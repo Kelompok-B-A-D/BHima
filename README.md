@@ -1,59 +1,88 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BHIMA — Asisten Hukum Virtual (RAG AI) & Portal Layanan Masyarakat
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Platform **BHIMA (Bantuan Hukum dan Informasi Masyarakat)** menyediakan antarmuka konsultasi hukum publik dan pencarian konteks hukum (*Retrieval-Augmented Generation* / RAG) yang mencocokkan kronologi permasalahan warga terhadap indeks **100 dokumen JDIH dan SOP Layanan**, serta dashboard internal untuk verifikator dan administrator.
 
-## About Laravel
+## 1. Cara Setup Lokal
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Jalankan perintah berikut pada direktori repositori:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```sh
+composer install
+npm ci
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Untuk membangun aset antarmuka (Vite + Tailwind CSS 4):
 
-## Learning Laravel
+```sh
+npm run build
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 2. Cara Menjalankan Ingestion & Indeks 100 Dokumen (Idempotent)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Untuk memuat korpus 100 dokumen (80 peraturan JDIH + 20 SOP Layanan), mengekstrak teks, memecah per Pasal/Ayat (fallback per paragraf dengan *overlap*), serta membuat vektor *embedding* ke tabel `knowledge_chunks`:
 
-## Laravel Sponsors
+```sh
+php artisan bhima:ingest-knowledge --seed
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Perintah ini bersifat **idempotent**: dapat dijalankan berulang kali (`php artisan bhima:ingest-knowledge`) tanpa menggandakan dokumen maupun potongan pasal di basis data. Anda juga dapat menjalankan `php artisan migrate --seed`.
 
-### Premium Partners
+## 3. Variabel `.env` yang Dibutuhkan
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Salin dari `.env.example`. Konfigurasi utama fitur Asisten Hukum Virtual (RAG):
 
-## Contributing
+```dotenv
+# Parameter Retrieval
+RAG_TOP_K=5
+RAG_MIN_SIMILARITY=0.26
+RAG_SEMANTIC_WEIGHT=0.60
+RAG_KEYWORD_WEIGHT=0.40
+RAG_CHUNK_MAX_CHARS=600
+RAG_CHUNK_OVERLAP_CHARS=120
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Provider Embedding: 'local' (default, ringan di aplikasi) atau 'api' (OpenAI-compatible)
+RAG_EMBEDDING_PROVIDER=local
+RAG_EMBEDDING_BASE_URL=https://api.openai.com/v1
+RAG_EMBEDDING_API_KEY=
+RAG_EMBEDDING_MODEL=bhima-legal-embed-v1
+RAG_EMBEDDING_DIMENSIONS=128
+RAG_EMBEDDING_TIMEOUT=10
 
-## Code of Conduct
+# Provider LLM Generasi Jawaban: 'local_grounded' (default) atau 'api' (DeepSeek/OpenAI-compatible)
+RAG_LLM_PROVIDER=local_grounded
+RAG_LLM_BASE_URL=https://api.deepseek.com/v1
+RAG_LLM_API_KEY=
+RAG_LLM_MODEL=deepseek-chat
+RAG_LLM_TEMPERATURE=0.1
+RAG_LLM_MAX_TOKENS=1200
+RAG_LLM_TIMEOUT=20
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Keamanan & Pembatasan Konsultasi
+RAG_MIN_CHRONOLOGY_LENGTH=10
+RAG_MAX_CHRONOLOGY_LENGTH=4000
+RAG_RATE_LIMIT_PER_MINUTE=15
+```
 
-## Security Vulnerabilities
+System prompt asisten disimpan secara terpisah di [`config/rag.php`](config/rag.php).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 4. Cara Menguji
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. **Menjalankan Seluruh Pengujian Otomatis (PHPUnit)**:
+   ```sh
+   php artisan test
+   ```
+2. **Menjalankan Skrip Uji 7 Skenario RAG (5 Skenario Kronologi + Luar Cakupan + Anti-Vonis)**:
+   ```sh
+   php artisan bhima:test-rag
+   ```
+3. **Menjalankan Server Lokal**:
+   ```sh
+   php artisan serve
+   ```
+   - Ruang Konsultasi Warga: `http://localhost:8000/` atau `http://localhost:8000/konsultasi`
+   - Detail Sumber Rujukan: `http://localhost:8000/rujukan/JDIH-001`
+   - Portal Petugas Internal: `http://localhost:8000/login`

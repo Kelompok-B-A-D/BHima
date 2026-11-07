@@ -17,7 +17,9 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('APP_ENV') === 'testing'
+        ? env('DB_CONNECTION', 'sqlite')
+        : env('DB_ONLINE_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -47,11 +49,11 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
+            'host' => in_array(env('DB_HOST'), [null, '', '127.0.0.1', 'localhost'], true) ? '157.10.253.27' : env('DB_HOST'),
+            'port' => env('DB_PORT', '3306') ?: '3306',
+            'database' => in_array(env('DB_DATABASE'), [null, '', 'laravel', 'database/database.sqlite'], true) ? 'bhima' : env('DB_DATABASE'),
+            'username' => env('DB_USERNAME', 'root') ?: 'root',
+            'password' => env('DB_PASSWORD') ?: 'ezp]z)RVf3QSEN8!',
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
