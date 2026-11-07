@@ -77,6 +77,12 @@
 /* Stitch Asisten Hukum Virtual - BHIMA (Teal & Amber Accent) */
 .stitch-consultation-body {
     overscroll-behavior: none;
+    overflow-x: hidden;
+}
+.stitch-consultation-body #quick-scenarios {
+    scrollbar-width: thin;
+    scrollbar-color: #CCECE6 transparent;
+    -webkit-overflow-scrolling: touch;
 }
 .stitch-consultation-body main > :first-child {
     margin-top: 0 !important;
