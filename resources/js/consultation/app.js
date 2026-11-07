@@ -24,8 +24,45 @@ function initConsultationApp(container) {
     const sessionIdLabel = container.querySelector('#session-id-label');
     const jdihSidebarList = container.querySelector('#jdih-sidebar-list');
     const defaultSidebarHtml = jdihSidebarList ? jdihSidebarList.innerHTML : '';
+    const mobileMenuBtn = container.querySelector('#mobile-menu-btn');
+    const mobileMenuIcon = container.querySelector('#mobile-menu-icon');
+    const mobileNavClose = container.querySelector('#mobile-nav-close');
+    const mobileNavBackdrop = container.querySelector('#mobile-nav-backdrop');
+    const consultSidebar = container.querySelector('#consult-sidebar');
 
     let busy = false;
+
+    function setMobileDrawerOpen(isOpen) {
+        if (!consultSidebar) return;
+        if (isOpen) {
+            consultSidebar.classList.remove('-translate-x-full');
+            consultSidebar.classList.add('translate-x-0');
+            if (mobileNavBackdrop) mobileNavBackdrop.hidden = false;
+            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
+            if (mobileMenuIcon) mobileMenuIcon.textContent = 'close';
+        } else {
+            consultSidebar.classList.add('-translate-x-full');
+            consultSidebar.classList.remove('translate-x-0');
+            if (mobileNavBackdrop) mobileNavBackdrop.hidden = true;
+            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+            if (mobileMenuIcon) mobileMenuIcon.textContent = 'menu';
+        }
+    }
+
+    mobileMenuBtn?.addEventListener('click', () => {
+        const isOpen = consultSidebar && !consultSidebar.classList.contains('-translate-x-full');
+        setMobileDrawerOpen(!isOpen);
+    });
+    mobileNavClose?.addEventListener('click', () => setMobileDrawerOpen(false));
+    mobileNavBackdrop?.addEventListener('click', () => setMobileDrawerOpen(false));
+    container.querySelectorAll('[data-drawer-link]').forEach((link) => {
+        link.addEventListener('click', () => setMobileDrawerOpen(false));
+    });
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            setMobileDrawerOpen(false);
+        }
+    });
 
     function updateSessionBadge(id) {
         if (sessionIdLabel && id) {
@@ -110,7 +147,7 @@ function initConsultationApp(container) {
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
 
                 return `
-                    <div class="p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] hover:border-[#0F766E] transition-all space-y-2.5">
+                    <div class="p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] hover:border-[#0F766E] transition-all flex flex-col justify-between gap-2.5">
                         <div class="flex items-start gap-3">
                             <div class="w-9 h-9 rounded-lg ${iconBoxClass} flex items-center justify-center shrink-0 mt-0.5 border">
                                 <span class="material-symbols-outlined text-[20px]">${iconName}</span>
@@ -122,7 +159,7 @@ function initConsultationApp(container) {
                                 <h3 class="text-sm text-text-dark font-semibold truncate" title="${e(c.document_name)}">
                                     ${e(c.document_name)}
                                 </h3>
-                                <div class="flex items-center gap-2 mt-1 text-text-muted text-xs flex-wrap">
+                                <div class="flex items-center gap-1.5 mt-1 text-text-muted text-[11px] sm:text-xs flex-wrap">
                                     <span class="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded font-bold">
                                         ${e(c.article_label || 'Pasal Terkait')}
                                     </span>
@@ -144,7 +181,7 @@ function initConsultationApp(container) {
                                 href="${e(c.source_url)}"
                                 target="_blank"
                                 rel="noopener"
-                                class="py-1.5 px-3.5 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white font-semibold text-xs flex items-center justify-center gap-1 shadow-sm transition-colors"
+                                class="py-1.5 px-3 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white font-semibold text-xs flex items-center justify-center gap-1 shadow-sm transition-colors"
                             >
                                 <span class="material-symbols-outlined text-[16px]">open_in_new</span> Sumber
                             </a>
@@ -161,19 +198,19 @@ function initConsultationApp(container) {
 
         if (isOutOfScope) {
             return `
-                <details class="w-fit max-w-[92%] sm:max-w-xl bg-white rounded-xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
-                    <summary class="bg-[#FEF3C7] text-[#92400E] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
+                <details class="w-fit max-w-[95%] sm:max-w-xl bg-white rounded-xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
+                    <summary class="bg-[#FEF3C7] text-[#92400E] px-3.5 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none">
                         <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-[18px] text-[#D97706]">warning</span>
-                            <span class="text-xs font-bold text-[#78350F]">
+                            <span class="material-symbols-outlined text-[18px] text-[#D97706] shrink-0">warning</span>
+                            <span class="text-[11px] sm:text-xs font-bold text-[#78350F]">
                                 Sumber Rujukan (0 Pasal di Atas Ambang Kemiripan)
                             </span>
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full bg-white text-[#92400E] border border-[#FDE68A] text-[11px] font-bold">
+                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">
                             Di Luar Cakupan ▾
                         </span>
                     </summary>
-                    <div class="p-4 bg-white text-xs text-text-muted leading-relaxed">
+                    <div class="p-3.5 sm:p-4 bg-white text-xs text-text-muted leading-relaxed">
                         <p>
                             Sistem tidak menemukan potongan pasal JDIH atau SOP layanan yang melewati ambang kemiripan minimum untuk kronologi ini. Sesuai standar keamanan BHIMA, asisten tidak mengarang pasal atau substansi hukum.
                         </p>
@@ -194,15 +231,15 @@ function initConsultationApp(container) {
                 const badgeLabel = isSop ? 'SOP Layanan' : 'Dokumen JDIH';
 
                 return `
-                    <div class="p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] space-y-2">
-                        <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="p-3 sm:p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-1.5 sm:gap-2">
                             <span class="text-xs sm:text-sm font-bold text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[#0F766E] text-[18px]">${iconName}</span>
-                                ${e(c.document_number || c.document_key)} • Tahun ${e(c.document_year || '-')}
+                                <span class="material-symbols-outlined text-[#0F766E] text-[17px] sm:text-[18px] shrink-0">${iconName}</span>
+                                <span>${e(c.document_number || c.document_key)} • Tahun ${e(c.document_year || '-')}</span>
                             </span>
-                            <div class="flex items-center gap-1.5">
-                                <span class="px-2 py-0.5 ${badgeBg} rounded-md text-[11px] font-semibold">${badgeLabel}</span>
-                                <span class="px-2 py-0.5 bg-white border border-[#CCECE6] text-[#0F766E] rounded-md text-[11px] font-bold">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="px-2 py-0.5 ${badgeBg} rounded-md text-[10px] sm:text-[11px] font-semibold">${badgeLabel}</span>
+                                <span class="px-2 py-0.5 bg-white border border-[#CCECE6] text-[#0F766E] rounded-md text-[10px] sm:text-[11px] font-bold">
                                     Relevansi ${scorePct}%
                                 </span>
                             </div>
@@ -234,63 +271,65 @@ function initConsultationApp(container) {
 
         return `
             <details class="w-full max-w-2xl bg-white rounded-2xl border border-[#CCECE6] shadow-sm overflow-hidden mt-1.5">
-                <summary class="bg-[#0F766E] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
-                    <div class="flex items-center gap-2.5">
-                        <span class="material-symbols-outlined text-[22px] text-[#9cf2e8]">balance</span>
-                        <div>
-                            <h3 class="font-headline text-sm md:text-base font-bold tracking-tight text-white">
+                <summary class="bg-[#0F766E] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 cursor-pointer select-none">
+                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                        <span class="material-symbols-outlined text-[20px] sm:text-[22px] text-[#9cf2e8] shrink-0">balance</span>
+                        <div class="min-w-0">
+                            <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold tracking-tight text-white">
                                 Sumber Rujukan &amp; Analisis Pasal (${count} Dokumen)
                             </h3>
-                            <p class="text-[11px] text-[#CCECE6]">
+                            <p class="text-[10px] sm:text-[11px] text-[#CCECE6]">
                                 Klik untuk membuka kutipan pasal JDIH &amp; SOP Layanan
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-0.5 rounded-full bg-[#115E59] text-[#9cf2e8] border border-[#2dd4bf]/40 text-[11px] font-bold tracking-wide">
+                    <div class="flex items-center gap-2 ml-auto">
+                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-[#115E59] text-[#9cf2e8] border border-[#2dd4bf]/40 text-[10px] sm:text-[11px] font-bold tracking-wide">
                             Relevansi ${topScorePct}%
                         </span>
                         <span class="material-symbols-outlined text-[18px] text-[#9cf2e8] transition-transform summary-chevron">expand_more</span>
                     </div>
                 </summary>
-                <div class="p-4 md:p-5 space-y-3.5 bg-white">
+                <div class="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-3.5 bg-white">
                     ${itemsHtml}
 
                     <!-- Official Advisory Disclaimer -->
-                    <div class="p-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-xl flex items-start gap-2">
-                        <span class="material-symbols-outlined text-[#4B5563] text-[18px] shrink-0 mt-0.5">info</span>
-                        <p class="text-xs text-text-muted leading-relaxed">
+                    <div class="p-2.5 sm:p-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-xl flex items-start gap-2">
+                        <span class="material-symbols-outlined text-[#4B5563] text-[17px] sm:text-[18px] shrink-0 mt-0.5">info</span>
+                        <p class="text-[11px] sm:text-xs text-text-muted leading-relaxed">
                             <strong class="text-text-dark font-semibold">Pemberitahuan Resmi:</strong>
                             Hasil analisis ini diproses secara komputasi berdasarkan regulasi terpublikasi di JDIH resmi dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
                         </p>
                     </div>
 
                     <!-- Action Button Matrix -->
-                    <div class="pt-1 flex flex-wrap gap-2.5 items-center">
+                    <div class="pt-1 flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-center">
                         <a
-                            class="flex-1 min-w-[200px] flex items-center justify-center gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all active:scale-[0.99]"
+                            class="flex-1 flex items-center justify-center gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white py-2.5 px-3.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all active:scale-[0.99] text-center"
                             href="${e(primaryUrl)}"
                             target="_blank"
                             rel="noopener"
                         >
-                            <span class="material-symbols-outlined text-[18px]">menu_book</span>
+                            <span class="material-symbols-outlined text-[17px] sm:text-[18px]">menu_book</span>
                             <span>Lihat Dokumen Rujukan Lengkap</span>
                         </a>
-                        <a
-                            class="flex items-center justify-center gap-1.5 bg-[#E6F5F2] hover:bg-[#CCECE6] text-[#0F766E] border border-[#CCECE6] py-2.5 px-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
-                            href="#posbakum-panel"
-                        >
-                            <span class="material-symbols-outlined text-[18px]">support_agent</span>
-                            <span>Posbakum</span>
-                        </a>
-                        <button
-                            type="button"
-                            data-copy-answer="1"
-                            class="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-text-muted hover:text-[#0F766E] hover:border-[#CCECE6] hover:bg-[#F0FAF8] transition-colors cursor-pointer"
-                            title="Salin Ringkasan Jawaban"
-                        >
-                            <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <a
+                                class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#E6F5F2] hover:bg-[#CCECE6] text-[#0F766E] border border-[#CCECE6] py-2.5 px-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
+                                href="#posbakum-panel"
+                            >
+                                <span class="material-symbols-outlined text-[17px] sm:text-[18px]">support_agent</span>
+                                <span>Posbakum</span>
+                            </a>
+                            <button
+                                type="button"
+                                data-copy-answer="1"
+                                class="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-text-muted hover:text-[#0F766E] hover:border-[#CCECE6] hover:bg-[#F0FAF8] transition-colors cursor-pointer shrink-0"
+                                title="Salin Ringkasan Jawaban"
+                            >
+                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </details>
@@ -303,12 +342,12 @@ function initConsultationApp(container) {
         const lineCount = clean.split('\n').filter((l) => l.trim().length > 0).length;
 
         if (len <= 70 && lineCount <= 1) {
-            return 'inline-block w-fit max-w-[78%] sm:max-w-md px-3.5 py-2';
+            return 'inline-block w-fit max-w-[85%] sm:max-w-md px-3.5 py-2';
         }
         if (len <= 200 && lineCount <= 3) {
-            return 'inline-block w-fit max-w-[85%] sm:max-w-lg px-4 py-3';
+            return 'inline-block w-fit max-w-[90%] sm:max-w-lg px-3.5 py-2.5 sm:px-4 sm:py-3';
         }
-        return 'inline-block w-fit max-w-[92%] sm:max-w-2xl p-4 md:p-5';
+        return 'inline-block w-fit max-w-[95%] sm:max-w-2xl p-3.5 sm:p-4 md:p-5';
     }
 
     function appendMessageBubble(msg) {
@@ -318,36 +357,36 @@ function initConsultationApp(container) {
         const bubbleSizing = getBubbleSizingClasses(trimmedContent);
 
         if (isUser) {
-            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1 pl-6 sm:pl-16';
+            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1 pl-3 sm:pl-12 md:pl-16';
             article.innerHTML = `
                 <div class="flex items-center gap-1.5 mb-0.5">
-                    <span class="text-xs font-medium text-text-muted">Kronologi Warga</span>
+                    <span class="text-[11px] sm:text-xs font-medium text-text-muted">Kronologi Warga</span>
                     <div class="w-5 h-5 rounded-full bg-[#CCECE6] flex items-center justify-center text-[#115E59]">
                         <span class="material-symbols-outlined text-[13px]">person</span>
                     </div>
                 </div>
-                <div class="${bubbleSizing} bg-[#115E59] text-white rounded-2xl rounded-tr-sm shadow-sm text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
-                <span class="text-[11px] text-text-muted pr-1">
+                <div class="${bubbleSizing} bg-[#115E59] text-white rounded-2xl rounded-tr-sm shadow-sm text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
+                <span class="text-[10px] sm:text-[11px] text-text-muted pr-1">
                     Terkirim ${e(formatTime(msg.created_at))} WIB
                 </span>
             `;
         } else {
-            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-2 sm:pr-8';
+            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 sm:pr-6 md:pr-8';
             const isOutOfScope = msg.retrieval_meta?.status === 'out_of_scope';
             const statusBadge = isOutOfScope
-                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded-full text-xs font-bold">Diarahkan ke Petugas</span>'
-                : '<span class="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-xs font-bold">Penalaran Peraturan Terverifikasi</span>';
+                ? '<span class="px-2 sm:px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded-full text-[10px] sm:text-xs font-bold">Diarahkan ke Petugas</span>'
+                : '<span class="px-2 sm:px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[10px] sm:text-xs font-bold">Penalaran Peraturan Terverifikasi</span>';
 
             article.innerHTML = `
-                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <div class="w-7 h-7 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shadow-sm">
-                        <span class="material-symbols-outlined text-[17px]">smart_toy</span>
+                <div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shadow-sm shrink-0">
+                        <span class="material-symbols-outlined text-[15px] sm:text-[17px]">smart_toy</span>
                     </div>
-                    <span class="text-sm font-bold text-text-dark">Asisten Hukum Virtual BHIMA</span>
+                    <span class="text-xs sm:text-sm font-bold text-text-dark">Asisten Hukum Virtual BHIMA</span>
                     ${statusBadge}
-                    <span class="text-xs text-text-muted">${e(formatTime(msg.created_at))} WIB</span>
+                    <span class="text-[11px] sm:text-xs text-text-muted">${e(formatTime(msg.created_at))} WIB</span>
                 </div>
-                <div class="${bubbleSizing} bg-white text-text-body rounded-2xl rounded-tl-sm border border-[#E2E8F0] shadow-sm space-y-2 text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
+                <div class="${bubbleSizing} bg-white text-text-body rounded-2xl rounded-tl-sm border border-[#E2E8F0] shadow-sm space-y-2 text-xs sm:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
                 ${renderSourcesSection(msg.citations, msg.retrieval_meta)}
             `;
 
