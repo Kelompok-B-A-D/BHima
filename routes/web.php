@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
+use App\Http\Controllers\ComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,11 @@ Route::post('/api/konsultasi/reset', [ConsultationController::class, 'reset'])->
 Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
     ->name('consultation.reference');
+
+Route::get('/pengaduan', [ComplaintController::class, 'create'])->name('complaint.create');
+Route::post('/pengaduan', [ComplaintController::class, 'store'])->middleware('throttle:10,1')->name('complaint.store');
+Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');
+Route::post('/lacak', [ComplaintController::class, 'track'])->middleware('throttle:20,1')->name('complaint.track.submit');
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {
