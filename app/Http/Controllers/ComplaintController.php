@@ -2,13 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ComplaintService;
 use Illuminate\Http\Request;
 
 class ComplaintController extends Controller
 {
+    public function __construct(private readonly ComplaintService $complaints) {}
+
     public function create(Request $request)
     {
-        return view('complaint.create');
+        $uuid = $request->query('session')
+            ?: $request->session()->get('bhima_consultation_session_uuid');
+
+        return view('complaint.create', [
+            'prefill' => $this->complaints->prescreeningFor($uuid),
+        ]);
     }
 
     public function store(Request $request)
