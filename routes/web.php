@@ -3,6 +3,7 @@
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
+use App\Http\Controllers\PublicComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
@@ -10,10 +11,16 @@ Route::get('/', [ConsultationController::class, 'index'])->name('consultation.ho
 Route::get('/konsultasi', [ConsultationController::class, 'index'])->name('consultation.index');
 Route::get('/api/konsultasi/riwayat', [ConsultationController::class, 'history'])->name('consultation.history');
 Route::post('/api/konsultasi/pesan', [ConsultationController::class, 'send'])->name('consultation.send');
+Route::post('/api/konsultasi/analisis', [ConsultationController::class, 'analyze'])->name('consultation.analyze');
 Route::post('/api/konsultasi/reset', [ConsultationController::class, 'reset'])->name('consultation.reset');
 Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
     ->name('consultation.reference');
+
+Route::get('/pengaduan', [PublicComplaintController::class, 'create'])->name('complaint.index');
+Route::get('/pengaduan/buat', [PublicComplaintController::class, 'create'])->name('complaint.create');
+Route::post('/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.store');
+Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.api.store');
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {

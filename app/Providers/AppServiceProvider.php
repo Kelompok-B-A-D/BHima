@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Contracts\AnalysisProvider;
+use App\Services\Analysis\DeepSeekProvider;
+use App\Services\Analysis\MockProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +15,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(AnalysisProvider::class, function ($app) {
+            $provider = strtolower(trim((string) config('legal_analysis.provider', 'mock')));
+
+            return $provider === 'deepseek'
+                ? $app->make(DeepSeekProvider::class)
+                : $app->make(MockProvider::class);
+        });
     }
 
     /**
