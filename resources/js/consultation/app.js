@@ -350,6 +350,222 @@ function initConsultationApp(container) {
         return 'inline-block w-fit max-w-[95%] sm:max-w-2xl p-3.5 sm:p-4 md:p-5';
     }
 
+    let lastUserChronology = '';
+
+    function renderLegalAnalysisCard(analysis, msg) {
+        if (!analysis || typeof analysis !== 'object') {
+            return '';
+        }
+
+        const rujukan = Array.isArray(analysis.rujukan) ? analysis.rujukan : [];
+        const pasalRelevan = Array.isArray(analysis.pasal_relevan) ? analysis.pasal_relevan : [];
+        const ancamanSanksi = Array.isArray(analysis.ancaman_sanksi) ? analysis.ancaman_sanksi : [];
+        const perluEskalasi = Boolean(analysis.perlu_eskalasi);
+        const catatan = String(analysis.catatan || '').trim();
+        const sanctionLabel = String(
+            analysis.meta?.sanction_label || 'berdasarkan bunyi pasal, bukan prediksi putusan'
+        );
+        const disclaimer = String(
+            analysis.meta?.disclaimer ||
+                'Informasi umum untuk edukasi awal warga, bukan nasihat hukum resmi maupun putusan pengadilan.'
+        );
+        const isError = analysis.meta?.status === 'error';
+
+        const rujukanHtml = rujukan.length
+            ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                ${rujukan
+                    .map(
+                        (r) => `
+                        <a
+                            href="${e(r.tautan || '#jdih-reference-panel')}"
+                            target="_blank"
+                            rel="noopener"
+                            class="p-2.5 rounded-xl bg-[#F0FAF8] hover:bg-[#E6F5F2] border border-[#CCECE6] flex items-start justify-between gap-2 transition-colors no-underline group"
+                        >
+                            <div class="min-w-0">
+                                <span class="text-[11px] font-bold text-[#0F766E] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
+                                <span class="text-xs font-semibold text-text-dark block truncate group-hover:text-[#0F766E]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
+                            </div>
+                            <span class="material-symbols-outlined text-[16px] text-[#0F766E] shrink-0 mt-0.5">open_in_new</span>
+                        </a>
+                    `
+                    )
+                    .join('')}
+               </div>`
+            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Belum ada rujukan undang-undang yang cocok di atas ambang kemiripan.</p>`;
+
+        const pasalHtml = pasalRelevan.length
+            ? `<div class="space-y-2.5">
+                ${pasalRelevan
+                    .map(
+                        (p) => `
+                        <div class="p-3 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] space-y-1.5">
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <span class="text-xs font-bold text-[#0F766E] flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px]">gavel</span>
+                                    ${e(p.pasal || '')}
+                                </span>
+                                <span class="text-[11px] font-semibold text-text-muted">${e(p.dokumen || '')}</span>
+                            </div>
+                            <p class="text-xs text-text-dark leading-relaxed">${e(p.penjelasan_awam || '')}</p>
+                            <p class="text-[11px] text-text-muted leading-relaxed border-t border-[#CCECE6]/60 pt-1">
+                                <strong class="text-[#0F766E]">Keterkaitan Kronologi:</strong> ${e(p.alasan_terkait_kronologi || '')}
+                            </p>
+                        </div>
+                    `
+                    )
+                    .join('')}
+               </div>`
+            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak ditemukan pasal yang berpotensi terkait pada konteks dokumen.</p>`;
+
+        const sanksiBadgeMap = {
+            pidana: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',
+            administratif: 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]',
+            perdata: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
+            lainnya: 'bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]',
+        };
+
+        const sanksiHtml = ancamanSanksi.length
+            ? `<div class="space-y-2">
+                ${ancamanSanksi
+                    .map((s) => {
+                        const jenisKey = String(s.jenis || 'lainnya').toLowerCase();
+                        const badgeCls = sanksiBadgeMap[jenisKey] || sanksiBadgeMap.lainnya;
+                        return `
+                            <div class="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                                <div class="flex items-center justify-between gap-2 flex-wrap">
+                                    <span class="text-xs font-bold text-text-dark">${e(s.pasal || '')} <span class="font-normal text-text-muted">• ${e(s.dokumen || '')}</span></span>
+                                    <span class="px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase ${badgeCls}">
+                                        ${e(jenisKey)}
+                                    </span>
+                                </div>
+                                <p class="text-xs text-text-body leading-relaxed">${e(s.bunyi_sanksi_ringkas || '')}</p>
+                            </div>
+                        `;
+                    })
+                    .join('')}
+               </div>`
+            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak tercantum dalam potongan pasal yang ditemukan.</p>`;
+
+        // Bangun URL eskalasi ke formulir pengaduan dengan prefill otomatis
+        const params = new URLSearchParams();
+        if (sessionId) params.set('session_id', sessionId);
+        if (msg?.id) params.set('message_id', String(msg.id));
+        if (lastUserChronology) params.set('chronology', lastUserChronology);
+        if (pasalRelevan.length > 0) {
+            const summaryLines = pasalRelevan.map((p) => `- ${p.pasal} (${p.dokumen}): ${p.penjelasan_awam}`);
+            ancamanSanksi.forEach((s) => {
+                summaryLines.push(`- Estimasi Sanksi ${s.pasal} [${String(s.jenis).toUpperCase()}]: ${s.bunyi_sanksi_ringkas}`);
+            });
+            params.set('pasal_ringkas', summaryLines.join('\n'));
+        }
+        if (rujukan.length > 0) {
+            params.set(
+                'rujukan',
+                rujukan.map((r) => `${r.dokumen} (${r.nomor_tahun}) — ${r.tautan}`).join('\n')
+            );
+        }
+        const escalationUrl = `/pengaduan/buat?${params.toString()}`;
+
+        const escalationButtonClass = perluEskalasi
+            ? 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-extrabold text-xs sm:text-sm shadow-md ring-2 ring-[#F59E0B]/30 transition-all no-underline'
+            : 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs sm:text-sm shadow-sm transition-all no-underline';
+
+        const escalationBadge = perluEskalasi
+            ? `<span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">Disarankan Eskalasi</span>`
+            : `<span class="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-[10px] sm:text-[11px] font-bold">Terkendali</span>`;
+
+        return `
+            <section
+                class="legal-analysis-card w-full max-w-2xl bg-white rounded-2xl border-2 ${perluEskalasi ? 'border-[#F59E0B]/70' : 'border-[#CCECE6]'} shadow-sm overflow-hidden mt-1.5"
+                aria-label="Hasil Analisis Pasal dan Estimasi Ancaman Sanksi"
+            >
+                <div class="bg-[#115E59] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="material-symbols-outlined text-[20px] text-[#9cf2e8] shrink-0">policy</span>
+                        <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold text-white truncate">
+                            Analisis Pasal &amp; Estimasi Ancaman Sanksi
+                        </h3>
+                    </div>
+                    ${escalationBadge}
+                </div>
+
+                <div class="p-3.5 sm:p-4 md:p-5 space-y-4">
+                    ${
+                        isError
+                            ? `<div role="alert" class="p-3 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E] font-medium">${e(catatan)}</div>`
+                            : ''
+                    }
+
+                    <!-- 1. Rujukan Undang-Undang -->
+                    <div class="space-y-1.5">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                            Rujukan Undang-Undang &amp; Regulasi (${rujukan.length})
+                        </h4>
+                        ${rujukanHtml}
+                    </div>
+
+                    <!-- 2. Pasal Terkait -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">fact_check</span>
+                                Pasal yang Berpotensi Terkait (${pasalRelevan.length})
+                            </h4>
+                            <span class="text-[10px] font-semibold text-text-muted">Berdasarkan kronologi, bukan putusan pelanggaran</span>
+                        </div>
+                        ${pasalHtml}
+                    </div>
+
+                    <!-- 3. Estimasi Ancaman Sanksi -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">gavel</span>
+                                Estimasi Ancaman Sanksi
+                            </h4>
+                            <span class="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                                ${e(sanctionLabel)}
+                            </span>
+                        </div>
+                        ${sanksiHtml}
+                    </div>
+
+                    ${
+                        !isError && catatan
+                            ? `<div class="p-2.5 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] text-[11px] sm:text-xs text-text-body leading-relaxed">${e(catatan)}</div>`
+                            : ''
+                    }
+
+                    <!-- Disclaimer Singkat -->
+                    <p class="text-[11px] text-text-muted leading-relaxed">
+                        <strong>Disclaimer:</strong> ${e(disclaimer)}
+                    </p>
+
+                    <!-- Tombol Eskalasi ke Formulir Pengaduan -->
+                    <div class="pt-2 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <span class="text-[11px] sm:text-xs font-semibold ${perluEskalasi ? 'text-[#92400E]' : 'text-text-muted'}">
+                            ${
+                                perluEskalasi
+                                    ? 'Permasalahan ini disarankan untuk dieskalasi ke petugas verifikator pengaduan.'
+                                    : 'Ingin melaporkan kendala ini secara resmi ke petugas verifikator?'
+                            }
+                        </span>
+                        <a
+                            href="${e(escalationUrl)}"
+                            data-escalate-complaint="1"
+                            class="${escalationButtonClass}"
+                        >
+                            <span class="material-symbols-outlined text-[18px]">campaign</span>
+                            <span>Ajukan Pengaduan</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+
     function appendMessageBubble(msg) {
         const isUser = msg.sender === 'user';
         const article = document.createElement('article');
@@ -357,6 +573,7 @@ function initConsultationApp(container) {
         const bubbleSizing = getBubbleSizingClasses(trimmedContent);
 
         if (isUser) {
+            lastUserChronology = trimmedContent;
             article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1 pl-3 sm:pl-12 md:pl-16';
             article.innerHTML = `
                 <div class="flex items-center gap-1.5 mb-0.5">
@@ -387,6 +604,7 @@ function initConsultationApp(container) {
                     <span class="text-[11px] sm:text-xs text-text-muted">${e(formatTime(msg.created_at))} WIB</span>
                 </div>
                 <div class="${bubbleSizing} bg-white text-text-body rounded-2xl rounded-tl-sm border border-[#E2E8F0] shadow-sm space-y-2 text-xs sm:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
+                ${renderLegalAnalysisCard(msg.legal_analysis, msg)}
                 ${renderSourcesSection(msg.citations, msg.retrieval_meta)}
             `;
 
@@ -407,7 +625,18 @@ function initConsultationApp(container) {
         }
 
         messagesEl.appendChild(article);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return article;
+    }
+
+    function scrollToBubbleTop(targetEl, behavior = 'smooth') {
+        if (!messagesEl || !targetEl) return;
+        const containerRect = messagesEl.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+        const nextScrollTop = Math.max(0, messagesEl.scrollTop + (targetRect.top - containerRect.top) - 12);
+        messagesEl.scrollTo({
+            top: nextScrollTop,
+            behavior,
+        });
     }
 
     async function loadHistory() {
@@ -435,7 +664,16 @@ function initConsultationApp(container) {
                 if (chunksStatEl) chunksStatEl.textContent = `${data.knowledge_stats.chunks} Chunk`;
             }
             if (Array.isArray(data.messages) && data.messages.length > 0) {
-                data.messages.forEach(appendMessageBubble);
+                let lastUserBubble = null;
+                data.messages.forEach((msg) => {
+                    const bubble = appendMessageBubble(msg);
+                    if (msg.sender === 'user') {
+                        lastUserBubble = bubble;
+                    }
+                });
+                if (lastUserBubble) {
+                    scrollToBubbleTop(lastUserBubble, 'auto');
+                }
             }
         } catch {
             // Abaikan kegagalan pemuatan awal secara senyap
@@ -494,11 +732,15 @@ function initConsultationApp(container) {
             inputEl.value = '';
             updateCounter();
 
+            let userBubbleEl = null;
             if (payload.user_message) {
-                appendMessageBubble(payload.user_message);
+                userBubbleEl = appendMessageBubble(payload.user_message);
             }
             if (payload.assistant_message) {
                 appendMessageBubble(payload.assistant_message);
+            }
+            if (userBubbleEl) {
+                scrollToBubbleTop(userBubbleEl, 'smooth');
             }
         } catch {
             showError('Tidak dapat terhubung ke server konsultasi BHIMA. Periksa koneksi Anda dan coba kembali.');
