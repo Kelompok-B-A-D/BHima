@@ -141,8 +141,16 @@ class ComplaintService
         ];
         $label = fn ($s) => $map[$s] ?? $s;
 
+        $fmt = function (?string $iso) {
+            if (! $iso) {
+                return null;
+            }
+
+            return \Carbon\Carbon::parse($iso)->setTimezone('Asia/Jakarta')->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+        };
+
         $history = collect($p['history'] ?? [])->map(fn ($h) => [
-            'date' => $h['date'] ?? null,
+            'date' => $fmt($h['date'] ?? null),
             'status' => $label(trim(Str::afterLast($h['text'] ?? '', '·'))),
         ])->values()->all();
 
@@ -150,7 +158,8 @@ class ComplaintService
             'ticket' => $ticket,
             'status' => $label($p['status'] ?? 'Baru'),
             'category' => $p['category'] ?? null,
-            'date' => $p['date'] ?? null,
+            'date' => isset($p['date']) ? \Carbon\Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
+            'agency' => $p['agency'] ?? null,
             'history' => $history,
         ];
     }
