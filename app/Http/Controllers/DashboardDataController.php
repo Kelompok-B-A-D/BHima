@@ -101,11 +101,15 @@ class DashboardDataController extends Controller
                 if ($request->hasFile('file')) {
                     $filePath = $request->file('file')->store('jdih', 'local');
                     $payload['filename'] = $request->file('file')->getClientOriginalName();
-                    $payload['status'] = 'Menunggu';
-                    $payload['extraction'] = 'Menunggu';
                 }
+                // Metadata or file changes must not leave an older indexed version publicly retrievable.
+                $payload['status'] = 'Menunggu';
+                $payload['extraction'] = 'Menunggu';
             }
             DB::table('dashboard_records')->updateOrInsert(['collection' => $collection, 'record_key' => $base['id']], ['payload' => json_encode($payload), 'assigned_to' => $assigned, 'file_path' => $filePath, 'updated_at' => now(), 'created_at' => $record?->created_at ?? now()]);
+            if ($collection === 'documents') {
+                DB::table('knowledge_chunks')->where('document_key', $base['id'])->delete();
+            }
             $this->audit($request, 'Memperbarui '.$collection.' '.$base['id']);
         });
 
@@ -143,6 +147,9 @@ class DashboardDataController extends Controller
         abort_unless($request->user()->role === 'admin', 403);
         abort_unless(in_array($collection, ['contents', 'documents', 'budgets'], true), 403);
         DB::transaction(function () use ($request, $collection, $key) {
+            if ($collection === 'documents') {
+                DB::table('knowledge_chunks')->where('document_key', $key)->delete();
+            }
             $deleted = DB::table('dashboard_records')->where('collection', $collection)->where('record_key', $key)->delete();
             abort_unless($deleted, 404);
             $this->audit($request, 'Menghapus '.$collection.' '.$key);
