@@ -4,6 +4,7 @@ use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\PublicComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
@@ -16,8 +17,12 @@ Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
     ->name('consultation.reference');
 
-Route::get('/pengaduan', [ComplaintController::class, 'create'])->name('complaint.create');
-Route::post('/pengaduan', [ComplaintController::class, 'store'])->middleware('throttle:10,1')->name('complaint.store');
+Route::get('/pengaduan', [PublicComplaintController::class, 'create'])->name('complaint.index');
+Route::get('/pengaduan/buat', [PublicComplaintController::class, 'create'])->name('complaint.create');
+Route::post('/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.store');
+Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.api.store');
+
+// Fitur 5 (KF-14): lacak tiket
 Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');
 Route::post('/lacak', [ComplaintController::class, 'track'])->middleware('throttle:20,1')->name('complaint.track.submit');
 
