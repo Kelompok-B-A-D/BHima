@@ -109,6 +109,67 @@ class DashboardTest extends TestCase
         $this->assertDatabaseCount('dashboard_records', 100);
     }
 
+    public function test_document_update_and_deletion_invalidate_knowledge_chunks(): void
+    {
+        $admin = $this->user();
+        $now = now();
+        $payload = [
+            'id' => 'D1',
+            'title' => 'Peraturan lama',
+            'number' => '1',
+            'year' => 2026,
+            'category' => 'Umum',
+            'summary' => 'Ringkasan lama',
+            'status' => 'Terindeks',
+            'extraction' => 'Berhasil',
+        ];
+        $recordId = DB::table('dashboard_records')->insertGetId([
+            'collection' => 'documents',
+            'record_key' => 'D1',
+            'payload' => json_encode($payload),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $chunk = [
+            'record_id' => $recordId,
+            'document_key' => 'D1',
+            'chunk_index' => 0,
+            'chunk_hash' => hash('sha256', 'D1-0'),
+            'document_name' => 'Peraturan lama',
+            'document_type' => 'Peraturan',
+            'document_number' => '1',
+            'document_year' => 2026,
+            'article_label' => 'Pasal 1',
+            'source_url' => '/rujukan/D1#pasal-1',
+            'category' => 'JDIH',
+            'topic' => 'Umum',
+            'content' => 'Isi lama',
+            'keywords' => 'isi lama',
+            'embedding' => json_encode([0.1]),
+            'embedding_model' => 'test',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        DB::table('knowledge_chunks')->insert($chunk);
+
+        $this->actingAs($admin)
+            ->postJson('/internal/data/documents', [
+                ...$payload,
+                'title' => 'Peraturan diperbarui',
+                'summary' => 'Ringkasan diperbarui',
+            ])
+            ->assertOk();
+        $this->assertDatabaseMissing('knowledge_chunks', ['document_key' => 'D1']);
+        $this->getJson('/internal/data')
+            ->assertJsonPath('documents.0.status', 'Menunggu')
+            ->assertJsonPath('documents.0.extraction', 'Menunggu');
+
+        DB::table('knowledge_chunks')->insert([...$chunk, 'chunk_hash' => hash('sha256', 'D1-1')]);
+        $this->deleteJson('/internal/data/documents/D1')->assertOk();
+        $this->assertDatabaseMissing('dashboard_records', ['collection' => 'documents', 'record_key' => 'D1']);
+        $this->assertDatabaseMissing('knowledge_chunks', ['document_key' => 'D1']);
+    }
+
     public function test_login_logout_and_disabled_accounts(): void
     {
         $user = $this->user();
