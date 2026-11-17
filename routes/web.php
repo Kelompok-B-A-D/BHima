@@ -12,6 +12,7 @@ Route::get('/', [ConsultationController::class, 'index'])->name('consultation.ho
 Route::get('/konsultasi', [ConsultationController::class, 'index'])->name('consultation.index');
 Route::get('/api/konsultasi/riwayat', [ConsultationController::class, 'history'])->name('consultation.history');
 Route::post('/api/konsultasi/pesan', [ConsultationController::class, 'send'])->name('consultation.send');
+Route::post('/api/konsultasi/analisis', [ConsultationController::class, 'analyze'])->name('consultation.analyze');
 Route::post('/api/konsultasi/reset', [ConsultationController::class, 'reset'])->name('consultation.reset');
 Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
