@@ -160,7 +160,8 @@
     }
 }
 .stitch-consultation-body,
-.stitch-beranda-body {
+.stitch-beranda-body,
+.stitch-liquid-body {
     overscroll-behavior: none;
     overflow-x: hidden;
 }
@@ -173,33 +174,64 @@
 .stitch-beranda-body button:not(:disabled),
 .stitch-beranda-body summary,
 .stitch-beranda-body select:not(:disabled),
-.stitch-beranda-body label[for] {
+.stitch-beranda-body label[for],
+.stitch-liquid-body a[href],
+.stitch-liquid-body button:not(:disabled),
+.stitch-liquid-body summary,
+.stitch-liquid-body select:not(:disabled),
+.stitch-liquid-body label[for],
+.stitch-liquid-body input[type="checkbox"]:not(:disabled),
+.stitch-liquid-body input[type="radio"]:not(:disabled) {
     cursor: pointer;
 }
 .stitch-consultation-body button:disabled,
 .stitch-consultation-body input:disabled,
 .stitch-beranda-body button:disabled,
-.stitch-beranda-body input:disabled {
+.stitch-beranda-body input:disabled,
+.stitch-liquid-body button:disabled,
+.stitch-liquid-body input:disabled,
+.stitch-liquid-body select:disabled,
+.stitch-liquid-body textarea:disabled {
     cursor: not-allowed;
 }
 .stitch-beranda-body a:focus-visible,
 .stitch-beranda-body button:focus-visible,
 .stitch-beranda-body input:focus-visible,
 .stitch-beranda-body select:focus-visible,
-.stitch-beranda-body textarea:focus-visible {
-    outline: 3px solid #0F766E;
+.stitch-beranda-body textarea:focus-visible,
+.stitch-consultation-body a:focus-visible,
+.stitch-consultation-body button:focus-visible,
+.stitch-consultation-body summary:focus-visible,
+.stitch-consultation-body input:focus-visible,
+.stitch-consultation-body select:focus-visible,
+.stitch-consultation-body textarea:focus-visible,
+.stitch-liquid-body a:focus-visible,
+.stitch-liquid-body button:focus-visible,
+.stitch-liquid-body summary:focus-visible,
+.stitch-liquid-body input:focus-visible,
+.stitch-liquid-body select:focus-visible,
+.stitch-liquid-body textarea:focus-visible {
+    outline: 3px solid #005AB3;
     outline-offset: 2px;
 }
 .stitch-beranda-body header a:focus-visible,
 .stitch-beranda-body header button:focus-visible,
 .stitch-beranda-body footer a:focus-visible,
-.stitch-beranda-body footer button:focus-visible {
+.stitch-beranda-body footer button:focus-visible,
+.stitch-consultation-body header a:focus-visible,
+.stitch-consultation-body header button:focus-visible,
+.stitch-consultation-body footer a:focus-visible,
+.stitch-consultation-body footer button:focus-visible,
+.stitch-liquid-body header a:focus-visible,
+.stitch-liquid-body header button:focus-visible,
+.stitch-liquid-body footer a:focus-visible,
+.stitch-liquid-body footer button:focus-visible {
     outline: 3px solid #F59E0B;
     outline-offset: 2px;
 }
 .stitch-consultation-body #quick-scenarios {
     scrollbar-width: thin;
-    scrollbar-color: #CCECE6 transparent;
+    scrollbar-color: #C0C6D6 transparent;
     -webkit-overflow-scrolling: touch;
 }
 .stitch-consultation-body main > :first-child {
@@ -226,10 +258,10 @@
 .stitch-answer-section-title {
     font-size: 0.875rem;
     font-weight: 700;
-    color: #0F766E;
+    color: #005AB3;
     margin: 0.85rem 0 0.35rem;
     padding-top: 0.6rem;
-    border-top: 1px dashed #CCECE6;
+    border-top: 1px dashed #D6E3FF;
 }
 .stitch-answer-body .stitch-answer-section-title:first-child {
     margin-top: 0;
