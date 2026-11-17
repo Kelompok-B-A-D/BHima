@@ -31,6 +31,85 @@
     --color-badge-red-text: #991B1B;
     --color-badge-gray-bg: #F3F4F6;
     --color-badge-gray-text: #374151;
+    --color-on-secondary: #ffffff;
+    --color-on-tertiary-fixed-variant: #653e00;
+    --color-on-tertiary-fixed: #2a1700;
+    --color-inverse-primary: #8fd3cc;
+    --color-secondary-fixed: #9cf2e8;
+    --color-inverse-surface: #27313f;
+    --color-outline-variant: #bec9c7;
+    --color-on-error-container: #93000a;
+    --color-surface: #f8f9ff;
+    --color-error-container: #ffdad6;
+    --color-tertiary-fixed: #ffddb8;
+    --color-surface-tint: #216963;
+    --color-primary-fixed: #abefe8;
+    --color-on-tertiary-container: #ffbb66;
+    --color-secondary-container: #99efe5;
+    --color-secondary-fixed-dim: #80d5cb;
+    --color-outline: #6f7977;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-variant: #d9e3f6;
+    --color-on-surface: #121c2a;
+    --color-on-primary-fixed-variant: #00504b;
+    --color-on-secondary-fixed-variant: #00504a;
+    --color-surface-bright: #f8f9ff;
+    --color-surface-container-high: #dee9fc;
+    --color-secondary: #006a63;
+    --color-on-secondary-fixed: #00201d;
+    --color-on-error: #ffffff;
+    --color-primary-fixed-dim: #8fd3cc;
+    --color-on-tertiary: #ffffff;
+    --color-on-surface-variant: #3f4947;
+    --color-tertiary-container: #774a00;
+    --color-tertiary-fixed-dim: #ffb95f;
+    --color-surface-container-low: #eff4ff;
+    --color-tertiary: #583500;
+    --color-surface-container-highest: #d9e3f6;
+    --color-on-secondary-container: #006f67;
+    --color-on-primary-container: #91d5ce;
+    --color-surface-dim: #d0dbed;
+    --color-surface-container: #e6eeff;
+    --color-error: #ba1a1a;
+    --color-background: #f8f9ff;
+    --color-on-primary-fixed: #00201e;
+    --color-on-primary: #ffffff;
+    --color-inverse-on-surface: #eaf1ff;
+    --color-primary-container: #115e59;
+    --color-on-background: #121c2a;
+    --spacing-space-xs: 0.25rem;
+    --spacing-space-sm: 0.5rem;
+    --spacing-space-md: 1rem;
+    --spacing-space-lg: 1.5rem;
+    --spacing-space-xl: 2.5rem;
+    --spacing-margin: 2rem;
+    --spacing-margin-mobile: 1rem;
+    --spacing-gutter: 1.5rem;
+    --spacing-gutter-sm: 1rem;
+    --font-display: 'Newsreader', Georgia, serif;
+    --font-headline-lg: 'Newsreader', Georgia, serif;
+    --font-headline-md: 'Newsreader', Georgia, serif;
+    --font-headline-sm: 'Newsreader', Georgia, serif;
+    --font-title-lg: 'Manrope', sans-serif;
+    --font-title-md: 'Manrope', sans-serif;
+    --font-label-lg: 'Manrope', sans-serif;
+    --font-label-md: 'Manrope', sans-serif;
+    --font-label-sm: 'Manrope', sans-serif;
+    --font-body-lg: 'Manrope', sans-serif;
+    --font-body-md: 'Manrope', sans-serif;
+    --font-body-sm: 'Manrope', sans-serif;
+    --text-display: 2.5rem;
+    --text-headline-lg: 2rem;
+    --text-headline-md: 1.5rem;
+    --text-headline-sm: 1.25rem;
+    --text-title-lg: 1.125rem;
+    --text-title-md: 1rem;
+    --text-label-lg: 0.875rem;
+    --text-label-md: 0.75rem;
+    --text-label-sm: 0.6875rem;
+    --text-body-lg: 1rem;
+    --text-body-md: 0.875rem;
+    --text-body-sm: 0.75rem;
 }
 
 @layer base {
@@ -74,10 +153,49 @@
 @media(max-width:650px){#main-content{padding:23px 16px}.topbar{padding:0 16px;gap:10px}.breadcrumb{font-size:9px}.breadcrumb span{margin:0 6px}.profile summary>span:not(.avatar){display:none}.profile-menu{top:45px}.page-heading{display:block;margin-bottom:22px}.page-heading h1{font-size:24px}.page-heading p:not(.eyebrow){font-size:11px}.today{display:inline-block;margin-top:15px;font-size:9px}.welcome-banner{padding:19px 16px}.welcome-banner h2{font-size:14px}.welcome-banner p{font-size:10px}.welcome-symbol{display:none}.stats,.stats.three,.stats.four{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:14px}.stat-top{font-size:10px}.stat strong{font-size:25px;margin:10px 0 5px}.stat small{font-size:9px}.stat-icon{width:24px;height:24px;font-size:15px}.charts-grid{grid-template-columns:1fr;gap:15px}.chart{min-height:230px}.panel{padding:17px;margin-bottom:17px}.panel-heading{gap:10px;margin-bottom:18px}.panel-heading h2{font-size:14px}.panel-heading .primary{font-size:9px;padding:9px}.table-toolbar{gap:8px}.search-field{flex-basis:100%}.table-toolbar select{flex:1;min-width:0;font-size:10px;padding:9px}.date-filters{gap:8px}.date-filters label{font-size:9px}.date-filters input{font-size:9px;width:118px}.date-filters>.muted{margin-left:0;width:100%}.pagination>div{width:100%;justify-content:space-between}.pagination{font-size:9px}.pagination button{font-size:9px}.dashboard-body footer{padding:17px;font-size:8px;gap:20px}.dashboard-body footer span{text-align:right}.dialog-body,.dialog-heading{padding:18px}.detail-grid,.form-grid{grid-template-columns:1fr}.detail-overview{flex-direction:column}.detail-overview h3{font-size:17px}.tabs button{padding:10px;font-size:10px}.detail-actions button{flex:1 0 40%}.notice{font-size:10px}.login-card{padding:27px}#preferences{align-items:stretch;flex-direction:column}.stat strong{font-variant-numeric:tabular-nums}.stats.three .stat strong{font-size:20px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
-/* Stitch Asisten Hukum Virtual - BHIMA (Teal & Amber Accent) */
-.stitch-consultation-body {
+/* Stitch Asisten Hukum Virtual & Beranda - BHIMA (Teal & Amber Accent) */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+}
+.stitch-consultation-body,
+.stitch-beranda-body {
     overscroll-behavior: none;
     overflow-x: hidden;
+}
+.stitch-consultation-body a[href],
+.stitch-consultation-body button:not(:disabled),
+.stitch-consultation-body summary,
+.stitch-consultation-body select:not(:disabled),
+.stitch-consultation-body label[for],
+.stitch-beranda-body a[href],
+.stitch-beranda-body button:not(:disabled),
+.stitch-beranda-body summary,
+.stitch-beranda-body select:not(:disabled),
+.stitch-beranda-body label[for] {
+    cursor: pointer;
+}
+.stitch-consultation-body button:disabled,
+.stitch-consultation-body input:disabled,
+.stitch-beranda-body button:disabled,
+.stitch-beranda-body input:disabled {
+    cursor: not-allowed;
+}
+.stitch-beranda-body a:focus-visible,
+.stitch-beranda-body button:focus-visible,
+.stitch-beranda-body input:focus-visible,
+.stitch-beranda-body select:focus-visible,
+.stitch-beranda-body textarea:focus-visible {
+    outline: 3px solid #0F766E;
+    outline-offset: 2px;
+}
+.stitch-beranda-body header a:focus-visible,
+.stitch-beranda-body header button:focus-visible,
+.stitch-beranda-body footer a:focus-visible,
+.stitch-beranda-body footer button:focus-visible {
+    outline: 3px solid #F59E0B;
+    outline-offset: 2px;
 }
 .stitch-consultation-body #quick-scenarios {
     scrollbar-width: thin;

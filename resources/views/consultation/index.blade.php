@@ -72,17 +72,17 @@
                 </div>
                 <nav class="hidden xl:flex items-center gap-1.5 text-sm font-semibold text-white/90" aria-label="Navigasi Utama Portal">
                     <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="{{ route('consultation.home') }}">Beranda</a>
-                    <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="#quick-scenarios">Layanan</a>
+                    <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="{{ route('consultation.home') }}#layanan">Layanan</a>
                     <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="#jdih-reference-panel">Peraturan JDIH</a>
                     <a aria-current="page" class="transition-all bg-[#0F766E] text-white font-bold rounded-lg px-3.5 py-2 shadow-sm border border-[#2dd4bf]/30" href="{{ route('consultation.index') }}">Asisten Hukum</a>
-                    <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="#posbakum-panel">Posbakum</a>
+                    <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="{{ route('complaint.track') }}">Lacak Tiket</a>
                     <a class="hover:text-white hover:bg-white/10 transition-colors px-3 py-2 rounded-lg" href="{{ route('login') }}">Portal Petugas</a>
                 </nav>
                 <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <a class="flex items-center gap-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-bold text-xs sm:text-sm px-2.5 sm:px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all active:scale-[0.98]" href="#chronology-input">
+                    <a class="flex items-center gap-1.5 bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-bold text-xs sm:text-sm px-2.5 sm:px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all active:scale-[0.98]" href="{{ route('complaint.create') }}">
                         <span class="material-symbols-outlined text-[18px] sm:text-[20px] text-[#111827]">campaign</span>
-                        <span class="hidden sm:inline">Lapor / Konsultasi</span>
-                        <span class="sm:hidden">Konsultasi</span>
+                        <span class="hidden sm:inline">Lapor Pengaduan</span>
+                        <span class="sm:hidden">Lapor</span>
                     </a>
                     <a href="{{ route('login') }}" title="Portal Petugas BHIMA" class="w-9 h-9 rounded-full bg-white/15 border border-white/25 flex items-center justify-center text-white hover:bg-white/25 transition-colors shrink-0">
                         <span class="material-symbols-outlined text-[20px]">person</span>
@@ -141,8 +141,20 @@
                     <span class="material-symbols-outlined text-[20px]">gavel</span>
                     Hubungi Advokat Posbakum
                 </a>
-                <div class="xl:hidden pt-3 mt-3 border-t border-white/10">
+                <a data-drawer-link class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#CCECE6] hover:bg-white/10 hover:text-white transition-colors" href="{{ route('complaint.create') }}">
+                    <span class="material-symbols-outlined text-[20px]">campaign</span>
+                    Formulir Pengaduan Warga
+                </a>
+                <a data-drawer-link class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#CCECE6] hover:bg-white/10 hover:text-white transition-colors" href="{{ route('complaint.track') }}">
+                    <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                    Lacak Tiket Pengaduan
+                </a>
+                <div class="pt-3 mt-3 border-t border-white/10">
                     <span class="px-3.5 text-[11px] font-bold uppercase tracking-wider text-[#9cf2e8]/80 block mb-1">Akses Portal</span>
+                    <a data-drawer-link class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#CCECE6] hover:bg-white/10 hover:text-white transition-colors" href="{{ route('consultation.home') }}">
+                        <span class="material-symbols-outlined text-[20px]">home</span>
+                        Beranda Portal BHIMA
+                    </a>
                     <a data-drawer-link class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#CCECE6] hover:bg-white/10 hover:text-white transition-colors" href="{{ route('login') }}">
                         <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
                         Portal Petugas BHIMA
@@ -191,7 +203,7 @@
                                         </span>
                                     </div>
                                     <p class="text-xs sm:text-sm text-text-muted mt-1 leading-relaxed">
-                                        Ruang Konsultasi Hukum Warga — Sistem verifikasi pasal &amp; panduan administratif warga otomatis berbasis indeks {{ $knowledgeStats['documents'] ?: 100 }} dokumen JDIH dan SOP layanan.
+                                        Ruang Konsultasi Hukum Warga: Sistem verifikasi pasal &amp; panduan administratif warga otomatis berbasis indeks {{ $knowledgeStats['documents'] ?: 100 }} dokumen JDIH dan SOP layanan.
                                     </p>
                                 </div>
                             </div>

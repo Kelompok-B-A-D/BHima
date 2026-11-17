@@ -8,23 +8,53 @@ use Illuminate\Validation\Rule;
 
 class ComplaintController extends Controller
 {
-    // TODO: samakan dengan daftar `categories` di resources/js/data.js
-    private const CATEGORIES = ['Pungutan Liar', 'Pelayanan Lambat', 'Prosedur Tidak Jelas', 'Maladministrasi Lainnya'];
+    private const CATEGORIES = [
+        'Pungutan Liar',
+        'Dugaan Pungutan Liar',
+        'Pelayanan Lambat',
+        'Prosedur Tidak Jelas',
+        'Administrasi Kependudukan',
+        'Pelayanan Kesehatan',
+        'Infrastruktur',
+        'Ketenagakerjaan',
+        'Pertanahan',
+        'Maladministrasi Lainnya',
+    ];
 
     public function __construct(private readonly ComplaintService $complaints) {}
 
     public function create(Request $request)
     {
-        $uuid = $request->query('session')
-            ?: $request->session()->get('bhima_consultation_session_uuid');
+        $uuid = (string) ($request->query('session')
+            ?: $request->query('session_id')
+            ?: ($request->hasSession() ? $request->session()->get('bhima_consultation_session_uuid') : ''));
+        $messageId = $request->filled('message_id') ? (int) $request->query('message_id') : null;
+
+        $prefill = $this->complaints->prescreeningFor($uuid ?: null, $messageId);
+        if (! $prefill && $request->filled('chronology')) {
+            $prefill = [
+                'session_uuid' => $uuid,
+                'message_id' => $messageId,
+                'chronology' => trim((string) $request->query('chronology')),
+                'answer' => trim((string) $request->query('pasal_ringkas', '')),
+                'citations' => [],
+                'legal_analysis' => null,
+            ];
+        }
 
         return view('complaint.create', [
-            'prefill' => $this->complaints->prescreeningFor($uuid),
+            'prefill' => $prefill,
+            'categories' => self::CATEGORIES,
         ]);
     }
 
     public function store(Request $request)
     {
+        // Dukung pengiriman JSON / skema eskalasi PBI 2 maupun pengiriman form langsung dari halaman pengaduan
+        if ($request->expectsJson() || ($request->filled('chronology') && ! $request->filled('uraian'))) {
+            return app(PublicComplaintController::class)->store($request);
+        }
+
         $data = $request->validate([
             'kategori' => ['required', Rule::in(self::CATEGORIES)],
             'instansi_terlapor' => 'required|string|max:200',
@@ -55,8 +85,17 @@ class ComplaintController extends Controller
         ]);
     }
 
-    public function trackForm()
+    public function trackForm(Request $request)
     {
+        $ticketParam = strtoupper(trim((string) $request->query('tiket', '')));
+        if ($ticketParam !== '' && preg_match('/^BHM-(\d{4}-\d{4,}|[A-Z0-9]{10})$/', $ticketParam)) {
+            return view('complaint.track', [
+                'autoSearched' => true,
+                'autoTicket' => $ticketParam,
+                'autoResult' => $this->complaints->trackByTicket($ticketParam),
+            ]);
+        }
+
         return view('complaint.track');
     }
 

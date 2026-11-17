@@ -5,6 +5,11 @@ if (root) {
     initConsultationApp(root);
 }
 
+const berandaRoot = document.getElementById('beranda-app');
+if (berandaRoot) {
+    initBerandaApp(berandaRoot);
+}
+
 function initConsultationApp(container) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const maxLen = Number(container.dataset.maxLength || 4000);
@@ -797,6 +802,240 @@ function initConsultationApp(container) {
         }
     });
 
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery && inputEl) {
+        inputEl.value = initialQuery.slice(0, maxLen);
+    }
+
     updateCounter();
     loadHistory();
+}
+
+function initBerandaApp(container) {
+    const mobileMenuBtn = container.querySelector('#beranda-mobile-menu-btn');
+    const mobileMenuIcon = container.querySelector('#beranda-mobile-menu-icon');
+    const mobileDrawer = container.querySelector('#beranda-mobile-drawer');
+
+    function setDrawerOpen(isOpen) {
+        if (!mobileDrawer) return;
+        mobileDrawer.hidden = !isOpen;
+        if (mobileMenuBtn) {
+            mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+        if (mobileMenuIcon) {
+            mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
+        }
+    }
+
+    mobileMenuBtn?.addEventListener('click', () => {
+        const isOpen = mobileDrawer && !mobileDrawer.hidden;
+        setDrawerOpen(!isOpen);
+    });
+
+    container.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
+        link.addEventListener('click', () => setDrawerOpen(false));
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && mobileDrawer && !mobileDrawer.hidden) {
+            setDrawerOpen(false);
+            mobileMenuBtn?.focus();
+        }
+    });
+
+    const searchForm = container.querySelector('#bhimaSearchForm');
+    const searchInput = container.querySelector('#bhimaSearchInput');
+    const searchSubmitBtn = container.querySelector('#bhimaSearchSubmitBtn');
+    const searchIdle = container.querySelector('#beranda-search-idle');
+    const searchLoading = container.querySelector('#beranda-search-loading');
+    const searchError = container.querySelector('#beranda-search-error');
+    const searchEmpty = container.querySelector('#beranda-search-empty');
+    const searchResults = container.querySelector('#beranda-search-results');
+    const searchSummary = container.querySelector('#beranda-search-summary');
+    const searchList = container.querySelector('#beranda-search-list');
+    const searchClose = container.querySelector('#beranda-search-close');
+
+    function setSearchState(state, message = '') {
+        if (searchIdle) searchIdle.hidden = state !== 'idle';
+        if (searchLoading) searchLoading.hidden = state !== 'loading';
+        if (searchError) {
+            searchError.hidden = state !== 'error';
+            searchError.textContent = message;
+        }
+        if (searchEmpty) searchEmpty.hidden = state !== 'empty';
+        if (searchResults) searchResults.hidden = state !== 'results';
+    }
+
+    async function runPortalSearch(rawQuery) {
+        const query = String(rawQuery || '').trim();
+        setSearchState('loading');
+        if (searchSubmitBtn) searchSubmitBtn.disabled = true;
+
+        try {
+            const url = `/api/beranda/cari?q=${encodeURIComponent(query || 'semua')}`;
+            const res = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                setSearchState(
+                    'error',
+                    data.message || 'Pencarian dokumen belum dapat dimuat saat ini. Silakan coba kembali.'
+                );
+                return;
+            }
+
+            const items = Array.isArray(data.results) ? data.results : [];
+            if (items.length === 0) {
+                setSearchState('empty');
+                return;
+            }
+
+            if (searchSummary) {
+                searchSummary.textContent = query
+                    ? `Ditemukan ${items.length} Dokumen Terkait untuk "${query}"`
+                    : `Menampilkan ${items.length} Dokumen Rujukan Utama JDIH & SOP`;
+            }
+
+            if (searchList) {
+                searchList.innerHTML = items
+                    .map((item) => {
+                        const isSop = item.category === 'SOP';
+                        const badgeClass = isSop
+                            ? 'bg-[#E0F2FE] text-[#075985] border-[#bae6fd]'
+                            : 'bg-[#DCFCE7] text-[#166534] border-[#bbf7d0]';
+                        const consultHref = `/konsultasi?q=${encodeURIComponent(
+                            query || `${item.document_name} (${item.document_number})`
+                        )}`;
+
+                        return `
+                            <article class="p-4 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] flex flex-col justify-between gap-3">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                                            ${e(item.category || 'JDIH')} • ${e(item.document_number || '')}
+                                        </span>
+                                        <span class="text-xs font-semibold text-[#374151]">${e(item.topic || '')}</span>
+                                    </div>
+                                    <h3 class="font-headline text-base sm:text-lg font-semibold text-[#1F2937] leading-snug">
+                                        ${e(item.document_name || '')}
+                                    </h3>
+                                    <p class="text-xs sm:text-sm text-[#374151] leading-relaxed">
+                                        ${e(item.excerpt || '')}
+                                    </p>
+                                </div>
+                                <div class="pt-2 border-t border-[#CCECE6]/80 flex flex-wrap items-center justify-between gap-2">
+                                    <a
+                                        href="${e(item.url || '#')}"
+                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-white hover:bg-[#E6F4F1] text-[#0F766E] border border-[#CCECE6] text-xs font-bold inline-flex items-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">menu_book</span>
+                                        <span>Baca Pasal (${e(item.article_label || 'Lengkap')})</span>
+                                    </a>
+                                    <a
+                                        href="${e(consultHref)}"
+                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white text-xs font-bold inline-flex items-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
+                                        <span>Tanya Asisten</span>
+                                    </a>
+                                </div>
+                            </article>
+                        `;
+                    })
+                    .join('');
+            }
+
+            setSearchState('results');
+        } catch {
+            setSearchState(
+                'error',
+                'Tidak dapat terhubung ke layanan pencarian dokumen. Periksa koneksi Anda atau buka Ruang Konsultasi.'
+            );
+        } finally {
+            if (searchSubmitBtn) searchSubmitBtn.disabled = false;
+        }
+    }
+
+    searchForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const val = searchInput ? searchInput.value.trim() : '';
+        if (!val) {
+            setSearchState('error', 'Silakan ketik kata kunci layanan, SOP, atau peraturan terlebih dahulu.');
+            searchInput?.focus();
+            return;
+        }
+        runPortalSearch(val);
+    });
+
+    container.querySelectorAll('[data-search-tag]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const tag = btn.getAttribute('data-search-tag') || '';
+            if (searchInput) {
+                searchInput.value = tag;
+            }
+            runPortalSearch(tag);
+        });
+    });
+
+    container.querySelectorAll('[data-show-all-docs]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            document.getElementById('pencarian-regulasi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            runPortalSearch('semua');
+        });
+    });
+
+    searchClose?.addEventListener('click', () => {
+        setSearchState('idle');
+    });
+
+    const ticketForm = container.querySelector('#beranda-ticket-form');
+    const ticketInput = container.querySelector('#ticketCodeInput');
+    const ticketBtn = container.querySelector('#ticketTrackBtn');
+    const ticketStatusMsg = container.querySelector('#ticketStatusMsg');
+
+    ticketForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!ticketStatusMsg) return;
+
+        const val = ticketInput ? ticketInput.value.trim().toUpperCase() : '';
+        if (!val) {
+            ticketStatusMsg.textContent = 'Harap isi nomor tiket terlebih dahulu (contoh: BHM-2026-0001).';
+            ticketStatusMsg.className = 'text-xs font-bold text-[#991B1B] block mt-1.5';
+            ticketInput?.focus();
+            return;
+        }
+
+        ticketStatusMsg.textContent = `Memeriksa status tiket ${val}...`;
+        ticketStatusMsg.className = 'text-xs font-semibold text-[#0F766E] block mt-1.5';
+        if (ticketBtn) ticketBtn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/beranda/lacak?tiket=${encodeURIComponent(val)}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || !data.found) {
+                ticketStatusMsg.innerHTML = `${e(data.message || 'Tiket tidak ditemukan.')} <a href="/lacak?tiket=${encodeURIComponent(val)}" class="underline font-bold text-[#0F766E]">Buka halaman Lacak Tiket</a>`;
+                ticketStatusMsg.className = 'text-xs font-semibold text-[#991B1B] block mt-1.5';
+                return;
+            }
+
+            ticketStatusMsg.innerHTML = `Tiket <strong>${e(data.ticket)}</strong> (${e(data.category)}): Status <strong>${e(data.status)}</strong>. <a href="${e(data.detail_url)}" class="underline font-bold text-[#0F766E]">Lihat detail lengkap</a>`;
+            ticketStatusMsg.className = 'text-xs font-semibold text-[#166534] block mt-1.5';
+        } catch {
+            ticketStatusMsg.textContent = 'Gagal memeriksa tiket secara langsung. Silakan coba lagi.';
+            ticketStatusMsg.className = 'text-xs font-semibold text-[#991B1B] block mt-1.5';
+        } finally {
+            if (ticketBtn) ticketBtn.disabled = false;
+        }
+    });
 }

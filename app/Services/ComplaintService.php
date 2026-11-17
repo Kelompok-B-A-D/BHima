@@ -3,13 +3,14 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ComplaintService
 {
     // Ambil hasil pre-screening terakhir dari sesi konsultasi chatbot.
 
-    public function prescreeningFor(?string $uuid): ?array
+    public function prescreeningFor(?string $uuid, ?int $messageId = null): ?array
     {
         if (! $uuid || ! preg_match('/^[A-Za-z0-9_-]{12,64}$/', $uuid)) {
             return null;
@@ -21,18 +22,31 @@ class ComplaintService
         }
 
         $base = DB::table('consultation_messages')->where('consultation_session_id', $session->id);
-        $assistant = (clone $base)->where('sender', 'assistant')->latest('id')->first();
+        $assistant = $messageId
+            ? (clone $base)->where('id', $messageId)->where('sender', 'assistant')->first()
+            : null;
+        if (! $assistant) {
+            $assistant = (clone $base)->where('sender', 'assistant')->latest('id')->first();
+        }
         $user = (clone $base)->where('sender', 'user')->latest('id')->first();
 
         if (! $assistant) {
             return null;
         }
 
+        $citations = json_decode($assistant->citations ?? '[]', true) ?: [];
+        $legalAnalysis = isset($assistant->legal_analysis) && $assistant->legal_analysis
+            ? (json_decode((string) $assistant->legal_analysis, true) ?: null)
+            : null;
+
         return [
+            'session_id' => (int) $session->id,
             'session_uuid' => $uuid,
+            'message_id' => (int) $assistant->id,
             'chronology' => $user?->content,
             'answer' => $assistant->content,
-            'citations' => json_decode($assistant->citations ?? '[]', true) ?: [],
+            'citations' => $citations,
+            'legal_analysis' => $legalAnalysis,
         ];
     }
 
@@ -77,8 +91,22 @@ class ComplaintService
             }
 
             $references = collect($prefill['citations'] ?? [])
-                ->map(fn ($c) => trim(data_get($c, 'document_name', 'Rujukan').' '.data_get($c, 'article_label', '')))
+                ->map(fn ($c) => trim(data_get($c, 'document_name', 'Rujukan').' ('.data_get($c, 'document_number', '-').') '.data_get($c, 'article_label', '')))
                 ->filter()->values()->all();
+
+            $aiSummary = $prefill['answer'] ?? null;
+            if (! empty($prefill['legal_analysis']['pasal_relevan']) && is_array($prefill['legal_analysis']['pasal_relevan'])) {
+                $lines = [];
+                foreach ($prefill['legal_analysis']['pasal_relevan'] as $p) {
+                    $lines[] = '- '.($p['pasal'] ?? '').' ('.($p['dokumen'] ?? '').'): '.($p['penjelasan_awam'] ?? '');
+                }
+                foreach ($prefill['legal_analysis']['ancaman_sanksi'] ?? [] as $s) {
+                    $lines[] = '- Estimasi Sanksi '.($s['pasal'] ?? '').' ['.strtoupper((string) ($s['jenis'] ?? 'lainnya')).']: '.($s['bunyi_sanksi_ringkas'] ?? '');
+                }
+                if (! empty($lines)) {
+                    $aiSummary = implode("\n", $lines);
+                }
+            }
 
             $payload = [
                 'id' => $ticket,
@@ -95,14 +123,16 @@ class ComplaintService
                 'incidentDate' => $input['tanggal_kejadian'],
                 'chronology' => $input['uraian'],
                 'agency' => null,
-                'ai' => $prefill['answer'] ?? null,
+                'ai' => $aiSummary,
                 'references' => $references,
                 'attachments' => $attachments,
                 'notes' => [],
                 'history' => [['date' => $now->toIso8601String(), 'text' => 'received · Baru']],
+                'consultation_session_uuid' => $prefill['session_uuid'] ?? null,
+                'consultation_message_id' => $prefill['message_id'] ?? null,
             ];
 
-            DB::table('dashboard_records')->insert([
+            $insertData = [
                 'collection' => 'complaints',
                 'record_key' => $ticket,
                 'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
@@ -110,7 +140,14 @@ class ComplaintService
                 'file_path' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]);
+            ];
+
+            if (Schema::hasColumn('dashboard_records', 'consultation_session_id')) {
+                $insertData['consultation_session_id'] = $prefill['session_id'] ?? null;
+                $insertData['consultation_message_id'] = $prefill['message_id'] ?? null;
+            }
+
+            DB::table('dashboard_records')->insert($insertData);
 
             return $ticket;
         });

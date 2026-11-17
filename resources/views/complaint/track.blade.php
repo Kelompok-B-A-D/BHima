@@ -10,182 +10,9 @@
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&amp;display=swap" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-        <style>
-            @layer base {
-                html,body {
-                    margin: 0;
-                    padding: 0;
-                }
-
-                body {
-                    overscroll-behavior: none;
-                }
-
-                main>:first-child {
-                    margin-top: 0!important;
-                }
-
-                main>:last-child {
-                    margin-bottom: 0!important;
-                }
-            }
-
-            ::-webkit-scrollbar {
-                display: none;
-            }
-        </style>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script id="tailwind-config">
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        "colors": {
-                            "on-secondary": "#ffffff",
-                            "on-tertiary-fixed-variant": "#653e00",
-                            "on-tertiary-fixed": "#2a1700",
-                            "inverse-primary": "#8fd3cc",
-                            "secondary-fixed": "#9cf2e8",
-                            "inverse-surface": "#27313f",
-                            "outline-variant": "#bec9c7",
-                            "on-error-container": "#93000a",
-                            "surface": "#f8f9ff",
-                            "error-container": "#ffdad6",
-                            "tertiary-fixed": "#ffddb8",
-                            "surface-tint": "#216963",
-                            "primary-fixed": "#abefe8",
-                            "primary": "#004541",
-                            "on-tertiary-container": "#ffbb66",
-                            "secondary-container": "#99efe5",
-                            "secondary-fixed-dim": "#80d5cb",
-                            "outline": "#6f7977",
-                            "surface-container-lowest": "#ffffff",
-                            "surface-variant": "#d9e3f6",
-                            "on-surface": "#121c2a",
-                            "on-primary-fixed-variant": "#00504b",
-                            "on-secondary-fixed-variant": "#00504a",
-                            "surface-bright": "#f8f9ff",
-                            "surface-container-high": "#dee9fc",
-                            "secondary": "#006a63",
-                            "on-secondary-fixed": "#00201d",
-                            "on-error": "#ffffff",
-                            "primary-fixed-dim": "#8fd3cc",
-                            "on-tertiary": "#ffffff",
-                            "on-surface-variant": "#3f4947",
-                            "tertiary-container": "#774a00",
-                            "tertiary-fixed-dim": "#ffb95f",
-                            "surface-container-low": "#eff4ff",
-                            "tertiary": "#583500",
-                            "surface-container-highest": "#d9e3f6",
-                            "on-secondary-container": "#006f67",
-                            "on-primary-container": "#91d5ce",
-                            "surface-dim": "#d0dbed",
-                            "surface-container": "#e6eeff",
-                            "error": "#ba1a1a",
-                            "background": "#f8f9ff",
-                            "on-primary-fixed": "#00201e",
-                            "on-primary": "#ffffff",
-                            "inverse-on-surface": "#eaf1ff",
-                            "primary-container": "#115e59",
-                            "on-background": "#121c2a"
-                        },
-                        "borderRadius": {
-                            "DEFAULT": "0.25rem",
-                            "lg": "0.5rem",
-                            "xl": "0.75rem",
-                            "full": "9999px"
-                        },
-                        "spacing": {
-                            "space-lg": "1.5rem",
-                            "space-xs": "0.25rem",
-                            "margin-mobile": "1rem",
-                            "gutter": "1.5rem",
-                            "space-xl": "2.5rem",
-                            "space-md": "1rem",
-                            "gutter-sm": "1rem",
-                            "space-sm": "0.5rem",
-                            "margin": "2rem"
-                        },
-                        "fontFamily": {
-                            "headline-lg": ["Newsreader"],
-                            "label-md": ["Manrope"],
-                            "title-md": ["Manrope"],
-                            "body-lg": ["Manrope"],
-                            "headline-lg-mobile": ["Newsreader"],
-                            "display": ["Newsreader"],
-                            "headline-sm": ["Newsreader"],
-                            "label-lg": ["Manrope"],
-                            "title-lg": ["Manrope"],
-                            "label-sm": ["Manrope"],
-                            "headline-md": ["Newsreader"],
-                            "body-sm": ["Manrope"],
-                            "body-md": ["Manrope"]
-                        },
-                        "fontSize": {
-                            "headline-lg": ["36px", {
-                                "lineHeight": "44px",
-                                "letterSpacing": "-0.015em",
-                                "fontWeight": "600"
-                            }],
-                            "label-md": ["12px", {
-                                "lineHeight": "16px",
-                                "letterSpacing": "0.02em",
-                                "fontWeight": "600"
-                            }],
-                            "title-md": ["16px", {
-                                "lineHeight": "24px",
-                                "fontWeight": "600"
-                            }],
-                            "body-lg": ["16px", {
-                                "lineHeight": "26px",
-                                "fontWeight": "400"
-                            }],
-                            "headline-lg-mobile": ["28px", {
-                                "lineHeight": "36px",
-                                "letterSpacing": "-0.01em",
-                                "fontWeight": "600"
-                            }],
-                            "display": ["48px", {
-                                "lineHeight": "56px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "600"
-                            }],
-                            "headline-sm": ["20px", {
-                                "lineHeight": "28px",
-                                "fontWeight": "500"
-                            }],
-                            "label-lg": ["14px", {
-                                "lineHeight": "20px",
-                                "letterSpacing": "0.01em",
-                                "fontWeight": "600"
-                            }],
-                            "title-lg": ["18px", {
-                                "lineHeight": "26px",
-                                "fontWeight": "700"
-                            }],
-                            "label-sm": ["11px", {
-                                "lineHeight": "14px",
-                                "letterSpacing": "0.04em",
-                                "fontWeight": "700"
-                            }],
-                            "headline-md": ["26px", {
-                                "lineHeight": "34px",
-                                "letterSpacing": "-0.01em",
-                                "fontWeight": "500"
-                            }],
-                            "body-sm": ["12px", {
-                                "lineHeight": "18px",
-                                "fontWeight": "400"
-                            }],
-                            "body-md": ["14px", {
-                                "lineHeight": "22px",
-                                "fontWeight": "400"
-                            }]
-                        }
-                    }
-                }
-            };
-        </script>
+        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+            @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @endif
     </head>
     <body class="bg-background font-body-md text-on-surface antialiased">
         <header class="fixed top-0 w-full z-50 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
@@ -201,18 +28,18 @@
                 </div>
                 <nav class="hidden xl:flex items-center gap-space-md" data-active-classes="text-primary-fixed font-title-md">
                     <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="beranda" href="{{ route('consultation.home') }}">Beranda</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="layanan" href="#">Layanan</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="pengumuman" href="#">Pengumuman</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="anggaran" href="#">Anggaran</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="peraturan" href="#">Peraturan</a>
+                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="layanan" href="{{ route('consultation.home') }}#layanan">Layanan</a>
+                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="pengumuman" href="{{ route('consultation.home') }}#pengumuman">Pengumuman</a>
+                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="anggaran" href="{{ route('consultation.home') }}#anggaran">Anggaran</a>
+                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="peraturan" href="{{ route('consultation.home') }}#peraturan">Peraturan</a>
                     <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="asisten-hukum" href="{{ route('consultation.index') }}">Asisten Hukum</a>
                     <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="lacak-tiket" href="{{ route('complaint.track') }}">Lacak Tiket</a>
                 </nav>
                 <div class="flex items-center gap-space-md">
                     <a class="inline-flex items-center justify-center font-bold px-4 py-2 rounded-lg shadow-sm transition-all hover:opacity-90 text-[14px]" data-path="formulir-pengaduan" href="{{ route('complaint.create') }}" style="background-color: #F59E0B; color: #111827;">Lapor</a>
-                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                    <a href="{{ route('login') }}" title="Portal Petugas BHIMA" aria-label="Portal Petugas BHIMA" class="w-9 h-9 rounded-full bg-primary hover:bg-secondary flex items-center justify-center transition-colors">
                         <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-                    </div>
+                    </a>
                 </div>
             </div>
         </header>
@@ -226,7 +53,7 @@
 
                 <form method="POST" action="{{ route('complaint.track.submit') }}" class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col sm:flex-row gap-space-sm">
                     @csrf
-                    <input type="text" name="tiket" value="{{ old('tiket') }}" placeholder="Contoh: BHM-2026-0001" required class="flex-1 h-11 px-space-md rounded-lg bg-surface text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                    <input type="text" name="tiket" value="{{ old('tiket', $autoTicket ?? request('tiket')) }}" placeholder="Contoh: BHM-2026-0001" required class="flex-1 h-11 px-space-md rounded-lg bg-surface text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary">
                     <button type="submit" class="h-11 px-space-lg rounded-lg bg-primary hover:bg-primary-container text-on-primary font-bold">Lacak</button>
                 </form>
 
@@ -234,9 +61,9 @@
                     <div role="alert" class="bg-error-container text-on-error-container rounded-xl p-space-md">{{ $errors->first() }}</div>
                 @endif
 
-                @if (session('searched'))
+                @if (session('searched') || ($autoSearched ?? false))
                     @php
-                        $result = session('result');
+                        $result = session('searched') ? session('result') : ($autoResult ?? null);
                     @endphp
                     @if ($result)
                         @php
@@ -334,10 +161,10 @@
                     <h4 class="font-title-md text-title-md text-on-surface mb-space-sm">Tautan Penting</h4>
                     <ul class="space-y-space-xs font-body-md text-body-md">
                         <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="layanan" href="#">Layanan Publik</a>
+                            <a class="hover:text-on-surface transition-colors" data-path="layanan" href="{{ route('consultation.home') }}#layanan">Layanan Publik</a>
                         </li>
                         <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="peraturan" href="#">Jaringan Dokumentasi Peraturan</a>
+                            <a class="hover:text-on-surface transition-colors" data-path="peraturan" href="{{ route('consultation.home') }}#peraturan">Jaringan Dokumentasi Peraturan</a>
                         </li>
                         <li class="">
                             <a class="hover:text-on-surface transition-colors" data-path="lacak-tiket" href="{{ route('complaint.track') }}">Pelacakan Pengaduan</a>

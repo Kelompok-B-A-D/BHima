@@ -8,7 +8,10 @@ use App\Http\Controllers\PublicComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [ConsultationController::class, 'index'])->name('consultation.home');
+Route::get('/', [ConsultationController::class, 'home'])->name('consultation.home');
+Route::get('/beranda', [ConsultationController::class, 'home'])->name('consultation.beranda');
+Route::get('/api/beranda/cari', [ConsultationController::class, 'searchPortal'])->middleware('throttle:30,1')->name('consultation.search');
+Route::get('/api/beranda/lacak', [ConsultationController::class, 'trackTicketQuick'])->middleware('throttle:30,1')->name('consultation.track.quick');
 Route::get('/konsultasi', [ConsultationController::class, 'index'])->name('consultation.index');
 Route::get('/api/konsultasi/riwayat', [ConsultationController::class, 'history'])->name('consultation.history');
 Route::post('/api/konsultasi/pesan', [ConsultationController::class, 'send'])->name('consultation.send');
@@ -18,10 +21,10 @@ Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
     ->name('consultation.reference');
 
-Route::get('/pengaduan', [PublicComplaintController::class, 'create'])->name('complaint.index');
-Route::get('/pengaduan/buat', [PublicComplaintController::class, 'create'])->name('complaint.create');
-Route::post('/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.store');
-Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.api.store');
+Route::get('/pengaduan', [ComplaintController::class, 'create'])->name('complaint.index');
+Route::get('/pengaduan/buat', [ComplaintController::class, 'create'])->name('complaint.create');
+Route::post('/pengaduan', [ComplaintController::class, 'store'])->middleware('throttle:15,1')->name('complaint.store');
+Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->middleware('throttle:15,1')->name('complaint.api.store');
 
 // Fitur 5 (KF-14): lacak tiket
 Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');

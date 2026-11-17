@@ -15,12 +15,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if (! User::where('email', 'test@example.com')->exists()) {
-            User::factory()->create([
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-            ]);
-        }
+        User::updateOrCreate(
+            ['email' => 'admin@bhima.go.id'],
+            [
+                'name' => 'Administrator BHIMA',
+                'password' => 'password12345',
+                'role' => 'admin',
+                'is_active' => true,
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'verifikator@bhima.go.id'],
+            [
+                'name' => 'Petugas Verifikator BHIMA',
+                'password' => 'password12345',
+                'role' => 'verifikator',
+                'is_active' => true,
+            ]
+        );
 
         $this->call(LegalKnowledgeSeeder::class);
     }
