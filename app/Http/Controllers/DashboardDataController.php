@@ -146,6 +146,11 @@ class DashboardDataController extends Controller
     {
         abort_unless($request->user()->role === 'admin', 403);
         abort_unless(in_array($collection, ['contents', 'documents', 'budgets'], true), 403);
+        if ($collection === 'contents') {
+            app(ServiceContentController::class)->destroy($request, $key);
+
+            return response()->json(['message' => 'Data dihapus.']);
+        }
         DB::transaction(function () use ($request, $collection, $key) {
             if ($collection === 'documents') {
                 DB::table('knowledge_chunks')->where('document_key', $key)->delete();
