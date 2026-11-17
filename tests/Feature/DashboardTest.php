@@ -93,6 +93,20 @@ class DashboardTest extends TestCase
         $this->postJson('/internal/data/accounts', ['id' => (string) $admin->id, 'name' => $admin->name, 'email' => $admin->email, 'role' => 'verifikator', 'status' => 'Aktif'])->assertUnprocessable();
     }
 
+    public function test_budget_activity_cannot_be_duplicated_in_the_same_year(): void
+    {
+        $this->actingAs($this->user());
+        $budget = ['title' => 'Infrastruktur Desa', 'year' => 2026, 'allocation' => 100, 'realized' => 50];
+
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B1'])->assertOk();
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B2', 'title' => '  infrastruktur   desa  '])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('title');
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B3', 'year' => 2027])->assertOk();
+
+        $this->assertDatabaseCount('dashboard_records', 2);
+    }
+
     public function test_pdf_upload_is_private_and_capacity_is_enforced(): void
     {
         Storage::fake('local');
