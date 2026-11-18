@@ -1,5 +1,7 @@
 import { escape as e } from '../dashboard/ui';
 
+initLiquidHeaderDrawer();
+
 const root = document.getElementById('consultation-app');
 if (root) {
     initConsultationApp(root);
@@ -8,6 +10,44 @@ if (root) {
 const berandaRoot = document.getElementById('beranda-app');
 if (berandaRoot) {
     initBerandaApp(berandaRoot);
+}
+
+function initLiquidHeaderDrawer() {
+    const mobileMenuBtn = document.getElementById('beranda-mobile-menu-btn');
+    const mobileMenuIcon = document.getElementById('beranda-mobile-menu-icon');
+    const mobileDrawer = document.getElementById('beranda-mobile-drawer');
+    if (!mobileMenuBtn || !mobileDrawer) return;
+
+    function setDrawerOpen(isOpen) {
+        mobileDrawer.hidden = !isOpen;
+        mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (mobileMenuIcon) {
+            mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
+        }
+    }
+
+    mobileMenuBtn.addEventListener('click', () => {
+        setDrawerOpen(mobileDrawer.hidden);
+    });
+
+    mobileDrawer.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
+        link.addEventListener('click', () => setDrawerOpen(false));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (mobileDrawer.hidden) return;
+        const target = event.target;
+        if (!mobileDrawer.contains(target) && !mobileMenuBtn.contains(target)) {
+            setDrawerOpen(false);
+        }
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !mobileDrawer.hidden) {
+            setDrawerOpen(false);
+            mobileMenuBtn.focus();
+        }
+    });
 }
 
 function initConsultationApp(container) {
@@ -29,45 +69,8 @@ function initConsultationApp(container) {
     const sessionIdLabel = container.querySelector('#session-id-label');
     const jdihSidebarList = container.querySelector('#jdih-sidebar-list');
     const defaultSidebarHtml = jdihSidebarList ? jdihSidebarList.innerHTML : '';
-    const mobileMenuBtn = container.querySelector('#mobile-menu-btn');
-    const mobileMenuIcon = container.querySelector('#mobile-menu-icon');
-    const mobileNavClose = container.querySelector('#mobile-nav-close');
-    const mobileNavBackdrop = container.querySelector('#mobile-nav-backdrop');
-    const consultSidebar = container.querySelector('#consult-sidebar');
 
     let busy = false;
-
-    function setMobileDrawerOpen(isOpen) {
-        if (!consultSidebar) return;
-        if (isOpen) {
-            consultSidebar.classList.remove('-translate-x-full');
-            consultSidebar.classList.add('translate-x-0');
-            if (mobileNavBackdrop) mobileNavBackdrop.hidden = false;
-            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
-            if (mobileMenuIcon) mobileMenuIcon.textContent = 'close';
-        } else {
-            consultSidebar.classList.add('-translate-x-full');
-            consultSidebar.classList.remove('translate-x-0');
-            if (mobileNavBackdrop) mobileNavBackdrop.hidden = true;
-            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
-            if (mobileMenuIcon) mobileMenuIcon.textContent = 'menu';
-        }
-    }
-
-    mobileMenuBtn?.addEventListener('click', () => {
-        const isOpen = consultSidebar && !consultSidebar.classList.contains('-translate-x-full');
-        setMobileDrawerOpen(!isOpen);
-    });
-    mobileNavClose?.addEventListener('click', () => setMobileDrawerOpen(false));
-    mobileNavBackdrop?.addEventListener('click', () => setMobileDrawerOpen(false));
-    container.querySelectorAll('[data-drawer-link]').forEach((link) => {
-        link.addEventListener('click', () => setMobileDrawerOpen(false));
-    });
-    window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            setMobileDrawerOpen(false);
-        }
-    });
 
     function updateSessionBadge(id) {
         if (sessionIdLabel && id) {
@@ -103,7 +106,7 @@ function initConsultationApp(container) {
     }
 
     function formatAssistantBody(rawText) {
-        const lines = String(rawText || '').split('\n');
+        const lines = String(rawText || '').replace(/\s+\u2014\s+/g, ' - ').split('\n');
         return lines
             .map((line) => {
                 const trimmed = line.trim();
@@ -146,49 +149,51 @@ function initConsultationApp(container) {
             .map((c) => {
                 const isSop = c.category === 'SOP';
                 const iconBoxClass = isSop
-                    ? 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]'
-                    : 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]';
+                    ? 'bg-[#9CF2E8] text-[#00504A]'
+                    : 'bg-[#D6E3FF] text-[#00468D]';
                 const iconName = isSop ? 'description' : 'picture_as_pdf';
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
 
                 return `
-                    <div class="p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] hover:border-[#0F766E] transition-all flex flex-col justify-between gap-2.5">
+                    <div class="p-4 bg-[#EFF4FB]/90 rounded-2xl border border-[#DEE3EA] hover:border-[#005AB3] transition-all flex flex-col justify-between gap-3">
                         <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg ${iconBoxClass} flex items-center justify-center shrink-0 mt-0.5 border">
-                                <span class="material-symbols-outlined text-[20px]">${iconName}</span>
+                            <div class="w-9 h-9 rounded-xl ${iconBoxClass} flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[19px]" aria-hidden="true">${iconName}</span>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <span class="text-xs text-[#0F766E] font-bold block uppercase tracking-wider">
+                                <span class="text-[11px] text-[#005AB3] font-bold block uppercase tracking-wider">
                                     ${e(c.document_number || c.category || 'JDIH')} (${e(c.document_year || '-')})
                                 </span>
-                                <h3 class="text-sm text-text-dark font-semibold truncate" title="${e(c.document_name)}">
+                                <h3 class="text-sm text-[#171C21] font-bold truncate" title="${e(c.document_name)}">
                                     ${e(c.document_name)}
                                 </h3>
-                                <div class="flex items-center gap-1.5 mt-1 text-text-muted text-[11px] sm:text-xs flex-wrap">
-                                    <span class="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded font-bold">
+                                <div class="flex items-center gap-1.5 mt-1 text-[#414754] text-[11px] flex-wrap">
+                                    <span class="px-2 py-0.5 bg-[#9CF2E8] text-[#00504A] rounded-md font-bold">
                                         ${e(c.article_label || 'Pasal Terkait')}
                                     </span>
                                     <span>•</span>
-                                    <span>Kemiripan ${scorePct}%</span>
+                                    <span>Relevansi ${scorePct}%</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 pt-1">
+                        <div class="flex items-center gap-2">
                             <a
                                 href="${e(c.source_url)}"
                                 target="_blank"
                                 rel="noopener"
-                                class="flex-1 py-1.5 px-2 rounded-lg bg-white border border-[#CCECE6] hover:bg-[#E6F5F2] text-[#0F766E] font-semibold text-xs flex items-center justify-center gap-1 transition-colors"
+                                class="flex-1 min-h-[44px] px-3 rounded-full bg-white border border-[#C0C6D6] hover:bg-[#D6E3FF] text-[#005AB3] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
                             >
-                                <span class="material-symbols-outlined text-[16px]">visibility</span> Baca Pasal
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                                <span>Baca Pasal</span>
                             </a>
                             <a
                                 href="${e(c.source_url)}"
                                 target="_blank"
                                 rel="noopener"
-                                class="py-1.5 px-3 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white font-semibold text-xs flex items-center justify-center gap-1 shadow-sm transition-colors"
+                                class="min-h-[44px] px-3.5 rounded-full bg-[#005AB3] hover:bg-[#00468D] text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors"
                             >
-                                <span class="material-symbols-outlined text-[16px]">open_in_new</span> Sumber
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
+                                <span>Buka</span>
                             </a>
                         </div>
                     </div>
@@ -203,19 +208,19 @@ function initConsultationApp(container) {
 
         if (isOutOfScope) {
             return `
-                <details class="w-fit max-w-[95%] sm:max-w-xl bg-white rounded-xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
-                    <summary class="bg-[#FEF3C7] text-[#92400E] px-3.5 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none">
+                <details class="w-fit max-w-[96%] min-[641px]:max-w-xl bg-white rounded-2xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
+                    <summary class="min-h-[44px] bg-[#FEF3C7] text-[#78350F] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5 cursor-pointer select-none">
                         <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-[18px] text-[#D97706] shrink-0">warning</span>
-                            <span class="text-[11px] sm:text-xs font-bold text-[#78350F]">
+                            <span class="material-symbols-outlined text-[18px] text-[#92400E] shrink-0" aria-hidden="true">warning</span>
+                            <span class="text-xs font-bold text-[#78350F]">
                                 Sumber Rujukan (0 Pasal di Atas Ambang Kemiripan)
                             </span>
                         </div>
-                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">
-                            Di Luar Cakupan ▾
+                        <span class="px-2.5 py-0.5 rounded-full bg-white text-[#78350F] border border-[#FDE68A] text-[11px] font-bold">
+                            Di Luar Cakupan
                         </span>
                     </summary>
-                    <div class="p-3.5 sm:p-4 bg-white text-xs text-text-muted leading-relaxed">
+                    <div class="p-4 bg-white text-xs text-[#414754] leading-relaxed">
                         <p>
                             Sistem tidak menemukan potongan pasal JDIH atau SOP layanan yang melewati ambang kemiripan minimum untuk kronologi ini. Sesuai standar keamanan BHIMA, asisten tidak mengarang pasal atau substansi hukum.
                         </p>
@@ -232,27 +237,27 @@ function initConsultationApp(container) {
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
                 const isSop = c.category === 'SOP';
                 const iconName = isSop ? 'description' : 'account_balance';
-                const badgeBg = isSop ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#E0F2FE] text-[#0369A1]';
+                const badgeBg = isSop ? 'bg-[#9CF2E8] text-[#00504A]' : 'bg-[#D6E3FF] text-[#00468D]';
                 const badgeLabel = isSop ? 'SOP Layanan' : 'Dokumen JDIH';
 
                 return `
-                    <div class="p-3 sm:p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] space-y-2">
-                        <div class="flex items-center justify-between flex-wrap gap-1.5 sm:gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[#0F766E] text-[17px] sm:text-[18px] shrink-0">${iconName}</span>
+                    <div class="p-3.5 bg-[#EFF4FB]/90 rounded-2xl border border-[#DEE3EA] space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="text-xs min-[641px]:text-sm font-bold text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[#005AB3] text-[18px] shrink-0" aria-hidden="true">${iconName}</span>
                                 <span>${e(c.document_number || c.document_key)} • Tahun ${e(c.document_year || '-')}</span>
                             </span>
                             <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="px-2 py-0.5 ${badgeBg} rounded-md text-[10px] sm:text-[11px] font-semibold">${badgeLabel}</span>
-                                <span class="px-2 py-0.5 bg-white border border-[#CCECE6] text-[#0F766E] rounded-md text-[10px] sm:text-[11px] font-bold">
+                                <span class="px-2.5 py-0.5 ${badgeBg} rounded-full text-[11px] font-bold">${badgeLabel}</span>
+                                <span class="px-2.5 py-0.5 bg-white border border-[#DEE3EA] text-[#0F766E] rounded-full text-[11px] font-bold">
                                     Relevansi ${scorePct}%
                                 </span>
                             </div>
                         </div>
-                        <p class="text-xs sm:text-sm text-text-dark font-semibold">
+                        <p class="text-xs min-[641px]:text-sm text-[#171C21] font-bold">
                             ${e(c.document_name)}
                         </p>
-                        <div class="bg-white p-2.5 rounded-lg border border-[#E2E8F0] space-y-1">
+                        <div class="bg-white p-3 rounded-xl border border-[#DEE3EA] space-y-1.5">
                             <div class="flex items-center justify-between gap-2 flex-wrap">
                                 <span class="text-[11px] text-[#0F766E] uppercase font-bold tracking-wide">
                                     Kutipan ${e(c.article_label)}:
@@ -261,13 +266,13 @@ function initConsultationApp(container) {
                                     href="${e(c.source_url)}"
                                     target="_blank"
                                     rel="noopener"
-                                    class="text-[11px] font-bold text-[#0F766E] hover:text-[#115E59] hover:underline flex items-center gap-1"
+                                    class="min-h-[44px] px-2.5 text-xs font-bold text-[#005AB3] hover:text-[#00468D] hover:underline inline-flex items-center gap-1"
                                 >
                                     <span>Buka Sumber (${e(c.document_key)})</span>
-                                    <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                                    <span class="material-symbols-outlined text-[14px]" aria-hidden="true">open_in_new</span>
                                 </a>
                             </div>
-                            <p class="text-xs text-text-body italic leading-relaxed">"${e(String(c.excerpt || '').trim())}"</p>
+                            <p class="text-xs text-[#171C21] italic leading-relaxed">"${e(String(c.excerpt || '').trim())}"</p>
                         </div>
                     </div>
                 `;
@@ -275,64 +280,63 @@ function initConsultationApp(container) {
             .join('');
 
         return `
-            <details class="w-full max-w-2xl bg-white rounded-2xl border border-[#CCECE6] shadow-sm overflow-hidden mt-1.5">
-                <summary class="bg-[#0F766E] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 cursor-pointer select-none">
-                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                        <span class="material-symbols-outlined text-[20px] sm:text-[22px] text-[#9cf2e8] shrink-0">balance</span>
+            <details class="w-full max-w-2xl bg-white rounded-[24px] border border-[#DEE3EA] shadow-[0_8px_24px_rgba(20,30,80,0.05)] overflow-hidden mt-1.5">
+                <summary class="min-h-[48px] bg-[#005AB3] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="material-symbols-outlined text-[21px] text-[#D6E3FF] shrink-0" aria-hidden="true">balance</span>
                         <div class="min-w-0">
-                            <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold tracking-tight text-white">
+                            <h3 class="text-xs min-[641px]:text-sm font-bold tracking-tight text-white">
                                 Sumber Rujukan &amp; Analisis Pasal (${count} Dokumen)
                             </h3>
-                            <p class="text-[10px] sm:text-[11px] text-[#CCECE6]">
+                            <p class="text-[11px] text-[#D6E3FF]">
                                 Klik untuk membuka kutipan pasal JDIH &amp; SOP Layanan
                             </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
-                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-[#115E59] text-[#9cf2e8] border border-[#2dd4bf]/40 text-[10px] sm:text-[11px] font-bold tracking-wide">
+                        <span class="px-2.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25 text-[11px] font-bold tracking-wide">
                             Relevansi ${topScorePct}%
                         </span>
-                        <span class="material-symbols-outlined text-[18px] text-[#9cf2e8] transition-transform summary-chevron">expand_more</span>
+                        <span class="material-symbols-outlined text-[18px] text-white transition-transform summary-chevron" aria-hidden="true">expand_more</span>
                     </div>
                 </summary>
-                <div class="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-3.5 bg-white">
+                <div class="p-4 min-[641px]:p-5 space-y-3.5 bg-white">
                     ${itemsHtml}
 
-                    <!-- Official Advisory Disclaimer -->
-                    <div class="p-2.5 sm:p-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-xl flex items-start gap-2">
-                        <span class="material-symbols-outlined text-[#4B5563] text-[17px] sm:text-[18px] shrink-0 mt-0.5">info</span>
-                        <p class="text-[11px] sm:text-xs text-text-muted leading-relaxed">
-                            <strong class="text-text-dark font-semibold">Pemberitahuan Resmi:</strong>
-                            Hasil analisis ini diproses secara komputasi berdasarkan regulasi terpublikasi di JDIH resmi dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
+                    <div class="p-3 bg-[#EFF4FB] border border-[#DEE3EA] rounded-2xl flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-[#414754] text-[18px] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                        <p class="text-xs text-[#414754] leading-relaxed">
+                            <strong class="text-[#171C21] font-bold">Pemberitahuan Resmi:</strong>
+                            Hasil analisis diproses langsung dari basis data regulasi JDIH dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
                         </p>
                     </div>
 
-                    <!-- Action Button Matrix -->
-                    <div class="pt-1 flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-center">
+                    <div class="pt-1 flex flex-col min-[641px]:flex-row min-[641px]:flex-wrap gap-2 items-stretch min-[641px]:items-center">
                         <a
-                            class="flex-1 flex items-center justify-center gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white py-2.5 px-3.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all active:scale-[0.99] text-center"
+                            class="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-[#005AB3] hover:bg-[#00468D] text-white py-2.5 px-4 rounded-full font-bold text-xs min-[641px]:text-sm shadow-sm transition-colors text-center"
                             href="${e(primaryUrl)}"
                             target="_blank"
                             rel="noopener"
                         >
-                            <span class="material-symbols-outlined text-[17px] sm:text-[18px]">menu_book</span>
+                            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">menu_book</span>
                             <span>Lihat Dokumen Rujukan Lengkap</span>
                         </a>
                         <div class="flex items-center gap-2">
                             <a
-                                class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#E6F5F2] hover:bg-[#CCECE6] text-[#0F766E] border border-[#CCECE6] py-2.5 px-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
+                                class="flex-1 min-[641px]:flex-initial min-h-[44px] flex items-center justify-center gap-1.5 bg-[#EFF4FB] hover:bg-[#D6E3FF] text-[#005AB3] border border-[#C0C6D6] py-2.5 px-4 rounded-full font-bold text-xs min-[641px]:text-sm transition-colors"
                                 href="#posbakum-panel"
                             >
-                                <span class="material-symbols-outlined text-[17px] sm:text-[18px]">support_agent</span>
+                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">support_agent</span>
                                 <span>Posbakum</span>
                             </a>
                             <button
                                 type="button"
                                 data-copy-answer="1"
-                                class="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-text-muted hover:text-[#0F766E] hover:border-[#CCECE6] hover:bg-[#F0FAF8] transition-colors cursor-pointer shrink-0"
+                                aria-label="Salin Ringkasan Jawaban"
+                                class="w-11 h-11 rounded-full bg-white border border-[#C0C6D6] text-[#414754] hover:text-[#005AB3] hover:bg-[#EFF4FB] transition-colors flex items-center justify-center shrink-0"
                                 title="Salin Ringkasan Jawaban"
                             >
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">content_copy</span>
                             </button>
                         </div>
                     </div>
@@ -377,7 +381,7 @@ function initConsultationApp(container) {
         const isError = analysis.meta?.status === 'error';
 
         const rujukanHtml = rujukan.length
-            ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ? `<div class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-2.5">
                 ${rujukan
                     .map(
                         (r) => `
@@ -385,35 +389,35 @@ function initConsultationApp(container) {
                             href="${e(r.tautan || '#jdih-reference-panel')}"
                             target="_blank"
                             rel="noopener"
-                            class="p-2.5 rounded-xl bg-[#F0FAF8] hover:bg-[#E6F5F2] border border-[#CCECE6] flex items-start justify-between gap-2 transition-colors no-underline group"
+                            class="min-h-[44px] p-3 rounded-2xl bg-[#EFF4FB] hover:bg-[#D6E3FF] border border-[#DEE3EA] flex items-start justify-between gap-2 transition-colors no-underline group"
                         >
                             <div class="min-w-0">
-                                <span class="text-[11px] font-bold text-[#0F766E] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
-                                <span class="text-xs font-semibold text-text-dark block truncate group-hover:text-[#0F766E]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
+                                <span class="text-[11px] font-bold text-[#005AB3] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
+                                <span class="text-xs font-bold text-[#171C21] block truncate group-hover:text-[#00468D]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
                             </div>
-                            <span class="material-symbols-outlined text-[16px] text-[#0F766E] shrink-0 mt-0.5">open_in_new</span>
+                            <span class="material-symbols-outlined text-[16px] text-[#005AB3] shrink-0 mt-0.5" aria-hidden="true">open_in_new</span>
                         </a>
                     `
                     )
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Belum ada rujukan undang-undang yang cocok di atas ambang kemiripan.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Belum ada rujukan undang-undang yang cocok di atas ambang kemiripan.</p>`;
 
         const pasalHtml = pasalRelevan.length
             ? `<div class="space-y-2.5">
                 ${pasalRelevan
                     .map(
                         (p) => `
-                        <div class="p-3 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] space-y-1.5">
+                        <div class="p-3.5 rounded-2xl bg-[#EFF4FB] border border-[#DEE3EA] space-y-1.5">
                             <div class="flex items-center justify-between gap-2 flex-wrap">
-                                <span class="text-xs font-bold text-[#0F766E] flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[16px]">gavel</span>
+                                <span class="text-xs font-bold text-[#005AB3] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">gavel</span>
                                     ${e(p.pasal || '')}
                                 </span>
-                                <span class="text-[11px] font-semibold text-text-muted">${e(p.dokumen || '')}</span>
+                                <span class="text-[11px] font-semibold text-[#414754]">${e(p.dokumen || '')}</span>
                             </div>
-                            <p class="text-xs text-text-dark leading-relaxed">${e(p.penjelasan_awam || '')}</p>
-                            <p class="text-[11px] text-text-muted leading-relaxed border-t border-[#CCECE6]/60 pt-1">
+                            <p class="text-xs text-[#171C21] leading-relaxed">${e(p.penjelasan_awam || '')}</p>
+                            <p class="text-[11px] text-[#414754] leading-relaxed border-t border-[#DEE3EA] pt-1.5">
                                 <strong class="text-[#0F766E]">Keterkaitan Kronologi:</strong> ${e(p.alasan_terkait_kronologi || '')}
                             </p>
                         </div>
@@ -421,13 +425,13 @@ function initConsultationApp(container) {
                     )
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak ditemukan pasal yang berpotensi terkait pada konteks dokumen.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Tidak ditemukan pasal yang berpotensi terkait pada konteks dokumen.</p>`;
 
         const sanksiBadgeMap = {
-            pidana: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',
-            administratif: 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]',
-            perdata: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
-            lainnya: 'bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]',
+            pidana: 'bg-[#FFDAD6] text-[#93000A] border-[#BA1A1A]/30',
+            administratif: 'bg-[#D6E3FF] text-[#00468D] border-[#AEC6FF]',
+            perdata: 'bg-[#FEF3C7] text-[#78350F] border-[#FDE68A]',
+            lainnya: 'bg-[#EFF4FB] text-[#171C21] border-[#DEE3EA]',
         };
 
         const sanksiHtml = ancamanSanksi.length
@@ -437,20 +441,20 @@ function initConsultationApp(container) {
                         const jenisKey = String(s.jenis || 'lainnya').toLowerCase();
                         const badgeCls = sanksiBadgeMap[jenisKey] || sanksiBadgeMap.lainnya;
                         return `
-                            <div class="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                            <div class="p-3.5 rounded-2xl bg-white border border-[#DEE3EA] space-y-1">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
-                                    <span class="text-xs font-bold text-text-dark">${e(s.pasal || '')} <span class="font-normal text-text-muted">• ${e(s.dokumen || '')}</span></span>
-                                    <span class="px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase ${badgeCls}">
+                                    <span class="text-xs font-bold text-[#171C21]">${e(s.pasal || '')} <span class="font-medium text-[#414754]">• ${e(s.dokumen || '')}</span></span>
+                                    <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase ${badgeCls}">
                                         ${e(jenisKey)}
                                     </span>
                                 </div>
-                                <p class="text-xs text-text-body leading-relaxed">${e(s.bunyi_sanksi_ringkas || '')}</p>
+                                <p class="text-xs text-[#414754] leading-relaxed">${e(s.bunyi_sanksi_ringkas || '')}</p>
                             </div>
                         `;
                     })
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak tercantum dalam potongan pasal yang ditemukan.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Tidak tercantum dalam potongan pasal yang ditemukan.</p>`;
 
         // Bangun URL eskalasi ke formulir pengaduan dengan prefill otomatis
         const params = new URLSearchParams();
@@ -467,70 +471,70 @@ function initConsultationApp(container) {
         if (rujukan.length > 0) {
             params.set(
                 'rujukan',
-                rujukan.map((r) => `${r.dokumen} (${r.nomor_tahun}) — ${r.tautan}`).join('\n')
+                rujukan.map((r) => `${r.dokumen} (${r.nomor_tahun}) - ${r.tautan}`).join('\n')
             );
         }
         const escalationUrl = `/pengaduan/buat?${params.toString()}`;
 
         const escalationButtonClass = perluEskalasi
-            ? 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-extrabold text-xs sm:text-sm shadow-md ring-2 ring-[#F59E0B]/30 transition-all no-underline'
-            : 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs sm:text-sm shadow-sm transition-all no-underline';
+            ? 'w-full min-[641px]:w-auto min-h-[48px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-extrabold text-xs min-[641px]:text-sm shadow-[0_6px_18px_rgba(245,158,11,0.30)] transition-all no-underline'
+            : 'w-full min-[641px]:w-auto min-h-[48px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#005AB3] hover:bg-[#00468D] text-white font-bold text-xs min-[641px]:text-sm shadow-sm transition-all no-underline';
 
         const escalationBadge = perluEskalasi
-            ? `<span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">Disarankan Eskalasi</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-[10px] sm:text-[11px] font-bold">Terkendali</span>`;
+            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] text-[11px] font-bold">Disarankan Eskalasi</span>`
+            : `<span class="px-3 py-1 rounded-full bg-[#9CF2E8] text-[#00504A] text-[11px] font-bold">Terkendali</span>`;
 
         return `
             <section
-                class="legal-analysis-card w-full max-w-2xl bg-white rounded-2xl border-2 ${perluEskalasi ? 'border-[#F59E0B]/70' : 'border-[#CCECE6]'} shadow-sm overflow-hidden mt-1.5"
+                class="legal-analysis-card w-full max-w-2xl bg-white rounded-[24px] border-2 ${perluEskalasi ? 'border-[#F59E0B]/70' : 'border-[#DEE3EA]'} shadow-[0_12px_28px_rgba(20,30,80,0.06)] overflow-hidden mt-1.5"
                 aria-label="Hasil Analisis Pasal dan Estimasi Ancaman Sanksi"
             >
-                <div class="bg-[#115E59] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="bg-[#005AB3] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="material-symbols-outlined text-[20px] text-[#9cf2e8] shrink-0">policy</span>
-                        <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold text-white truncate">
-                            Analisis Pasal &amp; Estimasi Ancaman Sanksi
+                        <span class="material-symbols-outlined text-[20px] text-[#D6E3FF] shrink-0" aria-hidden="true">assignment_turned_in</span>
+                        <h3 class="text-xs min-[641px]:text-sm font-bold text-white truncate">
+                            Ringkasan Validasi Regulasi &amp; Estimasi Sanksi
                         </h3>
                     </div>
                     ${escalationBadge}
                 </div>
 
-                <div class="p-3.5 sm:p-4 md:p-5 space-y-4">
+                <div class="p-4 min-[641px]:p-5 space-y-4">
                     ${
                         isError
-                            ? `<div role="alert" class="p-3 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E] font-medium">${e(catatan)}</div>`
+                            ? `<div role="alert" class="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#78350F] font-bold">${e(catatan)}</div>`
                             : ''
                     }
 
                     <!-- 1. Rujukan Undang-Undang -->
-                    <div class="space-y-1.5">
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]" aria-hidden="true">menu_book</span>
                             Rujukan Undang-Undang &amp; Regulasi (${rujukan.length})
                         </h4>
                         ${rujukanHtml}
                     </div>
 
                     <!-- 2. Pasal Terkait -->
-                    <div class="space-y-1.5">
+                    <div class="space-y-2">
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[16px]">fact_check</span>
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">fact_check</span>
                                 Pasal yang Berpotensi Terkait (${pasalRelevan.length})
                             </h4>
-                            <span class="text-[10px] font-semibold text-text-muted">Berdasarkan kronologi, bukan putusan pelanggaran</span>
+                            <span class="text-[11px] font-semibold text-[#414754]">Berdasarkan kronologi, bukan putusan pelanggaran</span>
                         </div>
                         ${pasalHtml}
                     </div>
 
                     <!-- 3. Estimasi Ancaman Sanksi -->
-                    <div class="space-y-1.5">
+                    <div class="space-y-2">
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[16px]">gavel</span>
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">gavel</span>
                                 Estimasi Ancaman Sanksi
                             </h4>
-                            <span class="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                            <span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] text-[10px] font-bold">
                                 ${e(sanctionLabel)}
                             </span>
                         </div>
@@ -539,18 +543,18 @@ function initConsultationApp(container) {
 
                     ${
                         !isError && catatan
-                            ? `<div class="p-2.5 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] text-[11px] sm:text-xs text-text-body leading-relaxed">${e(catatan)}</div>`
+                            ? `<div class="p-3 rounded-2xl bg-[#D6E3FF]/35 border border-[#AEC6FF] text-xs text-[#171C21] leading-relaxed">${e(catatan)}</div>`
                             : ''
                     }
 
                     <!-- Disclaimer Singkat -->
-                    <p class="text-[11px] text-text-muted leading-relaxed">
-                        <strong>Disclaimer:</strong> ${e(disclaimer)}
+                    <p class="text-[11px] text-[#414754] leading-relaxed">
+                        <strong class="text-[#171C21]">Disclaimer:</strong> ${e(disclaimer)}
                     </p>
 
                     <!-- Tombol Eskalasi ke Formulir Pengaduan -->
-                    <div class="pt-2 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <span class="text-[11px] sm:text-xs font-semibold ${perluEskalasi ? 'text-[#92400E]' : 'text-text-muted'}">
+                    <div class="pt-3 border-t border-[#DEE3EA] flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-3">
+                        <span class="text-xs font-semibold ${perluEskalasi ? 'text-[#78350F]' : 'text-[#414754]'}">
                             ${
                                 perluEskalasi
                                     ? 'Permasalahan ini disarankan untuk dieskalasi ke petugas verifikator pengaduan.'
@@ -562,7 +566,7 @@ function initConsultationApp(container) {
                             data-escalate-complaint="1"
                             class="${escalationButtonClass}"
                         >
-                            <span class="material-symbols-outlined text-[18px]">campaign</span>
+                            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">campaign</span>
                             <span>Ajukan Pengaduan</span>
                         </a>
                     </div>
@@ -579,36 +583,36 @@ function initConsultationApp(container) {
 
         if (isUser) {
             lastUserChronology = trimmedContent;
-            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1 pl-3 sm:pl-12 md:pl-16';
+            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1.5 pl-3 min-[641px]:pl-12';
             article.innerHTML = `
-                <div class="flex items-center gap-1.5 mb-0.5">
-                    <span class="text-[11px] sm:text-xs font-medium text-text-muted">Kronologi Warga</span>
-                    <div class="w-5 h-5 rounded-full bg-[#CCECE6] flex items-center justify-center text-[#115E59]">
-                        <span class="material-symbols-outlined text-[13px]">person</span>
+                <div class="flex items-center gap-2 pr-1">
+                    <span class="text-xs font-semibold text-[#414754]">Kronologi Warga</span>
+                    <div class="w-6 h-6 rounded-full bg-[#D6E3FF] flex items-center justify-center text-[#00468D]">
+                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">person</span>
                     </div>
                 </div>
-                <div class="${bubbleSizing} bg-[#115E59] text-white rounded-2xl rounded-tr-sm shadow-sm text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
-                <span class="text-[10px] sm:text-[11px] text-text-muted pr-1">
+                <div class="${bubbleSizing} bg-[#005AB3] text-white rounded-2xl rounded-tr-sm shadow-[0_8px_20px_rgba(0,90,179,0.20)] text-xs min-[380px]:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
+                <span class="text-[11px] text-[#414754] pr-1">
                     Terkirim ${e(formatTime(msg.created_at))} WIB
                 </span>
             `;
         } else {
-            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 sm:pr-6 md:pr-8';
+            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 min-[641px]:pr-6';
             const isOutOfScope = msg.retrieval_meta?.status === 'out_of_scope';
             const statusBadge = isOutOfScope
-                ? '<span class="px-2 sm:px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded-full text-[10px] sm:text-xs font-bold">Diarahkan ke Petugas</span>'
-                : '<span class="px-2 sm:px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[10px] sm:text-xs font-bold">Penalaran Peraturan Terverifikasi</span>';
+                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] rounded-full text-[11px] font-bold">Diarahkan ke Petugas</span>'
+                : '<span class="px-2.5 py-0.5 bg-[#9CF2E8] text-[#00504A] rounded-full text-[11px] font-bold">Penalaran Peraturan Terverifikasi</span>';
 
             article.innerHTML = `
-                <div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
-                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shadow-sm shrink-0">
-                        <span class="material-symbols-outlined text-[15px] sm:text-[17px]">smart_toy</span>
+                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <div class="w-7 h-7 rounded-xl bg-[#005AB3] text-white flex items-center justify-center shadow-sm shrink-0">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
                     </div>
-                    <span class="text-xs sm:text-sm font-bold text-text-dark">Asisten Hukum Virtual BHIMA</span>
+                    <span class="text-xs min-[641px]:text-sm font-bold text-[#171C21]">Asisten Hukum Virtual BHIMA</span>
                     ${statusBadge}
-                    <span class="text-[11px] sm:text-xs text-text-muted">${e(formatTime(msg.created_at))} WIB</span>
+                    <span class="text-[11px] text-[#414754]">${e(formatTime(msg.created_at))} WIB</span>
                 </div>
-                <div class="${bubbleSizing} bg-white text-text-body rounded-2xl rounded-tl-sm border border-[#E2E8F0] shadow-sm space-y-2 text-xs sm:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
+                <div class="${bubbleSizing} bg-white text-[#171C21] rounded-2xl rounded-tl-sm border border-[#DEE3EA] shadow-[0_6px_18px_rgba(20,30,80,0.04)] space-y-2 text-xs min-[380px]:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
                 ${renderLegalAnalysisCard(msg.legal_analysis, msg)}
                 ${renderSourcesSection(msg.citations, msg.retrieval_meta)}
             `;
@@ -812,37 +816,6 @@ function initConsultationApp(container) {
 }
 
 function initBerandaApp(container) {
-    const mobileMenuBtn = container.querySelector('#beranda-mobile-menu-btn');
-    const mobileMenuIcon = container.querySelector('#beranda-mobile-menu-icon');
-    const mobileDrawer = container.querySelector('#beranda-mobile-drawer');
-
-    function setDrawerOpen(isOpen) {
-        if (!mobileDrawer) return;
-        mobileDrawer.hidden = !isOpen;
-        if (mobileMenuBtn) {
-            mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        }
-        if (mobileMenuIcon) {
-            mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
-        }
-    }
-
-    mobileMenuBtn?.addEventListener('click', () => {
-        const isOpen = mobileDrawer && !mobileDrawer.hidden;
-        setDrawerOpen(!isOpen);
-    });
-
-    container.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
-        link.addEventListener('click', () => setDrawerOpen(false));
-    });
-
-    window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && mobileDrawer && !mobileDrawer.hidden) {
-            setDrawerOpen(false);
-            mobileMenuBtn?.focus();
-        }
-    });
-
     const searchForm = container.querySelector('#bhimaSearchForm');
     const searchInput = container.querySelector('#bhimaSearchInput');
     const searchSubmitBtn = container.querySelector('#bhimaSearchSubmitBtn');
@@ -904,39 +877,39 @@ function initBerandaApp(container) {
                     .map((item) => {
                         const isSop = item.category === 'SOP';
                         const badgeClass = isSop
-                            ? 'bg-[#E0F2FE] text-[#075985] border-[#bae6fd]'
-                            : 'bg-[#DCFCE7] text-[#166534] border-[#bbf7d0]';
+                            ? 'bg-[#D6E3FF] text-[#00468D] border-[#AEC6FF]'
+                            : 'bg-[#9CF2E8] text-[#00504A] border-[#7FD6CD]';
                         const consultHref = `/konsultasi?q=${encodeURIComponent(
                             query || `${item.document_name} (${item.document_number})`
                         )}`;
 
                         return `
-                            <article class="p-4 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] flex flex-col justify-between gap-3">
+                            <article class="p-4 rounded-xl bg-[#EFF4FC]/90 border border-[#C1C6D6]/50 flex flex-col justify-between gap-3">
                                 <div class="space-y-1.5">
                                     <div class="flex items-center justify-between gap-2 flex-wrap">
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
                                             ${e(item.category || 'JDIH')} • ${e(item.document_number || '')}
                                         </span>
-                                        <span class="text-xs font-semibold text-[#374151]">${e(item.topic || '')}</span>
+                                        <span class="text-xs font-semibold text-[#414754]">${e(item.topic || '')}</span>
                                     </div>
-                                    <h3 class="font-headline text-base sm:text-lg font-semibold text-[#1F2937] leading-snug">
+                                    <h3 class="font-headline text-base sm:text-lg font-bold text-[#171C21] leading-snug">
                                         ${e(item.document_name || '')}
                                     </h3>
-                                    <p class="text-xs sm:text-sm text-[#374151] leading-relaxed">
+                                    <p class="text-xs sm:text-sm text-[#414754] leading-relaxed">
                                         ${e(item.excerpt || '')}
                                     </p>
                                 </div>
-                                <div class="pt-2 border-t border-[#CCECE6]/80 flex flex-wrap items-center justify-between gap-2">
+                                <div class="pt-2 border-t border-[#C1C6D6]/40 flex flex-wrap items-center justify-between gap-2">
                                     <a
                                         href="${e(item.url || '#')}"
-                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-white hover:bg-[#E6F4F1] text-[#0F766E] border border-[#CCECE6] text-xs font-bold inline-flex items-center gap-1.5"
+                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-white hover:bg-[#DFEAFA] text-[#005AB3] border border-[#C1C6D6]/60 text-xs font-bold inline-flex items-center gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">menu_book</span>
                                         <span>Baca Pasal (${e(item.article_label || 'Lengkap')})</span>
                                     </a>
                                     <a
                                         href="${e(consultHref)}"
-                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white text-xs font-bold inline-flex items-center gap-1.5"
+                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-[#005AB3] hover:bg-[#00468D] text-white text-xs font-bold inline-flex items-center gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
                                         <span>Tanya Asisten</span>
