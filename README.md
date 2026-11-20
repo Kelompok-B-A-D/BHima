@@ -36,6 +36,9 @@ Perintah ini bersifat **idempotent**: dapat dijalankan berulang kali (`php artis
 Salin dari `.env.example`. Konfigurasi utama fitur Asisten Hukum Virtual (RAG):
 
 ```dotenv
+# Zona Waktu Aplikasi
+APP_TIMEZONE=Asia/Jakarta
+
 # Parameter Retrieval
 RAG_TOP_K=5
 RAG_MIN_SIMILARITY=0.26
@@ -52,11 +55,12 @@ RAG_EMBEDDING_MODEL=bhima-legal-embed-v1
 RAG_EMBEDDING_DIMENSIONS=128
 RAG_EMBEDDING_TIMEOUT=10
 
-# Provider LLM Generasi Jawaban: 'local_grounded' (default) atau 'api' (DeepSeek/OpenAI-compatible)
+# Provider LLM Generasi Jawaban: 'local_grounded' (default) atau 'api' (endpoint paas.id / OpenAI-compatible)
+# Samakan endpoint, model, dan key dengan DEEPSEEK_* agar tidak ada dua tagihan terpisah
 RAG_LLM_PROVIDER=local_grounded
-RAG_LLM_BASE_URL=https://api.deepseek.com/v1
+RAG_LLM_BASE_URL=https://ai.paas.id
 RAG_LLM_API_KEY=
-RAG_LLM_MODEL=deepseek-chat
+RAG_LLM_MODEL=deepseek-v4.1-flash
 RAG_LLM_TEMPERATURE=0.1
 RAG_LLM_MAX_TOKENS=1200
 RAG_LLM_TIMEOUT=20
@@ -69,8 +73,9 @@ RAG_RATE_LIMIT_PER_MINUTE=15
 # Analisis Pasal, Estimasi Ancaman Sanksi & Eskalasi Pengaduan (PBI 2: mock | deepseek)
 LLM_PROVIDER=mock
 DEEPSEEK_API_KEY=
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://ai.paas.id
+DEEPSEEK_MODEL=deepseek-v4.1-flash
+DEEPSEEK_SEND_RESPONSE_FORMAT=true
 DEEPSEEK_TIMEOUT=20
 DEEPSEEK_TEMPERATURE=0.1
 DEEPSEEK_MAX_TOKENS=1500
@@ -79,20 +84,27 @@ ANALYSIS_RATE_LIMIT_PER_MINUTE=15
 
 System prompt asisten disimpan secara terpisah di [`config/rag.php`](config/rag.php), sedangkan system prompt dan aturan analisis pasal terstruktur (PBI 2) disimpan di [`config/legal_analysis.php`](config/legal_analysis.php).
 
-### Cara Beralih dari `MockProvider` ke `DeepSeekProvider`
+### Cara Beralih dari `MockProvider` ke `DeepSeekProvider` (Gateway `paas.id`)
 
-Secara default, aplikasi berjalan menggunakan `LLM_PROVIDER=mock` (`MockProvider`) yang menyusun rujukan undang-undang, pasal berpotensi terkait, dan estimasi ancaman sanksi langsung dari potongan teks *chunk* hasil *retrieval* tanpa memanggil jaringan eksternal.
+Secara default, aplikasi berjalan menggunakan `LLM_PROVIDER=mock` (`MockProvider`) dan `RAG_LLM_PROVIDER=local_grounded` yang menyusun jawaban serta analisis pasal langsung dari potongan teks *chunk* hasil *retrieval* tanpa memanggil jaringan eksternal.
 
-Untuk beralih ke **DeepSeek API** saat kunci API sudah tersedia:
-1. Buka berkas `.env` dan isi variabel berikut:
+Untuk beralih ke **DeepSeek API melalui gateway `paas.id`** saat kunci API sudah tersedia:
+1. Buka berkas `.env` lokal (jangan pernah di-commit ke repositori) dan isi variabel berikut:
    ```dotenv
+   APP_TIMEZONE=Asia/Jakarta
+
    LLM_PROVIDER=deepseek
-   DEEPSEEK_API_KEY=sk-isi-kunci-api-deepseek-anda
-   DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-   DEEPSEEK_MODEL=deepseek-chat
-   DEEPSEEK_TIMEOUT=20
-   DEEPSEEK_TEMPERATURE=0.1
+   DEEPSEEK_API_KEY=isi-kunci-api-lokal-anda
+   DEEPSEEK_BASE_URL=https://ai.paas.id
+   DEEPSEEK_MODEL=deepseek-v4.1-flash
+   DEEPSEEK_SEND_RESPONSE_FORMAT=true
+
+   RAG_LLM_PROVIDER=api
+   RAG_LLM_BASE_URL=https://ai.paas.id
+   RAG_LLM_API_KEY=isi-kunci-api-lokal-anda
+   RAG_LLM_MODEL=deepseek-v4.1-flash
    ```
+   Jika `RAG_LLM_API_KEY` dibiarkan kosong, `config/rag.php` otomatis mewarisi `DEEPSEEK_API_KEY`. Bila gateway menolak parameter `response_format: json_object`, `DeepSeekProvider` otomatis mengulang tanpa field tersebut dan mem-parsing JSON melalui `parseJsonContent()` (atau set `DEEPSEEK_SEND_RESPONSE_FORMAT=false`).
 2. Bersihkan cache konfigurasi bila aktif:
    ```sh
    php artisan config:clear

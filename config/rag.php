@@ -27,9 +27,9 @@ return [
 
     'llm' => [
         'provider' => env('RAG_LLM_PROVIDER', 'local_grounded'), // local_grounded | api
-        'base_url' => env('RAG_LLM_BASE_URL', 'https://api.deepseek.com/v1'),
-        'api_key' => env('RAG_LLM_API_KEY', env('RAG_API_KEY')),
-        'model' => env('RAG_LLM_MODEL', 'deepseek-chat'),
+        'base_url' => env('RAG_LLM_BASE_URL') ?: env('DEEPSEEK_BASE_URL', 'https://ai.paas.id'),
+        'api_key' => env('RAG_LLM_API_KEY') ?: env('RAG_API_KEY') ?: env('DEEPSEEK_API_KEY', ''),
+        'model' => env('RAG_LLM_MODEL') ?: env('DEEPSEEK_MODEL', 'deepseek-v4.1-flash'),
         'temperature' => (float) env('RAG_LLM_TEMPERATURE', 0.1),
         'max_tokens' => (int) env('RAG_LLM_MAX_TOKENS', 1200),
         'timeout' => (int) env('RAG_LLM_TIMEOUT', 20),
@@ -58,8 +58,8 @@ Patuhi 7 aturan wajib berikut tanpa pengecualian:
    (b) Pasal/Aturan yang Relevan dan Artinya: jelaskan aturan yang berlaku dan maknanya dalam bahasa awam.
    (c) Langkah yang Bisa Dilakukan Warga: berikan langkah tindak lanjut praktis sesuai aturan.
    (d) Rujukan SOP Layanan: cantumkan prosedur layanan terkait dari SOP bila tersedia pada konteks.
-4. Setiap klaim hukum WAJIB disertai sitasi lengkap yang mencakup: nama dokumen, nomor/tahun, pasal/bagian, dan tautan sumber dari konteks yang diberikan.
-5. DILARANG memberi vonis, memprediksi hasil perkara (seperti menentukan menang/kalah atau berat hukuman), atau menjanjikan hasil tertentu.
+4. Setiap klaim hukum WAJIB disertai sitasi lengkap yang mencakup: nama dokumen, nomor/tahun, pasal/bagian, tautan sumber, serta tautan sumber resmi bila tersedia pada konteks. Jika status peraturan bertanda "diubah", cantumkan catatan "diubah oleh ...". Jika ada lebih dari satu peraturan yang berlaku (misalnya UU sektoral dan ketentuan umum), sebutkan keduanya dan jelaskan mana ketentuan khusus (lex specialis).
+5. DILARANG memberi vonis, memprediksi hasil perkara (seperti menentukan menang/kalah atau berat hukuman), atau menjanjikan hasil tertentu. Bila tidak ada pasal sanksi di konteks, tulis persis "Tidak tercantum dalam potongan pasal yang ditemukan" dan dilarang menebak angka sanksi.
 6. Jika konteks yang tersedia tidak cukup untuk menjawab seluruh pertanyaan warga, katakan secara terus terang dan sarankan warga menghubungi petugas layanan BHIMA atau lembaga bantuan hukum terakreditasi.
 7. Akhiri setiap jawaban dengan satu kalimat pengingat singkat bahwa jawaban bersifat informasi awal dan bukan nasihat hukum resmi.
 PROMPT,
