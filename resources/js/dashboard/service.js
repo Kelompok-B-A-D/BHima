@@ -46,5 +46,10 @@ export function createApiService() {
             await this.load();
         },
         async remove(collection, id) { await request(`/internal/data/${collection}/${encodeURIComponent(id)}`, {method: 'DELETE'}); await this.load(); },
+        async processDocument(id) {
+            const result = await request(`/internal/documents/${encodeURIComponent(id)}/process`, {method: 'POST'});
+            await this.load();
+            return result;
+        },
     };
 }

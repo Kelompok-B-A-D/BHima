@@ -9,12 +9,33 @@ use Illuminate\Support\Facades\DB;
 
 class IngestLegalKnowledge extends Command
 {
-    protected $signature = 'bhima:ingest-knowledge {--seed : Muat data dokumen JDIH terverifikasi dan SOP Layanan ke database terlebih dahulu}';
+    protected $signature = 'bhima:ingest-knowledge
+        {--seed : Muat data dokumen JDIH terverifikasi dan SOP Layanan ke database terlebih dahulu}
+        {--document= : Proses ulang satu dokumen JDIH berdasarkan document key, mis. JDIH-001}';
 
     protected $description = 'Ekstrak teks (PDF/manifest resmi), pecah per pasal/ayat, tandai sanksi, buat embedding, dan indeks secara idempotent';
 
     public function handle(LegalIngestionService $ingestionService): int
     {
+        $documentKey = trim((string) $this->option('document'));
+        if ($documentKey !== '') {
+            if ($this->option('seed')) {
+                $this->info('Memuat korpus dokumen JDIH inti sebelum pemrosesan dokumen terpilih...');
+                app(LegalKnowledgeSeeder::class)->run();
+            }
+
+            $result = $ingestionService->processDocument($documentKey);
+            if ($result['status'] !== 'indexed') {
+                $this->error($result['message']);
+
+                return self::FAILURE;
+            }
+
+            $this->info($result['message']);
+
+            return self::SUCCESS;
+        }
+
         $existingDocs = DB::table('dashboard_records')
             ->whereIn('collection', ['documents', 'contents'])
             ->count();
@@ -38,4 +59,3 @@ class IngestLegalKnowledge extends Command
         return self::SUCCESS;
     }
 }
-
