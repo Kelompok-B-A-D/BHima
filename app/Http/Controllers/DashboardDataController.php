@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\LegalIngestionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -189,6 +190,23 @@ class DashboardDataController extends Controller
         abort_unless($record && $record->file_path && Storage::disk('local')->exists($record->file_path), 404);
 
         return Storage::disk('local')->download($record->file_path, basename(json_decode($record->payload, true)['filename']));
+    }
+
+    public function processDocument(Request $request, string $key, LegalIngestionService $ingestionService)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        abort_unless(preg_match('/^[A-Za-z0-9_-]{1,80}$/', $key), 404);
+
+        $result = $ingestionService->processDocument($key);
+        abort_if($result['status'] === 'not_found', 404);
+
+        if ($result['status'] === 'failed') {
+            return response()->json(['message' => $result['message']], 422);
+        }
+
+        $this->audit($request, 'Memproses dan mengindeks ulang dokumen '.$result['document_key']);
+
+        return response()->json($result);
     }
 
     private function audit(Request $request, string $text): void
