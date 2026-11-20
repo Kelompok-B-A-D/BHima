@@ -54,14 +54,50 @@
 
     <main class="pt-[108px] sm:pt-[132px] pb-12 sm:pb-16 px-3 sm:px-6 max-w-[1120px] mx-auto space-y-5 sm:space-y-6">
         <section class="bg-white rounded-2xl border border-[#CCECE6] shadow-[0_4px_16px_rgba(15,118,110,0.05)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5">
+            @php
+                $docStatus = strtolower((string) ($document['status_berlaku'] ?? 'berlaku'));
+                $statusBadgeClass = match ($docStatus) {
+                    'dicabut' => 'bg-[#FFDAD6] text-[#93000A] border-[#F87171]',
+                    'diubah' => 'bg-[#FEF3C7] text-[#78350F] border-[#F59E0B]',
+                    default => 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]',
+                };
+                $statusLabel = match ($docStatus) {
+                    'dicabut' => 'Dicabut (Arsip)',
+                    'diubah' => 'Berlaku (Diubah)',
+                    default => 'Berlaku',
+                };
+            @endphp
             <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-                <span class="px-2.5 sm:px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                    Sumber Rujukan Terverifikasi • {{ $document['category'] }}
-                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 sm:px-3 py-1 rounded-full border text-[11px] sm:text-xs font-bold uppercase tracking-wider {{ $statusBadgeClass }}">
+                        Status: {{ $statusLabel }} • {{ $document['category'] }}
+                    </span>
+                    @if(!empty($document['source_page_url']))
+                        <a
+                            href="{{ $document['source_page_url'] }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full bg-[#D6E3FF] text-[#00468D] border border-[#93C5FD] text-[11px] sm:text-xs font-bold hover:bg-[#BFDBFE] transition-colors"
+                        >
+                            <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                            <span>Sumber Resmi JDIH</span>
+                        </a>
+                    @endif
+                </div>
                 <span class="text-[11px] sm:text-xs font-bold text-[#0F766E] bg-[#E6F5F2] border border-[#CCECE6] px-2.5 sm:px-3 py-1 rounded-lg">
                     Kode: {{ $document['key'] }}
                 </span>
             </div>
+
+            @if($docStatus === 'dicabut')
+                <div class="p-3.5 rounded-xl bg-[#FFDAD6] border border-[#F87171] text-[#93000A] text-xs sm:text-sm font-semibold">
+                    Peraturan ini berstatus <strong>dicabut</strong>{{ !empty($document['dicabut_oleh']) ? ' oleh '.$document['dicabut_oleh'] : '' }} dan disimpan hanya sebagai arsip (tidak digunakan sebagai rujukan utama jawaban asisten).
+                </div>
+            @elseif($docStatus === 'diubah' && !empty($document['diubah_oleh']))
+                <div class="p-3.5 rounded-xl bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-xs sm:text-sm font-semibold">
+                    Catatan perubahan: sebagian ketentuan peraturan ini <strong>diubah oleh {{ $document['diubah_oleh'] }}</strong>. Pastikan mengecek naskah konsolidasi terbaru pada tautan sumber resmi.
+                </div>
+            @endif
 
             <h1 class="font-headline text-xl sm:text-2xl md:text-3xl font-bold text-text-dark tracking-tight">
                 {{ $document['title'] }}
@@ -115,12 +151,22 @@
                         class="reference-chunk-card p-3.5 sm:p-5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] space-y-2 scroll-mt-28 sm:scroll-mt-32 transition-all"
                     >
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <strong class="text-xs sm:text-sm font-bold text-[#0F766E] flex items-center gap-1.5">
+                            <strong class="text-xs sm:text-sm font-bold text-[#0F766E] flex items-center gap-1.5 flex-wrap">
                                 <span class="material-symbols-outlined text-[17px] sm:text-[18px]">gavel</span>
-                                {{ $chunk->article_label }}
+                                <span>{{ $chunk->article_label }}</span>
+                                @if(!empty($chunk->is_ketentuan_pidana))
+                                    <span class="px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#78350F] border border-[#F59E0B] text-[10px] font-bold uppercase">
+                                        Ketentuan Sanksi ({{ strtoupper((string) ($chunk->sanksi_jenis ?? 'LAINNYA')) }})
+                                    </span>
+                                @endif
+                                @if(!empty($chunk->rujuk_pasal))
+                                    <span class="px-2 py-0.5 rounded-full bg-[#D6E3FF] text-[#00468D] text-[10px] font-bold">
+                                        Rujuk: {{ $chunk->rujuk_pasal }}
+                                    </span>
+                                @endif
                             </strong>
                             <span class="px-2 sm:px-2.5 py-0.5 bg-white border border-[#CCECE6] text-[#0F766E] rounded-md text-[11px] sm:text-xs font-bold">
-                                {{ $chunk->category }} • Bagian #{{ $chunk->chunk_index + 1 }}
+                                {{ $chunk->category }} • Bagian #{{ $chunk->chunk_index + 1 }}{{ !empty($chunk->pdf_page) ? ' • Hal. '.$chunk->pdf_page : '' }}
                             </span>
                         </div>
                         <p class="text-xs sm:text-sm text-text-body leading-relaxed whitespace-pre-wrap bg-white p-3 sm:p-4 rounded-lg border border-[#E2E8F0]">{{ $chunk->content }}</p>

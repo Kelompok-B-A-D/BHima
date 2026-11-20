@@ -20,42 +20,101 @@ class EmbeddingService
         'bagaimana', 'apa', 'apakah', 'siapa', 'kapan', 'dimana', 'mengapa', 'kenapa', 'berapa',
         'pasal', 'ayat', 'huruf', 'angka', 'bagian', 'bab', 'paragraf', 'undang', 'peraturan', 'daerah',
         'pemerintah', 'menteri', 'presiden', 'bupati', 'walikota', 'gubernur', 'nomor', 'tahun',
-        'sebagaimana', 'dimaksud', 'ketentuan', 'ayat', 'berikut', 'tersebut', 'lainnya', 'lebih',
+        'sebagaimana', 'dimaksud', 'ketentuan', 'berikut', 'tersebut', 'lainnya', 'lebih',
         'lanjut', 'diatur', 'sesuai', 'berdasarkan', 'melalui', 'kepada', 'bagi', 'sampai', 'hingga',
         'sejak', 'saat', 'ketika', 'kemarin', 'hari', 'bulan', 'minggu', 'lalu', 'tadi', 'sangat',
         'sekali', 'masih', 'belum', 'lagi', 'juga', 'hanya', 'saja', 'pun', 'agar', 'supaya',
+        'melakukan', 'melaku', 'dilakukan', 'dilaku', 'lakukan', 'mengalami', 'mengalam', 'terjadi',
+        'kena', 'bawa', 'membawa', 'dibawa', 'kalo', 'kalau', 'gak', 'ga', 'nggak', 'ngga', 'enggak',
+        'udah', 'udh', 'tapi', 'tetapi', 'namun', 'padahal', 'sedangkan', 'sehingga', 'bahwa', 'serta',
+        'maupun', 'yakni', 'yaitu', 'seperti', 'misalnya', 'orang', 'org', 'seseorang', 'pihak', 'hal', 'cara',
+        'sebelum', 'sesudah', 'setelah', 'selama', 'sekarang', 'besok', 'nanti', 'boleh', 'tanpa',
+        'ada', 'jadi', 'menjadi', 'punya', 'memiliki', 'sama', 'ama', 'sendiri', 'besar', 'gede', 'kecil', 'baru',
+        'lama', 'banyak', 'sedikit', 'cukup', 'terlalu', 'trus', 'terus', 'dulu', 'jg', 'krn', 'tp', 'yg',
+        'dgn', 'utk', 'dr', 'pd', 'sy', 'gw', 'gue', 'lu', 'lo', 'pakai', 'pake', 'persen',
+    ];
+
+    /**
+     * Normalisasi kata sehari-hari / slang / singkatan warga ke bentuk baku regulasi.
+     *
+     * @var array<string, string>
+     */
+    private const SLANG_MAP = [
+        'ugd' => 'igd',
+        'dp' => 'deposit',
+        'ilang' => 'hilang',
+        'duit' => 'uang',
+        'duitnya' => 'uang',
+        'dimintain' => 'dimintai',
+        'mintain' => 'meminta',
+        'dipalak' => 'pemerasan',
+        'malak' => 'pemerasan',
+        'nyogok' => 'suap',
+        'sogok' => 'suap',
+        'mukulin' => 'memukul',
+        'dipukulin' => 'dipukul',
+        'digebukin' => 'dikeroyok',
+        'jatoh' => 'jatuh',
+        'bolong' => 'berlubang',
+        'kades' => 'kepala',
+        'bos' => 'pengusaha',
+        'kerjaan' => 'pekerjaan',
+        'sertifikat' => 'sertipikat',
+        'kekerasahan' => 'kekerasan',
+    ];
+
+    /**
+     * Daftar kata dasar yang dilindungi dari pemotongan imbuhan akhir/awal (mencegah bug over-stemming seperti pelaku -> pela, masalah -> masa, salah -> sa).
+     *
+     * @var list<string>
+     */
+    private const PROTECTED_ROOTS = [
+        'pelaku', 'berlaku', 'selaku', 'perilaku', 'melakukan', 'mengaku',
+        'masalah', 'salah', 'sekolah', 'wilayah', 'ibadah', 'jumlah', 'rumah', 'tanah',
+        'darah', 'murah', 'marah', 'parah', 'upah', 'nikah', 'sampah', 'limbah', 'langkah', 'perintah', 'pemerintah',
+        'majikan', 'kontrakan', 'jaminan', 'layanan', 'aturan', 'putusan', 'alasan', 'batasan', 'halaman',
+        'ancaman', 'pimpinan', 'bantuan', 'aduan', 'pengaduan', 'laporan', 'jalan', 'bulan', 'pasangan',
+        'pekarangan', 'anggaran', 'keuangan', 'kesehatan', 'pertanahan', 'lingkungan', 'pelayanan',
+        'perkawinan', 'perceraian', 'kelahiran', 'kematian', 'kepolisian', 'pengadilan', 'kelurahan',
+        'kecamatan', 'perusahaan', 'perjanjian', 'ketentuan', 'kemampuan', 'kejahatan', 'kesalahan',
+        'kehilangan', 'kerusakan', 'kecelakaan', 'kekerasan', 'pelecehan', 'pencabulan', 'penipuan',
+        'pencurian', 'pemerasan', 'penahanan', 'pemutusan', 'pengupahan', 'pendaftaran', 'pencatatan',
+        'kependudukan', 'sertifikat', 'sertipikat', 'sengketa', 'serobot', 'sebar', 'keluarga',
+        'ketenagakerjaan', 'keberatan', 'kebijakan', 'disnaker', 'disdukcapil', 'disposisi', 'deposit',
+        'dokumen', 'darurat', 'drainase', 'peraturan', 'perkara', 'permohonan', 'perlindungan', 'pekerjaan',
     ];
 
     /**
      * Klaster konsep hukum & layanan publik (dimensi 0..25) untuk menjembatani bahasa awam warga dan bahasa regulasi.
+     * Hanya memuat kata kunci berdaya beda tinggi (tanpa kata generik lintas topik seperti 'uang', 'rumah', 'pelaku', 'izin', 'batas', 'sengketa', 'oknum', 'pidana').
      */
     private const CONCEPT_CLUSTERS = [
         0 => ['ktp', 'ktpel', 'nik', 'kependudukan', 'dukcapil', 'disdukcapil', 'blanko', 'perekaman', 'identitas', 'penduduk', 'domisili', 'pindah', 'adminduk'],
-        1 => ['kk', 'keluarga', 'akta', 'kelahiran', 'kematian', 'perkawinan', 'perceraian', 'catatan', 'sipil', 'kelahiran', 'bayi'],
-        2 => ['gratis', 'bebas', 'biaya', 'dipungut', '79a', '95b', 'cuma'],
-        3 => ['pungli', 'pungutan', 'liar', 'rokok', 'pelicin', 'kopi', 'amplop', 'calo', 'oknum', 'peras', 'pemerasan', 'suap', 'korupsi', 'saber', 'imbalan', 'tip'],
-        4 => ['pelayanan', 'publik', 'maklumat', 'standar', 'waktu', 'terlambat', 'maladministrasi', 'ombudsman', 'kompensasi', 'loket', 'antrean', 'prosedur', 'sop'],
-        5 => ['kesehatan', 'rumah', 'sakit', 'rsud', 'puskesmas', 'klinik', 'dokter', 'perawat', 'medis', 'rawat', 'inap', 'obat', 'ambulans', 'pasien'],
-        6 => ['igd', 'ugd', 'gawat', 'darurat', 'kritis', 'tolak', 'menolak', 'penolakan', 'uang', 'muka', 'deposit', 'nyawa', 'darurat'],
-        7 => ['bpjs', 'kis', 'jkn', 'jaminan', 'pbi', 'iuran', 'tunggakan', 'nonaktif', 'faskes', 'rujukan', 'kepesertaan'],
-        8 => ['jalan', 'rusak', 'berlubang', 'aspal', 'jembatan', 'rambu', 'penerangan', 'pju', 'pupr', 'jatuh', 'kecelakaan', 'lalu', 'lintas', 'perbaikan'],
-        9 => ['drainase', 'selokan', 'got', 'banjir', 'genangan', 'sampah', 'limbah', 'pencemaran', 'polusi', 'bau', 'sungai', 'lingkungan', 'amdal'],
-        10 => ['bantuan', 'hukum', 'posbakum', 'obh', 'advokat', 'pengacara', 'miskin', 'sktm', 'pendampingan', 'litigasi', 'nonlitigasi', 'perkara'],
-        11 => ['kerja', 'pekerja', 'buruh', 'karyawan', 'perusahaan', 'pabrik', 'majikan', 'phk', 'dipecat', 'pemutusan', 'pesangon', 'pkwt', 'kontrak', 'disnaker', 'bipartit', 'industrial'],
-        12 => ['upah', 'gaji', 'umk', 'ump', 'minimum', 'lembur', 'thr', 'dipotong', 'menunggak', 'ijazah', 'ditahan', 'penahanan'],
-        13 => ['tanah', 'lahan', 'sertifikat', 'shm', 'hgb', 'bpn', 'agraria', 'batas', 'patok', 'diserobot', 'serobot', 'sengketa', 'girik', 'ukur', 'ptsl', 'ppat'],
-        14 => ['waris', 'warisan', 'ahli', 'wasiat', 'peninggalan', 'hibah', 'pembagian'],
-        15 => ['konsumen', 'pelaku', 'usaha', 'cacat', 'garansi', 'ganti', 'rugi', 'bpsk', 'komplain', 'kadaluarsa', 'produk'],
-        16 => ['pinjol', 'pinjaman', 'online', 'fintech', 'ojk', 'collector', 'penagih', 'teror', 'sebar', 'data', 'pribadi', 'bunga', 'ilegal', 'pdp', 'utang', 'hutang'],
-        17 => ['penipuan', 'tipu', 'scam', 'phishing', 'rekening', 'transfer', 'ite', 'pencemaran', 'ancaman', 'elektronik', 'peretasan', 'siber'],
-        18 => ['kdrt', 'kekerasan', 'rumah', 'tangga', 'suami', 'istri', 'anak', 'fisik', 'psikis', 'penelantaran', 'pelecehan', 'seksual', 'uptd', 'ppa', 'visum'],
-        19 => ['informasi', 'ppid', 'transparansi', 'anggaran', 'apbd', 'apbdes', 'desa', 'keberatan', 'komisi', 'keuangan', 'bansos', 'blt', 'realisasi', 'pagu'],
-        20 => ['pelapor', 'saksi', 'whistleblower', 'anonim', 'rahasia', 'intimidasi', 'ancaman', 'perlindungan', 'lpsk', 'kerahasiaan'],
-        21 => ['pengaduan', 'laporan', 'tiket', 'verifikasi', 'verifikator', 'disposisi', 'tindak', 'kelengkapan', 'bukti', 'kronologi', 'bhima'],
-        22 => ['izin', 'nib', 'oss', 'umkm', 'pedagang', 'ketertiban', 'satpol', 'retribusi', 'pajak', 'imb', 'pbg'],
-        23 => ['sanksi', 'teguran', 'disiplin', 'pns', 'asn', 'pejabat', 'pemberhentian', 'inspektorat', 'etik'],
-        24 => ['pidana', 'penjara', 'kurungan', 'denda', 'kepolisian', 'penyidik', 'polisi', 'kejahatan'],
-        25 => ['mediasi', 'musyawarah', 'damai', 'mediator', 'kesepakatan', 'kelurahan', 'kecamatan'],
+        1 => ['kk', 'keluarga', 'akta', 'kelahiran', 'kematian', 'perkawinan', 'perceraian', 'catatan', 'sipil', 'bayi'],
+        2 => ['gratis', 'bebas', 'dipungut', '79a', '95b', 'cuma'],
+        3 => ['pungli', 'pungutan', 'liar', 'rokok', 'pelicin', 'kopi', 'amplop', 'calo', 'peras', 'pemerasan', 'suap', 'korupsi', 'saber', 'imbalan', 'gratifikasi'],
+        4 => ['pelayanan', 'publik', 'maklumat', 'standar', 'terlambat', 'maladministrasi', 'ombudsman', 'kompensasi', 'loket', 'antrean', 'prosedur', 'sop'],
+        5 => ['kesehatan', 'sakit', 'rsud', 'puskesmas', 'klinik', 'dokter', 'perawat', 'medis', 'rawat', 'inap', 'obat', 'ambulans', 'pasien', 'malapraktik'],
+        6 => ['igd', 'ugd', 'gawat', 'darurat', 'kritis', 'deposit', 'nyawa', 'pertolongan', 'penyelamatan'],
+        7 => ['bpjs', 'kis', 'jkn', 'jaminan', 'pbi', 'iuran', 'tunggakan', 'menunggak', 'nonaktif', 'faskes', 'rujukan', 'kepesertaan', 'pbpu', 'rehab'],
+        8 => ['jalan', 'rusak', 'berlubang', 'aspal', 'jembatan', 'rambu', 'penerangan', 'pju', 'pupr', 'jatuh', 'kecelakaan', 'lalu', 'lintas', 'perbaikan', 'tabrak'],
+        9 => ['drainase', 'selokan', 'got', 'banjir', 'genangan', 'sampah', 'limbah', 'pencemaran', 'polusi', 'bau', 'sungai', 'lingkungan', 'amdal', 'dumping'],
+        10 => ['posbakum', 'obh', 'advokat', 'pengacara', 'miskin', 'sktm', 'pendampingan', 'litigasi', 'nonlitigasi'],
+        11 => ['pekerja', 'buruh', 'karyawan', 'perusahaan', 'pabrik', 'majikan', 'phk', 'dipecat', 'pemutusan', 'pesangon', 'pkwt', 'disnaker', 'bipartit', 'industrial'],
+        12 => ['upah', 'gaji', 'umk', 'ump', 'umr', 'minimum', 'lembur', 'thr', 'dipotong', 'ijazah', 'ditahan', 'penahanan'],
+        13 => ['tanah', 'lahan', 'pertanahan', 'sertifikat', 'sertipikat', 'shm', 'hgb', 'bpn', 'agraria', 'patok', 'diserobot', 'serobot', 'girik', 'ukur', 'ptsl', 'ppat', 'kavling', 'developer'],
+        14 => ['waris', 'warisan', 'ahli', 'wasiat', 'peninggalan', 'hibah', 'pewaris'],
+        15 => ['konsumen', 'cacat', 'garansi', 'ganti', 'rugi', 'bpsk', 'komplain', 'kadaluarsa', 'produk', 'pesanan', 'toko'],
+        16 => ['pinjol', 'pinjaman', 'fintech', 'ojk', 'collector', 'penagih', 'penagihan', 'teror', 'sebar', 'pribadi', 'ilegal', 'pdp'],
+        17 => ['penipuan', 'tipu', 'scam', 'phishing', 'ite', 'elektronik', 'peretasan', 'siber', 'marketplace'],
+        18 => ['kdrt', 'kekerasan', 'fisik', 'psikis', 'penelantaran', 'pelecehan', 'seksual', 'pencabulan', 'cabul', 'uptd', 'ppa', 'visum', 'perundungan'],
+        19 => ['informasi', 'ppid', 'transparansi', 'anggaran', 'apbd', 'apbdes', 'keberatan', 'komisi', 'keuangan', 'bansos', 'blt', 'realisasi', 'pagu'],
+        20 => ['pelapor', 'saksi', 'whistleblower', 'anonim', 'rahasia', 'intimidasi', 'perlindungan', 'lpsk', 'kerahasiaan'],
+        21 => ['pengaduan', 'tiket', 'verifikasi', 'verifikator', 'disposisi', 'tindak', 'kelengkapan', 'bukti', 'kronologi', 'bhima'],
+        22 => ['nib', 'oss', 'umkm', 'dpmptsp', 'mikro'],
+        23 => ['teguran', 'disiplin', 'pns', 'asn', 'pemberhentian', 'inspektorat', 'etik'],
+        24 => ['kepolisian', 'penyidik', 'polisi', 'kejahatan'],
+        25 => ['mediasi', 'musyawarah', 'damai', 'mediator', 'kesepakatan'],
     ];
 
     /**
@@ -199,6 +258,7 @@ class EmbeddingService
     {
         $clean = mb_strtolower($text, 'UTF-8');
         $clean = str_replace(['ktp-el', 'e-ktp', 'ektp'], 'ktp elektronik', $clean);
+        $clean = str_replace(['bayar dp', 'minta dp', 'diminta dp', 'uang dp'], 'uang muka deposit', $clean);
         $clean = preg_replace('/[^a-z0-9\s]/u', ' ', $clean) ?? '';
         $rawParts = preg_split('/\s+/u', trim($clean), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
@@ -206,6 +266,7 @@ class EmbeddingService
         $tokens = [];
 
         foreach ($rawParts as $word) {
+            $word = self::SLANG_MAP[$word] ?? $word;
             if (mb_strlen($word) < 2 || ctype_digit($word)) {
                 continue;
             }
@@ -213,6 +274,7 @@ class EmbeddingService
                 continue;
             }
             $stemmed = $this->stemToken($word);
+            $stemmed = self::SLANG_MAP[$stemmed] ?? $stemmed;
             if (mb_strlen($stemmed) < 2 || isset($stopLookup[$stemmed])) {
                 continue;
             }
@@ -249,29 +311,38 @@ class EmbeddingService
 
     public function stemToken(string $word): string
     {
-        if (mb_strlen($word) <= 4) {
+        $word = self::SLANG_MAP[$word] ?? $word;
+
+        if (mb_strlen($word) <= 4 || in_array($word, self::PROTECTED_ROOTS, true)) {
             return $word;
         }
 
-        // Hapus partikel & kata ganti milik di akhir
-        $word = preg_replace('/(lah|kah|tah|pun)$/u', '', $word) ?? $word;
+        // Hapus kata ganti milik -nya di akhir tanpa memotong kata dasar berakhiran -ku/-mu (seperti pelaku, berlaku, mengaku)
         if (mb_strlen($word) > 5) {
-            $word = preg_replace('/(nya|mu|ku)$/u', '', $word) ?? $word;
+            $word = preg_replace('/(nya)$/u', '', $word) ?? $word;
+            if (in_array($word, self::PROTECTED_ROOTS, true)) {
+                return $word;
+            }
         }
 
-        // Hapus akhiran derivasional umum
-        if (mb_strlen($word) > 6) {
+        // Hapus partikel penegas di akhir hanya untuk kata panjang yang bukan kata dasar terlindung (mencegah masalah -> masa, salah -> sa, sekolah -> seko)
+        if (mb_strlen($word) > 6 && ! in_array($word, self::PROTECTED_ROOTS, true)) {
+            $word = preg_replace('/(lah|kah|tah|pun)$/u', '', $word) ?? $word;
+            if (in_array($word, self::PROTECTED_ROOTS, true)) {
+                return $word;
+            }
+        }
+
+        // Hapus akhiran derivasional umum hanya bila bukan kata dasar terlindung (mencegah majikan -> maji, kontrakan -> kontra)
+        if (mb_strlen($word) > 7 && ! in_array($word, self::PROTECTED_ROOTS, true)) {
             $word = preg_replace('/(kan|an)$/u', '', $word) ?? $word;
+            if (in_array($word, self::PROTECTED_ROOTS, true)) {
+                return $word;
+            }
         }
 
-        // Hapus awalan pasif/intransitif umum tanpa memotong kata dasar seperti sertifikat, sengketa, keluarga, disnaker
-        $protectedRoots = [
-            'sertifikat', 'sertipikat', 'sengketa', 'serobot', 'sebar', 'keluarga', 'kesehatan',
-            'kecelakaan', 'kematian', 'kelahiran', 'ketenagakerjaan', 'keberatan', 'kebijakan',
-            'disnaker', 'disdukcapil', 'disposisi', 'deposit', 'dokumen', 'darurat', 'drainase',
-            'perusahaan', 'peraturan', 'perkara', 'perjanjian', 'permohonan', 'perlindungan',
-        ];
-        if (mb_strlen($word) > 7 && ! in_array($word, $protectedRoots, true)) {
+        // Hapus awalan pasif/intransitif umum tanpa memotong kata dasar terlindung
+        if (mb_strlen($word) > 7 && ! in_array($word, self::PROTECTED_ROOTS, true)) {
             $word = preg_replace('/^(ber|ter)/u', '', $word) ?? $word;
         }
 

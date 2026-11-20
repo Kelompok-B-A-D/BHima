@@ -102,7 +102,7 @@
 
                             <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#DEE3EA] text-[#0F766E] text-[11px] min-[641px]:text-xs font-bold shrink-0">
                                 <span class="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>
-                                <span><span id="stat-total-docs">{{ $knowledgeStats['documents'] ?: 100 }} Dokumen</span> (<span id="stat-total-chunks">{{ $knowledgeStats['chunks'] ?: 301 }} Chunk</span>)</span>
+                                <span><span id="stat-total-docs">{{ $knowledgeStats['documents'] }} Dokumen</span> (<span id="stat-total-chunks">{{ $knowledgeStats['chunks'] }} Chunk</span>)</span>
                             </div>
                         </div>
 
@@ -395,7 +395,7 @@
                                 target="_blank"
                                 rel="noopener"
                             >
-                                <span>Jelajahi Indeks {{ $knowledgeStats['documents'] ?: 100 }} Dokumen JDIH &amp; SOP</span>
+                                <span>Jelajahi Indeks {{ $knowledgeStats['documents'] }} Dokumen JDIH &amp; SOP</span>
                                 <span class="material-symbols-outlined text-[16px]" aria-hidden="true">north_east</span>
                             </a>
                         </div>
@@ -435,7 +435,7 @@
                             </div>
                             <a
                                 class="w-full min-h-[44px] flex items-center justify-center gap-2 bg-[#0F766E] hover:bg-[#0C635D] text-white py-2.5 px-4 rounded-full font-bold text-xs min-[641px]:text-sm shadow-sm transition-colors text-center"
-                                href="{{ route('consultation.reference', ['key' => 'JDIH-007']) }}"
+                                href="{{ route('consultation.reference', ['key' => 'JDIH-010']) }}"
                                 target="_blank"
                                 rel="noopener"
                             >
@@ -453,11 +453,11 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div class="bg-white/12 p-3.5 rounded-2xl border border-white/15">
-                                        <span class="text-xl min-[641px]:text-2xl font-extrabold text-white block">{{ $knowledgeStats['documents'] ?: 100 }}</span>
+                                        <span class="text-xl min-[641px]:text-2xl font-extrabold text-white block">{{ $knowledgeStats['documents'] }}</span>
                                         <span class="text-[11px] text-[#D6E3FF] font-semibold">Dokumen JDIH &amp; SOP</span>
                                     </div>
                                     <div class="bg-white/12 p-3.5 rounded-2xl border border-white/15">
-                                        <span class="text-xl min-[641px]:text-2xl font-extrabold text-white block">{{ $knowledgeStats['chunks'] ?: 301 }}</span>
+                                        <span class="text-xl min-[641px]:text-2xl font-extrabold text-white block">{{ $knowledgeStats['chunks'] }}</span>
                                         <span class="text-[11px] text-[#D6E3FF] font-semibold">Bagian Pasal Terindeks</span>
                                     </div>
                                 </div>

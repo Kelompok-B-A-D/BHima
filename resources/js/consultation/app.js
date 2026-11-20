@@ -153,6 +153,12 @@ function initConsultationApp(container) {
                     : 'bg-[#D6E3FF] text-[#00468D]';
                 const iconName = isSop ? 'description' : 'picture_as_pdf';
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
+                const officialUrl = c.source_page_url || c.source_url;
+                const openLabel = c.source_page_url ? 'Sumber Resmi' : 'Buka';
+                const statusBadge =
+                    c.status_berlaku === 'diubah' && c.diubah_oleh
+                        ? `<span class="mt-1 inline-block px-2 py-0.5 bg-[#FEF3C7] text-[#78350F] rounded-md text-[10px] font-bold">Diubah: ${e(c.diubah_oleh)}</span>`
+                        : '';
 
                 return `
                     <div class="p-4 bg-[#EFF4FB]/90 rounded-2xl border border-[#DEE3EA] hover:border-[#005AB3] transition-all flex flex-col justify-between gap-3">
@@ -174,6 +180,7 @@ function initConsultationApp(container) {
                                     <span>•</span>
                                     <span>Relevansi ${scorePct}%</span>
                                 </div>
+                                ${statusBadge}
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -187,13 +194,13 @@ function initConsultationApp(container) {
                                 <span>Baca Pasal</span>
                             </a>
                             <a
-                                href="${e(c.source_url)}"
+                                href="${e(officialUrl)}"
                                 target="_blank"
-                                rel="noopener"
+                                rel="noopener noreferrer"
                                 class="min-h-[44px] px-3.5 rounded-full bg-[#005AB3] hover:bg-[#00468D] text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors"
                             >
                                 <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
-                                <span>Buka</span>
+                                <span>${e(openLabel)}</span>
                             </a>
                         </div>
                     </div>
@@ -385,18 +392,33 @@ function initConsultationApp(container) {
                 ${rujukan
                     .map(
                         (r) => `
-                        <a
-                            href="${e(r.tautan || '#jdih-reference-panel')}"
-                            target="_blank"
-                            rel="noopener"
-                            class="min-h-[44px] p-3 rounded-2xl bg-[#EFF4FB] hover:bg-[#D6E3FF] border border-[#DEE3EA] flex items-start justify-between gap-2 transition-colors no-underline group"
-                        >
-                            <div class="min-w-0">
-                                <span class="text-[11px] font-bold text-[#005AB3] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
-                                <span class="text-xs font-bold text-[#171C21] block truncate group-hover:text-[#00468D]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
-                            </div>
-                            <span class="material-symbols-outlined text-[16px] text-[#005AB3] shrink-0 mt-0.5" aria-hidden="true">open_in_new</span>
-                        </a>
+                        <div class="min-h-[44px] p-3 rounded-2xl bg-[#EFF4FB] border border-[#DEE3EA] flex flex-col justify-between gap-2">
+                            <a
+                                href="${e(r.tautan || '#jdih-reference-panel')}"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex items-start justify-between gap-2 no-underline group"
+                            >
+                                <div class="min-w-0">
+                                    <span class="text-[11px] font-bold text-[#005AB3] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
+                                    <span class="text-xs font-bold text-[#171C21] block truncate group-hover:text-[#00468D]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
+                                    ${
+                                        r.status_berlaku === 'diubah' && r.diubah_oleh
+                                            ? `<span class="mt-1 inline-block px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#78350F] text-[10px] font-bold">Diubah oleh: ${e(r.diubah_oleh)}</span>`
+                                            : ''
+                                    }
+                                </div>
+                                <span class="material-symbols-outlined text-[16px] text-[#005AB3] shrink-0 mt-0.5" aria-hidden="true">open_in_new</span>
+                            </a>
+                            ${
+                                r.tautan_resmi
+                                    ? `<a href="${e(r.tautan_resmi)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-[#0F766E] hover:underline inline-flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[13px]" aria-hidden="true">verified</span>
+                                        <span>Cek Sumber Resmi JDIH</span>
+                                       </a>`
+                                    : ''
+                            }
+                        </div>
                     `
                     )
                     .join('')}
