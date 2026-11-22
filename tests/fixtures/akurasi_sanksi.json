@@ -1,0 +1,421 @@
+[
+  {
+    "id": "AK-01",
+    "topik": "Administrasi Kependudukan",
+    "pertanyaan": "Petugas Disdukcapil minta uang untuk bikin KTP-el, pasal apa dan sanksinya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-001"],
+    "pasal_wajib_muncul": ["Pasal 79A", "Pasal 95B"],
+    "sanksi_harus_memuat": "pidana penjara paling lama 6 (enam) tahun"
+  },
+  {
+    "id": "AK-02",
+    "topik": "Administrasi Kependudukan",
+    "pertanyaan": "Saya mau buat KTP elektronik baru usia 17 tahun di Disdukcapil, apakah masih harus bawa surat pengantar RT RW?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-002", "SOP-001"],
+    "pasal_diharapkan_salah_satu": ["Pasal 14 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-03",
+    "topik": "Administrasi Kependudukan",
+    "pertanyaan": "KTP-el saya hilang, apa saja persyaratan penggantian KTP hilang di Disdukcapil dan berapa lama waktu penerbitannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-002", "SOP-001", "JDIH-001"],
+    "pasal_diharapkan_salah_satu": ["Pasal 15 Ayat (1)", "Pasal 1 Ayat (1)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-04",
+    "topik": "Administrasi Kependudukan",
+    "pertanyaan": "Apakah penerbitan Kartu Keluarga dan Akta Kelahiran di Disdukcapil dikenakan biaya administrasi?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-001", "SOP-002"],
+    "pasal_diharapkan_salah_satu": ["Pasal 79A", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-05",
+    "topik": "Administrasi Kependudukan",
+    "pertanyaan": "Oknum kelurahan memungut biaya penerbitan KTP-el warga sebesar Rp100.000, apa ancaman pidana dan dendanya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-001"],
+    "pasal_wajib_muncul": ["Pasal 95B"],
+    "sanksi_harus_memuat": "Rp75.000.000,00"
+  },
+  {
+    "id": "AK-06",
+    "topik": "Pelayanan Publik",
+    "pertanyaan": "Pelayanan publik di kantor dinas melanggar standar pelayanan dan mempersulit warga, ke mana masyarakat berhak mengadu?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-003"],
+    "pasal_diharapkan_salah_satu": ["Pasal 40 Ayat (1)", "Pasal 34", "Pasal 18 Ayat (1)"]
+  },
+  {
+    "id": "AK-07",
+    "topik": "Pelayanan Publik",
+    "pertanyaan": "Berapa batas waktu penyelenggara pelayanan publik wajib menindaklanjuti pengaduan masyarakat yang sudah lengkap?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-003", "SOP-012"],
+    "pasal_diharapkan_salah_satu": ["Pasal 50 Ayat (1)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-08",
+    "topik": "Pelayanan Publik",
+    "pertanyaan": "Apa saja komponen standar pelayanan publik yang wajib diketahui masyarakat?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-003"],
+    "pasal_diharapkan_salah_satu": ["Pasal 21", "Pasal 18 Ayat (1)"]
+  },
+  {
+    "id": "AK-09",
+    "topik": "Pelayanan Publik",
+    "pertanyaan": "Layanan administrasi publik terlambat melampaui maklumat pelayanan tanpa alasan sah, apa hak kompensasi warga?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-020", "JDIH-003"],
+    "pasal_diharapkan_salah_satu": ["Pasal 1 Ayat (1)", "Pasal 18 Ayat (1)"]
+  },
+  {
+    "id": "AK-10",
+    "topik": "Pelayanan Publik",
+    "pertanyaan": "Saya pelaku usaha mikro ingin mengurus NIB lewat OSS di DPMPTSP, apakah ada biaya dan berapa lama?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-017"],
+    "pasal_diharapkan_salah_satu": ["Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-11",
+    "topik": "Dugaan Pungli dan Suap",
+    "pertanyaan": "Pegawai negeri menyalahgunakan kekuasaan dan memaksa warga membayar potongan uang dalam pelayanan, apa ancaman hukumannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-005", "JDIH-024"],
+    "pasal_diharapkan_salah_satu": ["Pasal 12 huruf e", "Pasal 5 huruf a", "Pasal 8 Ayat (1)"],
+    "sanksi_harus_memuat": "pidana penjara"
+  },
+  {
+    "id": "AK-12",
+    "topik": "Dugaan Pungli dan Suap",
+    "pertanyaan": "Apa sanksi disiplin bagi PNS yang meminta atau menerima hadiah dan menyalahgunakan wewenang jabatan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-024"],
+    "pasal_diharapkan_salah_satu": ["Pasal 8 Ayat (1)", "Pasal 5 huruf a"],
+    "sanksi_harus_memuat": "Hukuman Disiplin"
+  },
+  {
+    "id": "AK-13",
+    "topik": "Dugaan Pungli dan Suap",
+    "pertanyaan": "Bagaimana cara melaporkan dugaan pungutan liar uang pelicin secara anonim di Portal BHIMA?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-003", "SOP-019"],
+    "pasal_diharapkan_salah_satu": ["Pasal 1 Ayat (1)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-14",
+    "topik": "Dugaan Pungli dan Suap",
+    "pertanyaan": "Apakah gratifikasi kepada pegawai negeri yang berhubungan dengan jabatan dianggap pemberian suap?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-005"],
+    "pasal_diharapkan_salah_satu": ["Pasal 12B Ayat (1)"]
+  },
+  {
+    "id": "AK-15",
+    "topik": "Pelayanan Kesehatan",
+    "pertanyaan": "Rumah sakit menolak pasien gawat darurat di IGD dan meminta uang muka deposit Rp5 juta sebelum ditangani, pasal apa dan apa ancaman pidananya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-006"],
+    "pasal_wajib_muncul": ["Pasal 174 Ayat (2)", "Pasal 438 Ayat (1)"],
+    "sanksi_harus_memuat": "pidana penjara paling lama 2 (dua) tahun"
+  },
+  {
+    "id": "AK-16",
+    "topik": "Pelayanan Kesehatan",
+    "pertanyaan": "Apakah peserta BPJS Kesehatan dalam kondisi gawat darurat wajib membawa surat rujukan dari FKTP?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-007", "SOP-004"],
+    "pasal_diharapkan_salah_satu": ["Pasal 62 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-17",
+    "topik": "Pelayanan Kesehatan",
+    "pertanyaan": "Kartu BPJS PBI warga tidak mampu berstatus nonaktif saat rawat inap darurat, bagaimana prosedur reaktivasi daruratnya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-004", "JDIH-007"],
+    "pasal_diharapkan_salah_satu": ["Pasal 2 Ayat (1)", "Pasal 8 Ayat (1)"]
+  },
+  {
+    "id": "AK-18",
+    "topik": "Pelayanan Kesehatan",
+    "pertanyaan": "Bolehkah rumah sakit menarik biaya tambahan kepada peserta JKN selama menempati ruang perawatan sesuai haknya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-007"],
+    "pasal_diharapkan_salah_satu": ["Pasal 63 Ayat (1)"]
+  },
+  {
+    "id": "AK-19",
+    "topik": "Pelayanan Kesehatan",
+    "pertanyaan": "Bagaimana cara memesan layanan ambulans gawat darurat pemerintah daerah bagi peserta JKN tidak mampu?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-014"],
+    "pasal_diharapkan_salah_satu": ["Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-20",
+    "topik": "Infrastruktur",
+    "pertanyaan": "Jalan kabupaten rusak berlubang parah tidak diperbaiki penyelenggara jalan sehingga warga kecelakaan lalu lintas, apa pasal dan ancaman sanksinya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-008"],
+    "pasal_wajib_muncul": ["Pasal 24 Ayat (1)", "Pasal 273 Ayat (1)"],
+    "sanksi_harus_memuat": "penjara paling lama 6 (enam) bulan"
+  },
+  {
+    "id": "AK-21",
+    "topik": "Infrastruktur",
+    "pertanyaan": "Jika jalan rusak belum bisa segera diperbaiki, apa kewajiban penyelenggara jalan untuk mencegah kecelakaan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-008", "SOP-005"],
+    "pasal_diharapkan_salah_satu": ["Pasal 24 Ayat (2)", "Pasal 3 Ayat (1)"]
+  },
+  {
+    "id": "AK-22",
+    "topik": "Infrastruktur",
+    "pertanyaan": "Saluran drainase jalan tersumbat menyebabkan genangan banjir di desa, apa kewajiban penyelenggara jalan dan cara melaporkannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-009", "SOP-005"],
+    "pasal_diharapkan_salah_satu": ["Pasal 30 Ayat (1)", "Pasal 62 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-23",
+    "topik": "Infrastruktur",
+    "pertanyaan": "Pabrik membuang limbah cair tanpa izin ke sungai hingga mencemari lingkungan hidup warga, apa aturan larangannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-023", "SOP-015"],
+    "pasal_diharapkan_salah_satu": ["Pasal 69 Ayat (1)", "Pasal 65 Ayat (5)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-24",
+    "topik": "Infrastruktur",
+    "pertanyaan": "Apakah warga yang memperjuangkan hak atas lingkungan hidup yang baik dan sehat dapat dituntut secara pidana atau perdata?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-023"],
+    "pasal_diharapkan_salah_satu": ["Pasal 66", "Pasal 65 Ayat (1)"]
+  },
+  {
+    "id": "AK-25",
+    "topik": "Ketenagakerjaan",
+    "pertanyaan": "Perusahaan terlambat membayar gaji dan upah pekerja, apa pasal dan sanksi denda keterlambatan upahnya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-013"],
+    "pasal_wajib_muncul": ["Pasal 61 Ayat (1)"],
+    "sanksi_harus_memuat": "dikenakan denda sesuai dengan persentase tertentu"
+  },
+  {
+    "id": "AK-26",
+    "topik": "Ketenagakerjaan",
+    "pertanyaan": "Saya di-PHK sepihak oleh perusahaan tanpa pemberitahuan tertulis dan tanpa uang pesangon, bagaimana prosedur perundingan bipartit dan mediasinya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-012", "SOP-007"],
+    "pasal_diharapkan_salah_satu": ["Pasal 39 Ayat (1)", "Pasal 40 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-27",
+    "topik": "Ketenagakerjaan",
+    "pertanyaan": "Perusahaan menahan ijazah asli saya sebagai jaminan kerja dan meminta uang tebusan setelah resign, apakah diperbolehkan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-014", "SOP-007"],
+    "pasal_diharapkan_salah_satu": ["Pasal 19 Ayat (1)", "Pasal 19 Ayat (2)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-28",
+    "topik": "Ketenagakerjaan",
+    "pertanyaan": "Apakah pekerja kontrak PKWT yang sudah bekerja lebih dari satu bulan berhak mendapatkan uang kompensasi saat kontrak berakhir?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-012"],
+    "pasal_diharapkan_salah_satu": ["Pasal 15 Ayat (1)"]
+  },
+  {
+    "id": "AK-29",
+    "topik": "Ketenagakerjaan",
+    "pertanyaan": "Berapa batas maksimal pemotongan upah pekerja oleh pengusaha dari setiap pembayaran gaji?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-013"],
+    "pasal_diharapkan_salah_satu": ["Pasal 65 Ayat (1)"]
+  },
+  {
+    "id": "AK-30",
+    "topik": "Pertanahan",
+    "pertanyaan": "Tetangga menggeser patok batas bidang tanah pekarangan keluarga kami secara sepihak padahal kami punya SHM, bagaimana prosedur mediasinya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-015", "JDIH-016", "SOP-008"],
+    "pasal_diharapkan_salah_satu": ["Pasal 18 Ayat (1)", "Pasal 6 Ayat (1)", "Pasal 34 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-31",
+    "topik": "Pertanahan",
+    "pertanyaan": "Sertifikat tanah hak milik saya hilang, bagaimana syarat pengurusan sertipikat pengganti di Kantor Pertanahan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-015"],
+    "pasal_diharapkan_salah_satu": ["Pasal 57 Ayat (1)"]
+  },
+  {
+    "id": "AK-32",
+    "topik": "Pertanahan",
+    "pertanyaan": "Bagaimana kekuatan pembuktian sertipikat hak atas tanah menurut peraturan pendaftaran tanah?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-015"],
+    "pasal_diharapkan_salah_satu": ["Pasal 32 Ayat (1)"]
+  },
+  {
+    "id": "AK-33",
+    "topik": "Pertanahan",
+    "pertanyaan": "Apa persyaratan mengurus surat keterangan ahli waris di desa kelurahan dan kecamatan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-018"],
+    "pasal_diharapkan_salah_satu": ["Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-34",
+    "topik": "Pertanahan",
+    "pertanyaan": "Bagaimana tata cara menyampaikan pengaduan sengketa batas tanah dan pemeriksaan lapangan ke Kantor Pertanahan BPN?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-016", "SOP-008"],
+    "pasal_diharapkan_salah_satu": ["Pasal 6 Ayat (1)", "Pasal 11 Ayat (1)", "Pasal 3 Ayat (1)"]
+  },
+  {
+    "id": "AK-35",
+    "topik": "Konsumen dan Digital",
+    "pertanyaan": "Penagih pinjol menyebarkan data pribadi saya ke seluruh kontak tanpa persetujuan, pasal apa dan berapa ancaman pidana penjaranya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-017"],
+    "pasal_wajib_muncul": ["Pasal 65 Ayat (2)", "Pasal 67 Ayat (2)"],
+    "sanksi_harus_memuat": "pidana penjara paling lama 4 (empat) tahun"
+  },
+  {
+    "id": "AK-36",
+    "topik": "Konsumen dan Digital",
+    "pertanyaan": "Debt collector pinjaman online menagih dengan ancaman intimidasi dan menelepon pihak lain di luar peminjam, apa aturannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-018", "SOP-009"],
+    "pasal_diharapkan_salah_satu": ["Pasal 62 Ayat (2)", "Pasal 1 Ayat (1)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-37",
+    "topik": "Konsumen dan Digital",
+    "pertanyaan": "Jam berapa saja penagihan kredit oleh pelaku usaha jasa keuangan diperbolehkan melalui sarana komunikasi?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-018"],
+    "pasal_diharapkan_salah_satu": ["Pasal 62 Ayat (3)"]
+  },
+  {
+    "id": "AK-38",
+    "topik": "Konsumen dan Digital",
+    "pertanyaan": "Saya membeli barang elektronik ternyata barang cacat rusak dan garansi ditolak pelaku usaha, berapa hari batas ganti rugi dan cara lapor BPSK?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-021", "SOP-016"],
+    "pasal_diharapkan_salah_satu": ["Pasal 19 Ayat (1)", "Pasal 19 Ayat (3)", "Pasal 45 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-39",
+    "topik": "Konsumen dan Digital",
+    "pertanyaan": "Apakah subjek data pribadi berhak menggugat ganti rugi atas pelanggaran pemrosesan data pribadinya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-017"],
+    "pasal_diharapkan_salah_satu": ["Pasal 12 Ayat (1)"],
+    "sanksi_harus_memuat": "ganti rugi"
+  },
+  {
+    "id": "AK-40",
+    "topik": "Perempuan dan Anak",
+    "pertanyaan": "Saya mengalami KDRT kekerasan fisik dipukul suami di rumah tangga, bagaimana prosedur perlindungan sementara kepolisian 1x24 jam?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-019", "SOP-010"],
+    "pasal_diharapkan_salah_satu": ["Pasal 16 Ayat (1)", "Pasal 5", "Pasal 1 Ayat (1)", "Pasal 2 Ayat (1)"]
+  },
+  {
+    "id": "AK-41",
+    "topik": "Perempuan dan Anak",
+    "pertanyaan": "Bagaimana layanan cepat UPTD PPA untuk visum gratis dan rumah aman bagi korban KDRT serta kekerasan terhadap anak?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["SOP-010", "JDIH-019"],
+    "pasal_diharapkan_salah_satu": ["Pasal 2 Ayat (1)", "Pasal 1 Ayat (1)", "Pasal 10"]
+  },
+  {
+    "id": "AK-42",
+    "topik": "Perempuan dan Anak",
+    "pertanyaan": "kalo melakukan kekerasahan seksual kepada cowok",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-019"],
+    "pasal_diharapkan_salah_satu": ["Pasal 5"]
+  },
+  {
+    "id": "AK-43",
+    "topik": "Keterbukaan Informasi dan Anggaran",
+    "pertanyaan": "Warga ingin meminta informasi laporan realisasi anggaran APBDes dan dana desa, berapa hari batas tanggapan PPID dan cara keberatan?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-020", "JDIH-022", "SOP-011"],
+    "pasal_diharapkan_salah_satu": ["Pasal 22 Ayat (7)", "Pasal 35 Ayat (1)", "Pasal 82 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-44",
+    "topik": "Keterbukaan Informasi dan Anggaran",
+    "pertanyaan": "Apakah masyarakat desa berhak mendapatkan informasi tentang rencana pembangunan desa dan penerima bantuan sosial APBDes?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-022", "SOP-011"],
+    "pasal_diharapkan_salah_satu": ["Pasal 82 Ayat (1)", "Pasal 68 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-45",
+    "topik": "Bantuan Hukum",
+    "pertanyaan": "Saya warga tidak mampu bayar pengacara untuk perkara pidana atau perdata, apa syarat bantuan hukum gratis dan apakah pemberi bantuan hukum boleh meminta biaya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-010", "JDIH-011", "SOP-006"],
+    "pasal_diharapkan_salah_satu": ["Pasal 14 Ayat (1)", "Pasal 20", "Pasal 4 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-46",
+    "topik": "Bantuan Hukum",
+    "pertanyaan": "Jika pemohon bantuan hukum tidak memiliki SKTM, dokumen pengganti apa saja yang bisa dilampirkan dan berapa hari kerja jawabannya?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-011", "SOP-006", "SOP-013"],
+    "pasal_diharapkan_salah_satu": ["Pasal 6 Ayat (2)", "Pasal 9 Ayat (1)", "Pasal 1 Ayat (1)"]
+  },
+  {
+    "id": "AK-47",
+    "topik": "Peraturan Dicabut",
+    "pertanyaan": "Bagaimana status Perpres No. 87 Tahun 2016 tentang Satgas Saber Pungli saat melapor pungutan liar?",
+    "status_diharapkan": "answered",
+    "dilarang_dokumen_kunci": ["JDIH-004"],
+    "wajib_catatan_arsip_dicabut": "Perpres No. 49 Tahun 2025"
+  },
+  {
+    "id": "AK-48",
+    "topik": "Peraturan Dicabut",
+    "pertanyaan": "Apakah UU No. 31 Tahun 2014 tentang Perlindungan Saksi dan Korban masih berlaku?",
+    "status_diharapkan": "answered",
+    "dilarang_dokumen_kunci": ["JDIH-025"],
+    "wajib_catatan_arsip_dicabut": "UU No. 3 Tahun 2026"
+  },
+  {
+    "id": "AK-49",
+    "topik": "Luar Cakupan",
+    "pertanyaan": "saya melakukan pembunuhan",
+    "status_diharapkan": "out_of_scope"
+  },
+  {
+    "id": "AK-50",
+    "topik": "Luar Cakupan",
+    "pertanyaan": "saya kemarin kena tilang di lampu merah karena gak bawa stnk",
+    "status_diharapkan": "out_of_scope"
+  },
+  {
+    "id": "AK-51",
+    "topik": "Luar Cakupan",
+    "pertanyaan": "Bagaimana resep memasak rendang daging sapi khas Padang agar empuk dan bumbu meresap?",
+    "status_diharapkan": "out_of_scope"
+  },
+  {
+    "id": "AK-52",
+    "topik": "Anti-Vonis",
+    "pertanyaan": "Tetangga menggeser patok batas tanah pekarangan saya yang bersertifikat SHM. Jika saya gugat ke pengadilan apakah saya pasti menang?",
+    "status_diharapkan": "answered",
+    "dokumen_kunci_salah_satu": ["JDIH-015", "JDIH-016", "SOP-008"],
+    "wajib_guardrail_vonis": true
+  }
+]

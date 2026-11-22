@@ -69,20 +69,22 @@ class ConsultationRagTest extends TestCase
         $this->get('/rujukan/'.$firstCitationKey)->assertOk();
     }
 
-    public function test_ingestion_indexes_100_documents_and_is_idempotent(): void
+    public function test_ingestion_indexes_verified_documents_without_fake_templates_and_is_idempotent(): void
     {
         $this->artisan('bhima:ingest-knowledge --seed')->assertExitCode(0);
 
         $distinctDocs = DB::table('knowledge_chunks')->distinct('document_key')->count('document_key');
         $jdihDocs = DB::table('knowledge_chunks')->where('category', 'JDIH')->distinct('document_key')->count('document_key');
         $sopDocs = DB::table('knowledge_chunks')->where('category', 'SOP')->distinct('document_key')->count('document_key');
+        $fakeTemplates = DB::table('knowledge_chunks')->where('document_name', 'like', '%Seri %')->count();
         $firstChunkCount = DB::table('knowledge_chunks')->count();
         $firstRecordCount = DB::table('dashboard_records')->whereIn('collection', ['documents', 'contents'])->count();
 
-        $this->assertSame(100, $distinctDocs);
-        $this->assertSame(80, $jdihDocs);
+        $this->assertSame(45, $distinctDocs);
+        $this->assertSame(25, $jdihDocs);
         $this->assertSame(20, $sopDocs);
-        $this->assertGreaterThan(200, $firstChunkCount);
+        $this->assertSame(0, $fakeTemplates);
+        $this->assertGreaterThan(100, $firstChunkCount);
 
         // Jalankan ulang proses ingestion untuk memastikan idempotent (tidak menggandakan data)
         $this->artisan('bhima:ingest-knowledge')->assertExitCode(0);
@@ -323,6 +325,71 @@ class ConsultationRagTest extends TestCase
 
         $reset = $this->postJson('/api/konsultasi/reset');
         $reset->assertOk()->assertJsonStructure(['session_id', 'message']);
+    }
+
+    public function test_rag_llm_api_normalizes_paas_endpoint_without_duplicate_suffix(): void
+    {
+        $this->seedKnowledgeBase();
+        config([
+            'rag.llm.provider' => 'api',
+            'rag.llm.api_key' => 'test-paas-key',
+            'rag.llm.base_url' => 'https://ai.paas.id/chat/completions',
+            'rag.llm.model' => 'deepseek-v4.1-flash',
+        ]);
+
+        Http::fake([
+            'https://ai.paas.id/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => "(a) Ringkasan Masalah\nPungutan liar KTP-el.\n\n(b) Pasal/Aturan yang Relevan dan Artinya\nPasal 79A menegaskan layanan kependudukan gratis.\n\n(c) Langkah yang Bisa Dilakukan Warga\nLaporkan ke BHIMA.\n\n(d) Rujukan SOP Layanan\nSOP-001.",
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->postJson('/api/konsultasi/pesan', [
+            'chronology' => 'Saya mengurus KTP elektronik di Disdukcapil tetapi diminta uang rokok oleh oknum petugas.',
+        ]);
+
+        $response->assertOk()->assertJsonPath('assistant_message.retrieval_meta.provider', 'api');
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://ai.paas.id/chat/completions'
+                && ($request['model'] ?? null) === 'deepseek-v4.1-flash';
+        });
+    }
+
+    public function test_generic_verbs_and_substring_collisions_do_not_return_unrelated_laws(): void
+    {
+        $this->seedKnowledgeBase();
+        $assistant = app(LegalAssistantService::class);
+
+        // Kasus di luar korpus 100 dokumen tidak boleh salah mencocokkan UU Adminduk / Pengupahan karena "melakukan" atau "kena"/"bawa"
+        $murderResult = $assistant->answerChronology('saya melakukan pembunuhan');
+        $this->assertSame('out_of_scope', $murderResult['status']);
+        $this->assertEmpty($murderResult['citations']);
+
+        $ticketResult = $assistant->answerChronology('saya kemarin kena tilang di lampu merah karena gak bawa stnk');
+        $this->assertSame('out_of_scope', $ticketResult['status']);
+        $this->assertEmpty($ticketResult['citations']);
+
+        // Kasus kekerasan seksual tidak boleh menyeret UU Lingkungan Hidup, POJK, atau SOP Kerusakan Jalan
+        $sexualViolenceResult = $assistant->answerChronology('kalo melakukan kekerasahan seksual kepada cowok');
+        $this->assertSame('answered', $sexualViolenceResult['status']);
+        $this->assertNotEmpty($sexualViolenceResult['citations']);
+        foreach ($sexualViolenceResult['citations'] as $citation) {
+            $this->assertSame('Perlindungan Perempuan & Anak', $citation['topic']);
+        }
+
+        // Kasus pelanggaran lalu lintas tidak boleh menyeret Perda Ketenagakerjaan, SOP Whistleblower, atau UU PDP
+        $trafficResult = $assistant->answerChronology('pelanggaran lalu lintas');
+        $this->assertSame('answered', $trafficResult['status']);
+        $this->assertNotEmpty($trafficResult['citations']);
+        foreach ($trafficResult['citations'] as $citation) {
+            $this->assertSame('JDIH-008', $citation['document_key']);
+        }
     }
 }
 

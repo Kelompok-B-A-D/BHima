@@ -487,6 +487,10 @@ class ConsultationController extends Controller
             'topic' => $payload['topic'] ?? $payload['category'] ?? $firstChunk?->topic ?? 'Umum',
             'summary' => $payload['summary'] ?? null,
             'updated' => $payload['updated'] ?? null,
+            'status_berlaku' => $payload['status_berlaku'] ?? ($firstChunk?->status_berlaku ?? 'berlaku'),
+            'diubah_oleh' => $payload['diubah_oleh'] ?? ($firstChunk?->diubah_oleh ?? null),
+            'dicabut_oleh' => $payload['dicabut_oleh'] ?? ($firstChunk?->dicabut_oleh ?? null),
+            'source_page_url' => $payload['source_page_url'] ?? ($firstChunk?->source_page_url ?? null),
         ];
 
         return view('consultation.reference', [
@@ -540,9 +544,20 @@ class ConsultationController extends Controller
     private function knowledgeStats(): array
     {
         try {
-            $jdih = (int) DB::table('knowledge_chunks')->where('category', 'JDIH')->distinct('document_key')->count('document_key');
-            $sop = (int) DB::table('knowledge_chunks')->where('category', 'SOP')->distinct('document_key')->count('document_key');
-            $chunks = (int) DB::table('knowledge_chunks')->count();
+            $hasStatusCol = Schema::hasColumn('knowledge_chunks', 'status_berlaku');
+            $jdihQuery = DB::table('knowledge_chunks')->where('category', 'JDIH');
+            $sopQuery = DB::table('knowledge_chunks')->where('category', 'SOP');
+            $chunksQuery = DB::table('knowledge_chunks');
+
+            if ($hasStatusCol) {
+                $jdihQuery->where('status_berlaku', '!=', 'dicabut');
+                $sopQuery->where('status_berlaku', '!=', 'dicabut');
+                $chunksQuery->where('status_berlaku', '!=', 'dicabut');
+            }
+
+            $jdih = (int) $jdihQuery->distinct('document_key')->count('document_key');
+            $sop = (int) $sopQuery->distinct('document_key')->count('document_key');
+            $chunks = (int) $chunksQuery->count();
 
             return [
                 'documents' => $jdih + $sop,
@@ -568,15 +583,15 @@ class ConsultationController extends Controller
             $complaints = (int) DB::table('dashboard_records')->where('collection', 'complaints')->count();
 
             return [
-                'documents' => $stats['documents'] ?: 100,
-                'chunks' => $stats['chunks'] ?: 301,
+                'documents' => $stats['documents'],
+                'chunks' => $stats['chunks'],
                 'sessions' => $sessions,
                 'complaints' => $complaints,
             ];
         } catch (\Throwable) {
             return [
-                'documents' => $stats['documents'] ?: 100,
-                'chunks' => $stats['chunks'] ?: 301,
+                'documents' => $stats['documents'],
+                'chunks' => $stats['chunks'],
                 'sessions' => 0,
                 'complaints' => 0,
             ];

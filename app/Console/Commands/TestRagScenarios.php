@@ -16,12 +16,12 @@ class TestRagScenarios extends Command
     public function handle(LegalAssistantService $assistantService): int
     {
         if (DB::table('knowledge_chunks')->count() === 0) {
-            $this->info('Memuat 100 dokumen JDIH dan SOP layanan ke basis data terlebih dahulu...');
+            $this->info('Memuat dokumen JDIH terverifikasi dan SOP layanan ke basis data terlebih dahulu...');
             app(LegalKnowledgeSeeder::class)->run();
         }
 
-        $totalDocs = DB::table('knowledge_chunks')->distinct('document_key')->count('document_key');
-        $totalChunks = DB::table('knowledge_chunks')->count();
+        $totalDocs = DB::table('knowledge_chunks')->where('status_berlaku', '!=', 'dicabut')->distinct('document_key')->count('document_key');
+        $totalChunks = DB::table('knowledge_chunks')->where('status_berlaku', '!=', 'dicabut')->count();
         $this->info("Basis pengetahuan aktif: {$totalDocs} dokumen terindeks ({$totalChunks} potongan pasal/SOP).\n");
 
         $scenarios = [
@@ -29,7 +29,7 @@ class TestRagScenarios extends Command
                 'name' => 'Skenario 1: Pungli Pengurusan KTP Elektronik',
                 'chronology' => 'Saya mengurus KTP elektronik yang hilang di kantor pelayanan, sudah membawa KK dan surat kehilangan dari polisi, tetapi oknum petugas meminta uang rokok Rp100.000 agar cepat dicetak. Bagaimana aturan resminya?',
                 'expect_status' => 'answered',
-                'expect_doc_keys' => ['JDIH-001', 'JDIH-004', 'SOP-001', 'SOP-003'],
+                'expect_doc_keys' => ['JDIH-001', 'JDIH-005', 'SOP-001', 'SOP-003'],
             ],
             [
                 'name' => 'Skenario 2: Penolakan Pasien Gawat Darurat & Deposit IGD',

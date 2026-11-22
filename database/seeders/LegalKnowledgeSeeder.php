@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\JdihManifestService;
 use App\Services\LegalIngestionService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -9,13 +10,27 @@ use Illuminate\Support\Facades\DB;
 class LegalKnowledgeSeeder extends Seeder
 {
     /**
-     * Muat 100 dokumen hukum JDIH (80 dokumen) dan SOP Layanan (20 dokumen) secara idempotent,
-     * lalu jalankan proses ekstraksi, pemecahan pasal/ayat, dan indeksasi embedding.
+     * Muat dokumen hukum JDIH inti (tanpa templat karangan JDIH-026..080) dan 20 SOP Layanan
+     * secara idempotent, lengkapi metadata manifest resmi, lalu indeks ke knowledge_chunks.
      */
     public function run(): void
     {
         $now = now();
         $today = $now->toDateString();
+
+        // Hapus sisa dokumen templat sintetis JDIH-026..JDIH-080 agar tidak ada peraturan fiktif di indeks
+        $legacyTemplateKeys = [];
+        for ($i = 26; $i <= 80; $i++) {
+            $legacyTemplateKeys[] = sprintf('JDIH-%03d', $i);
+        }
+
+        DB::table('knowledge_chunks')
+            ->whereIn('document_key', $legacyTemplateKeys)
+            ->delete();
+        DB::table('dashboard_records')
+            ->where('collection', 'documents')
+            ->whereIn('record_key', $legacyTemplateKeys)
+            ->delete();
 
         $rows = [];
         foreach ($this->buildJdihDocuments($today) as $doc) {
@@ -52,7 +67,8 @@ class LegalKnowledgeSeeder extends Seeder
     }
 
     /**
-     * Bangun 80 dokumen JDIH dengan pasal dan ayat lengkap.
+     * Bangun daftar dokumen JDIH inti (JDIH-001 s.d. JDIH-025) yang dipadankan dengan jdih_manifest.csv.
+     * Dokumen templat karangan JDIH-026..080 telah dihapus seluruhnya sesuai panduan JDIH BHIMA.
      *
      * @return list<array<string, mixed>>
      */
@@ -142,8 +158,10 @@ TEXT,
                 'number' => 'UU No. 20 Tahun 2001',
                 'year' => 2001,
                 'category' => 'Dugaan Pungutan Liar',
-                'summary' => 'Mengatur tindak pidana korupsi termasuk pemerasan dan pungutan tidak sah oleh pegawai negeri atau penyelenggara negara dalam pelayanan masyarakat.',
+                'summary' => 'Mengatur tindak pidana korupsi termasuk penyalahgunaan kewenangan anggaran/dana desa yang merugikan keuangan negara serta pemerasan dan pungutan tidak sah oleh pegawai negeri atau penyelenggara negara.',
                 'body' => <<<'TEXT'
+Pasal 3
+Setiap orang yang dengan tujuan menguntungkan diri sendiri atau orang lain atau suatu korporasi, menyalahgunakan kewenangan, kesempatan, atau sarana yang ada padanya karena jabatan atau kedudukan (termasuk penyimpangan anggaran negara/daerah atau korupsi dana desa oleh kepala desa dan perangkatnya) yang dapat merugikan keuangan negara atau perekonomian negara, dipidana dengan pidana penjara seumur hidup atau pidana penjara paling singkat 1 (satu) tahun dan paling lama 20 (dua puluh) tahun dan atau denda paling sedikit Rp50.000.000,00 dan paling banyak Rp1.000.000.000,00.
 Pasal 12 huruf e
 Dipidana dengan pidana penjara seumur hidup atau pidana penjara paling singkat 4 (empat) tahun dan paling lama 20 (dua puluh) tahun dan pidana denda paling sedikit Rp200.000.000,00 pegawai negeri atau penyelenggara negara yang dengan maksud menguntungkan diri sendiri atau orang lain secara melawan hukum, atau dengan menyalahgunakan kekuasaannya memaksa seseorang memberikan sesuatu, membayar, atau menerima pembayaran dengan potongan.
 Pasal 12B Ayat (1)
@@ -159,16 +177,22 @@ TEXT,
                 'number' => 'UU No. 17 Tahun 2023',
                 'year' => 2023,
                 'category' => 'Pelayanan Kesehatan',
-                'summary' => 'Mengatur kewajiban Rumah Sakit dan Puskesmas memberikan pertolongan pertama pada pasien gawat darurat serta larangan menolak pasien dan larangan meminta uang muka.',
+                'summary' => 'Mengatur kewajiban Rumah Sakit dan Puskesmas memberikan pertolongan pertama pada pasien gawat darurat, larangan menolak pasien dan meminta uang muka, tanggung jawab hukum rumah sakit atas kelalaian/kesalahan pemberian obat (malapraktik medis), serta ancaman pidana.',
                 'body' => <<<'TEXT'
 Pasal 174 Ayat (1)
 Dalam keadaan Gawat Darurat, Fasilitas Pelayanan Kesehatan baik pemerintah maupun swasta wajib memberikan Pelayanan Kesehatan bagi penyelamatan nyawa Pasien dan pencegahan kedisabilitasan terlebih dahulu.
 Pasal 174 Ayat (2)
 Dalam keadaan Gawat Darurat sebagaimana dimaksud pada ayat (1), Fasilitas Pelayanan Kesehatan dilarang menolak Pasien dan/atau meminta uang muka (deposit) maupun jaminan pembayaran terlebih dahulu sebelum tindakan penyelamatan diberikan.
+Pasal 193
+Rumah Sakit bertanggung jawab secara hukum terhadap semua kerugian yang ditimbulkan atas kelalaian yang dilakukan oleh Sumber Daya Manusia Kesehatan (termasuk dokter, perawat, dan apoteker dalam pelayanan rawat jalan maupun rawat inap) di Rumah Sakit.
 Pasal 276 huruf a
 Pasien mempunyai hak memperoleh Pelayanan Kesehatan yang manusiawi, adil, jujur, dan tanpa diskriminasi sesuai dengan standar profesi dan standar prosedur operasional.
+Pasal 305 Ayat (1)
+Pasien atau keluarganya yang kepentingannya dirugikan atas tindakan Tenaga Medis atau Tenaga Kesehatan dalam memberikan Pelayanan Kesehatan (seperti kesalahan pemberian obat, reaksi alergi obat akibat kelalaian pemeriksaan, atau dugaan malapraktik medis) dapat mengadukan secara tertulis kepada Majelis Disiplin Profesi serta menuntut ganti rugi sesuai ketentuan hukum.
 Pasal 438 Ayat (1)
 Setiap pimpinan Fasilitas Pelayanan Kesehatan dan/atau Tenaga Medis atau Tenaga Kesehatan yang dengan sengaja tidak memberikan pertolongan pertama terhadap Pasien yang dalam keadaan Gawat Darurat sebagaimana dimaksud dalam Pasal 174 dipidana dengan pidana penjara paling lama 2 (dua) tahun atau pidana denda paling banyak Rp200.000.000,00.
+Pasal 440 Ayat (1)
+Setiap Tenaga Medis atau Tenaga Kesehatan yang melakukan kealpaan atau kelalaian medis dalam pelayanan kesehatan yang mengakibatkan Pasien luka berat dipidana dengan pidana penjara paling lama 3 (tiga) tahun atau pidana denda paling banyak Rp250.000.000,00.
 TEXT,
             ],
             [
@@ -178,10 +202,14 @@ TEXT,
                 'number' => 'Perpres No. 82 Tahun 2018',
                 'year' => 2018,
                 'category' => 'Pelayanan Kesehatan',
-                'summary' => 'Mengatur hak peserta Jaminan Kesehatan Nasional (JKN/BPJS), Penerima Bantuan Iuran (PBI) bagi fakir miskin, pelayanan gawat darurat tanpa surat rujukan, dan larangan pungutan biaya tambahan.',
+                'summary' => 'Mengatur hak peserta Jaminan Kesehatan Nasional (JKN/BPJS), Penerima Bantuan Iuran (PBI) bagi fakir miskin, penyelesaian tunggakan iuran peserta BPJS Mandiri (PBPU), pelayanan gawat darurat tanpa surat rujukan, dan larangan pungutan biaya tambahan.',
                 'body' => <<<'TEXT'
 Pasal 8 Ayat (1)
 Peserta Penerima Bantuan Iuran (PBI) Jaminan Kesehatan meliputi orang yang tergolong fakir miskin dan orang tidak mampu yang iurannya dibayarkan oleh Pemerintah Pusat atau Pemerintah Daerah.
+Pasal 42 Ayat (1)
+Dalam hal Peserta Pekerja Bukan Penerima Upah (PBPU / BPJS Kesehatan Mandiri) dan Peserta Bukan Pekerja tidak membayar atau menunggak iuran sampai dengan akhir bulan berjalan, maka penjaminan Peserta diberhentikan sementara sejak tanggal 1 bulan berikutnya sehingga kartu tidak dapat digunakan sementara pada fasilitas kesehatan.
+Pasal 42 Ayat (3)
+Pengakhiran pemberhentian sementara penjaminan peserta BPJS Mandiri yang menunggak iuran dilakukan setelah Peserta membayar iuran bulan tertunggak paling banyak 24 (dua puluh empat) bulan dan iuran pada bulan berjalan (atau melalui program cicilan Rencana Pembayaran Bertahap / REHAB BPJS Kesehatan), sehingga kartu kembali aktif untuk berobat di Puskesmas/FKTP.
 Pasal 47 Ayat (1)
 Manfaat pelayanan kesehatan bagi peserta JKN bersifat pelayanan perseorangan berupa pelayanan kesehatan yang mencakup pelayanan promotif, preventif, kuratif, dan rehabilitatif termasuk pelayanan obat dan bahan medis habis pakai.
 Pasal 62 Ayat (1)
@@ -197,16 +225,20 @@ TEXT,
                 'number' => 'UU No. 22 Tahun 2009',
                 'year' => 2009,
                 'category' => 'Infrastruktur',
-                'summary' => 'Mengatur kewajiban penyelenggara jalan untuk segera memperbaiki jalan yang rusak, memasang tanda peringatan, dan sanksi apabila kelalaian menyebabkan kecelakaan.',
+                'summary' => 'Mengatur kewajiban penyelenggara jalan untuk segera memperbaiki jalan yang rusak, memasang tanda peringatan, sanksi kelalaian jalan rusak, serta kewajiban dan ancaman pidana bagi pengemudi pelaku kecelakaan tabrak lari.',
                 'body' => <<<'TEXT'
 Pasal 24 Ayat (1)
 Penyelenggara Jalan wajib segera dan patut untuk memperbaiki Jalan yang rusak yang dapat mengakibatkan Kecelakaan Lalu Lintas.
 Pasal 24 Ayat (2)
 Dalam hal belum dapat dilakukan perbaikan Jalan yang rusak sebagaimana dimaksud pada ayat (1), penyelenggara Jalan wajib memberi tanda atau rambu pada Jalan yang rusak untuk mencegah terjadinya Kecelakaan Lalu Lintas.
+Pasal 231 Ayat (1)
+Pengemudi Kendaraan Bermotor yang terlibat Kecelakaan Lalu Lintas wajib menghentikan Kendaraan yang dikemudikannya, memberikan pertolongan kepada korban, melaporkan kecelakaan kepada Kepolisian Negara Republik Indonesia terdekat, dan memberikan keterangan yang terkait dengan kejadian kecelakaan.
 Pasal 238 Ayat (1)
 Pemerintah menyediakan dan/atau memperbaiki pengaturan, sarana, dan Prasarana Lalu Lintas yang menjadi penyebab kecelakaan, termasuk penerangan jalan umum dan rambu keselamatan.
 Pasal 273 Ayat (1)
 Setiap penyelenggara Jalan yang tidak dengan segera dan patut memperbaiki Jalan yang rusak yang mengakibatkan Kecelakaan Lalu Lintas sebagaimana dimaksud dalam Pasal 24 ayat (1) sehingga menimbulkan korban luka ringan dan/atau kerusakan Kendaraan dan/atau barang dipidana dengan penjara paling lama 6 (enam) bulan atau denda paling banyak Rp12.000.000,00.
+Pasal 312
+Setiap orang yang mengemudikan Kendaraan Bermotor yang terlibat Kecelakaan Lalu Lintas dan dengan sengaja tidak menghentikan kendaraannya, tidak memberikan pertolongan, atau tidak melaporkan Kecelakaan Lalu Lintas kepada Kepolisian Negara Republik Indonesia terdekat (pelaku tabrak lari) sebagaimana dimaksud dalam Pasal 231 ayat (1) huruf a, huruf b, dan huruf c tanpa alasan yang patut dipidana dengan pidana penjara paling lama 3 (tiga) tahun atau denda paling banyak Rp75.000.000,00.
 TEXT,
             ],
             [
@@ -271,10 +303,12 @@ TEXT,
                 'number' => 'PP No. 35 Tahun 2021',
                 'year' => 2021,
                 'category' => 'Ketenagakerjaan',
-                'summary' => 'Mengatur prosedur Pemutusan Hubungan Kerja (PHK), kewajiban perundingan bipartit, uang kompensasi PKWT, serta hak uang pesangon, uang penghargaan masa kerja, dan uang penggantian hak.',
+                'summary' => 'Mengatur prosedur Pemutusan Hubungan Kerja (PHK), kewajiban pembayaran upah kerja lembur, perundingan bipartit, uang kompensasi PKWT, serta hak uang pesangon, uang penghargaan masa kerja, dan uang penggantian hak.',
                 'body' => <<<'TEXT'
 Pasal 15 Ayat (1)
 Pengusaha wajib memberikan uang kompensasi kepada Pekerja/Buruh yang hubungan kerjanya berdasarkan Perjanjian Kerja Waktu Tertentu (PKWT) pada saat berakhirnya PKWT apabila Pekerja telah mempunyai masa kerja paling sedikit 1 (satu) bulan secara terus menerus.
+Pasal 31 Ayat (1)
+Pengusaha yang mempekerjakan Pekerja/Buruh melebihi waktu kerja normal (kerja lembur) wajib membayar Upah Kerja Lembur sesuai dengan perhitungan jam kerja lembur yang dilaksanakan oleh Pekerja/Buruh.
 Pasal 37 Ayat (1)
 Pengusaha, Pekerja/Buruh, Serikat Pekerja, dan Pemerintah harus mengupayakan agar tidak terjadi Pemutusan Hubungan Kerja (PHK). Apabila PHK tidak dapat dihindari, maksud dan alasan PHK diberitahukan secara tertulis oleh Pengusaha paling lambat 14 (empat belas) hari kerja sebelum PHK.
 Pasal 39 Ayat (1)
@@ -290,8 +324,10 @@ TEXT,
                 'number' => 'PP No. 36 Tahun 2021',
                 'year' => 2021,
                 'category' => 'Ketenagakerjaan',
-                'summary' => 'Mengatur perlindungan upah pekerja, larangan membayar upah di bawah Upah Minimum (UMP/UMK), batas waktu pembayaran upah, denda keterlambatan pembayaran gaji, dan batas pemotongan upah.',
+                'summary' => 'Mengatur perlindungan upah pekerja, kewajiban Tunjangan Hari Raya (THR) Keagamaan, larangan membayar upah di bawah Upah Minimum (UMP/UMK) beserta sanksinya, batas waktu pembayaran upah, denda keterlambatan pembayaran gaji/THR, dan batas pemotongan upah.',
                 'body' => <<<'TEXT'
+Pasal 9 Ayat (1)
+Tunjangan Hari Raya (THR) Keagamaan wajib diberikan oleh Pengusaha kepada Pekerja/Buruh yang telah mempunyai masa kerja 1 (satu) bulan secara terus menerus atau lebih, dan wajib dibayarkan secara penuh paling lambat 7 (tujuh) hari sebelum hari raya keagamaan (Lebaran/hari raya).
 Pasal 23 Ayat (3)
 Pengusaha dilarang membayar Upah lebih rendah dari Upah Minimum yang telah ditetapkan oleh Pemerintah Daerah (UMP atau UMK).
 Pasal 55 Ayat (1)
@@ -300,6 +336,10 @@ Pasal 61 Ayat (1)
 Pengusaha yang karena kesengajaan atau kelalaiannya mengakibatkan keterlambatan pembayaran Upah, dikenakan denda sesuai dengan persentase tertentu dari Upah Pekerja/Buruh yang wajib dibayarkan kepada Pekerja/Buruh.
 Pasal 65 Ayat (1)
 Jumlah keseluruhan pemotongan Upah oleh Pengusaha paling banyak 50% (lima puluh persen) dari setiap pembayaran Upah yang seharusnya diterima Pekerja/Buruh.
+Pasal 78 Ayat (1)
+Pengusaha yang terlambat atau tidak membayar Tunjangan Hari Raya (THR) Keagamaan sebagaimana dimaksud dalam Pasal 9 ayat (1) dikenakan denda sesuai dengan ketentuan sebesar 5% (lima persen) dari total THR yang harus dibayar tanpa menghilangkan kewajiban Pengusaha untuk tetap membayar THR kepada Pekerja/Buruh.
+Pasal 79 Ayat (1)
+Pengusaha yang melanggar ketentuan pembayaran Upah di bawah Upah Minimum (UMP/UMK) sebagaimana dimaksud dalam Pasal 23 ayat (3) jo. Pasal 88E ayat (2) dan Pasal 185 ayat (1) Undang-Undang Ketenagakerjaan dipidana dengan pidana penjara paling singkat 1 (satu) tahun dan paling lama 4 (empat) tahun dan/atau pidana denda paling sedikit Rp100.000.000,00 dan paling banyak Rp400.000.000,00.
 TEXT,
             ],
             [
@@ -309,12 +349,14 @@ TEXT,
                 'number' => 'Perda No. 4 Tahun 2022',
                 'year' => 2022,
                 'category' => 'Ketenagakerjaan',
-                'summary' => 'Mengatur larangan perusahaan menahan dokumen asli pekerja seperti ijazah, KTP, atau akta kelahiran sebagai jaminan kerja serta mekanisme pengawasan ketenagakerjaan.',
+                'summary' => 'Mengatur larangan perusahaan menahan dokumen asli pekerja seperti ijazah, KTP, atau akta kelahiran sebagai jaminan kerja, perlindungan pekerja dari pelecehan seksual di tempat kerja/kantor, serta mekanisme pengawasan ketenagakerjaan.',
                 'body' => <<<'TEXT'
 Pasal 19 Ayat (1)
 Setiap Pengusaha atau pemberi kerja dilarang menahan atau menyimpan dokumen asli milik Pekerja/Buruh berupa ijazah pendidikan, Kartu Tanda Penduduk, Kartu Keluarga, paspor, atau sertifikat kompetensi sebagai syarat kerja maupun jaminan ikatan dinas.
 Pasal 19 Ayat (2)
 Dalam hal hubungan kerja berakhir karena alasan apa pun, Pengusaha wajib segera mengembalikan seluruh dokumen milik Pekerja/Buruh tanpa memungut biaya tebusan atau penalti yang bertentangan dengan hukum.
+Pasal 28 Ayat (1)
+Setiap Pekerja/Buruh berhak memperoleh perlindungan atas keselamatan, kesehatan, kesusilaan, dan martabat di tempat kerja. Pengusaha wajib mencegah dan menindak segala bentuk pelecehan seksual, kekerasan, atau intimidasi oleh atasan maupun rekan kerja di kantor/tempat bekerja serta memfasilitasi pelaporan korban ke UPTD PPA dan Kepolisian.
 Pasal 42 Ayat (1)
 Pekerja/Buruh yang mengalami penahanan dokumen asli atau pelanggaran hak normatif ketenagakerjaan dapat mengajukan pengaduan kepada Pengawas Ketenagakerjaan dan mediator Dinas Tenaga Kerja untuk dilakukan pemeriksaan dan pemanggilan pemberi kerja.
 TEXT,
@@ -326,12 +368,16 @@ TEXT,
                 'number' => 'PP No. 24 Tahun 1997',
                 'year' => 1997,
                 'category' => 'Pertanahan',
-                'summary' => 'Mengatur penetapan batas bidang tanah secara kontradiktur delimitasi (persetujuan tetangga berbatasan), kekuatan pembuktian sertifikat hak atas tanah, dan penerbitan sertifikat pengganti karena hilang atau rusak.',
+                'summary' => 'Mengatur penetapan batas bidang tanah secara kontradiktur delimitasi, kekuatan pembuktian sertifikat hak atas tanah, pendaftaran peralihan hak jual beli tanah/kavling melalui Akta PPAT, dan penerbitan sertifikat pengganti karena hilang atau rusak.',
                 'body' => <<<'TEXT'
 Pasal 18 Ayat (1)
 Penetapan batas bidang tanah yang sudah dipunyai dengan suatu hak dilakukan oleh Panitia Ajudikasi atau Kepala Kantor Pertanahan berdasarkan penunjukan batas oleh pemegang hak atas tanah yang bersangkutan dan sedapat mungkin disetujui oleh para pemilik tanah yang berbatasan.
 Pasal 32 Ayat (1)
 Sertipikat merupakan surat tanda bukti hak yang berlaku sebagai alat pembuktian yang kuat mengenai data fisik dan data yuridis yang termuat di dalamnya, sepanjang data fisik dan data yuridis tersebut sesuai dengan data yang ada dalam surat ukur dan buku tanah hak yang bersangkutan.
+Pasal 37 Ayat (1)
+Peralihan hak atas tanah (termasuk pembelian tanah kavling atau rumah dari pengembang/developer yang telah lunas) melalui jual beli hanya dapat didaftarkan untuk penerbitan/balik nama Sertipikat Hak Milik (SHM) jika dibuktikan dengan Akta Jual Beli (AJB) yang dibuat oleh PPAT yang berwenang.
+Pasal 40 Ayat (1)
+Selambat-lambatnya dalam waktu 7 (tujuh) hari kerja sejak tanggal ditandatanganinya akta jual beli, PPAT wajib menyampaikan akta yang dibuatnya berikut dokumen-dokumen yang bersangkutan kepada Kantor Pertanahan (BPN) untuk didaftarkan penerbitan sertipikat hak atas tanah bagi pembeli.
 Pasal 57 Ayat (1)
 Atas permohonan pemegang hak diterbitkan sertipikat baru sebagai pengganti sertipikat yang rusak atau hilang setelah pemohon menyerahkan surat keterangan kehilangan dari kepolisian dan mengucapkan sumpah di hadapan Kepala Kantor Pertanahan.
 TEXT,
@@ -396,10 +442,14 @@ TEXT,
                 'number' => 'UU No. 23 Tahun 2004',
                 'year' => 2004,
                 'category' => 'Perlindungan Perempuan & Anak',
-                'summary' => 'Mengatur larangan kekerasan fisik, psikis, seksual, dan penelantaran rumah tangga, hak korban atas perlindungan sementara kepolisian dalam 1x24 jam, serta layanan pendampingan.',
+                'summary' => 'Mengatur lingkup rumah tangga (termasuk asisten rumah tangga yang menetap), larangan kekerasan fisik, psikis, seksual, dan penelantaran rumah tangga, hak korban atas perlindungan sementara kepolisian dalam 1x24 jam, serta layanan pendampingan.',
                 'body' => <<<'TEXT'
+Pasal 2 Ayat (1)
+Lingkup rumah tangga dalam Undang-Undang ini meliputi: a. suami, isteri, dan anak; b. orang-orang yang mempunyai hubungan keluarga karena hubungan darah, perkawinan, persusuan, pengasuhan, dan perwalian yang menetap dalam rumah tangga; dan/atau c. orang yang bekerja membantu rumah tangga (asisten rumah tangga / ART) dan menetap dalam rumah tangga tersebut selama berada dalam rumah tangga yang bersangkutan.
 Pasal 5
 Setiap orang dilarang melakukan kekerasan dalam rumah tangga terhadap orang dalam lingkup rumah tangganya, dengan cara kekerasan fisik, kekerasan psikis, kekerasan seksual, atau penelantaran rumah tangga.
+Pasal 9 Ayat (1)
+Setiap orang dilarang menelantarkan orang dalam lingkup rumah tangganya (termasuk menahan hak kehidupan/upah atau melarang keluar rumah secara melawan hukum terhadap anggota rumah tangga maupun asisten rumah tangga yang menetap), padahal menurut hukum yang berlaku baginya atau karena persetujuan atau perjanjian ia wajib memberikan kehidupan, perawatan, atau pemeliharaan kepada orang tersebut.
 Pasal 10
 Korban berhak mendapatkan perlindungan dari pihak keluarga, kepolisian, kejaksaan, pengadilan, advokat, lembaga sosial, atau pihak lainnya baik sementara maupun berdasarkan penetapan perintah perlindungan dari pengadilan, serta pelayanan kesehatan sesuai dengan kebutuhan medis.
 Pasal 16 Ayat (1)
@@ -434,16 +484,22 @@ TEXT,
                 'number' => 'UU No. 8 Tahun 1999',
                 'year' => 1999,
                 'category' => 'Perlindungan Konsumen & Digital',
-                'summary' => 'Mengatur hak konsumen atas barang/jasa yang aman dan sesuai deskripsi, kewajiban pelaku usaha memberikan ganti rugi atau penggantian barang cacat dalam 7 hari, dan penyelesaian sengketa di BPSK.',
+                'summary' => 'Mengatur hak konsumen atas barang/jasa yang aman dan sesuai deskripsi, larangan pelaku usaha tidak menepati pesanan online/perjanjian, kewajiban ganti rugi barang cacat dalam 7 hari, penyelesaian sengketa di BPSK, serta ancaman sanksi pidana.',
                 'body' => <<<'TEXT'
 Pasal 4
 Hak konsumen adalah hak atas kenyamanan, keamanan, dan keselamatan dalam mengkonsumsi barang dan/atau jasa; hak untuk memilih barang dan/atau jasa; hak atas informasi yang benar, jelas, dan jujur mengenai kondisi dan jaminan barang dan/atau jasa; serta hak untuk mendapatkan kompensasi, ganti rugi dan/atau penggantian, apabila barang dan/atau jasa yang diterima tidak sesuai dengan perjanjian.
+Pasal 16
+Pelaku usaha dalam menawarkan barang dan/atau jasa melalui pesanan (termasuk transaksi belanja online di marketplace maupun perjanjian pembelian tanah kavling/rumah dari developer) dilarang untuk tidak menepati pesanan, tidak mengirim barang atau tidak menyerahkan hak/sertipikat setelah pembayaran ditransfer/dilunasi, dan/atau tidak menepati kesepakatan waktu penyelesaian sesuai dengan yang dijanjikan.
 Pasal 19 Ayat (1)
 Pelaku usaha bertanggung jawab memberikan ganti rugi atas kerusakan, pencemaran, dan/atau kerugian konsumen akibat mengkonsumsi barang dan/atau jasa yang dihasilkan atau diperdagangkan.
 Pasal 19 Ayat (3)
 Pemberian ganti rugi berupa pengembalian uang atau penggantian barang dan/atau jasa yang sejenis atau setara nilainya dilaksanakan dalam tenggang waktu 7 (tujuh) hari setelah tanggal transaksi.
 Pasal 45 Ayat (1)
 Setiap konsumen yang dirugikan dapat menggugat pelaku usaha melalui lembaga yang bertugas menyelesaikan sengketa antara konsumen dan pelaku usaha (Badan Penyelesaian Sengketa Konsumen / BPSK) atau melalui peradilan umum.
+Pasal 62 Ayat (1)
+Pelaku usaha yang memperdagangkan barang yang rusak, cacat, atau tidak memenuhi standar yang dipersyaratkan dan menolak bertanggung jawab memberikan ganti rugi atas kerugian konsumen sebagaimana dimaksud dalam Pasal 19 dan Pasal 8 dipidana dengan pidana penjara paling lama 5 (lima) tahun atau pidana denda paling banyak Rp2.000.000.000,00.
+Pasal 62 Ayat (2)
+Pelaku usaha yang melanggar ketentuan larangan tidak menepati pesanan atau janji penyerahan barang/prestasi sebagaimana dimaksud dalam Pasal 16 dipidana dengan pidana penjara paling lama 2 (dua) tahun atau pidana denda paling banyak Rp500.000.000,00.
 TEXT,
             ],
             [
@@ -470,7 +526,7 @@ TEXT,
                 'number' => 'UU No. 32 Tahun 2009',
                 'year' => 2009,
                 'category' => 'Infrastruktur',
-                'summary' => 'Mengatur hak warga atas lingkungan hidup yang baik dan sehat, larangan pembuangan limbah tanpa izin ke sungai/drainase, dan hak mengajukan pengaduan pencemaran lingkungan.',
+                'summary' => 'Mengatur hak warga atas lingkungan hidup yang baik dan sehat, larangan pembuangan limbah tanpa izin ke sungai/drainase, hak mengajukan pengaduan pencemaran lingkungan, serta ancaman pidana penjara dan denda bagi pelaku pencemaran atau pembuangan limbah.',
                 'body' => <<<'TEXT'
 Pasal 65 Ayat (1)
 Setiap orang berhak atas lingkungan hidup yang baik dan sehat sebagai bagian dari hak asasi manusia serta berhak mengajukan usul dan/atau keberatan terhadap rencana usaha dan/atau kegiatan yang diperkirakan dapat menimbulkan dampak terhadap lingkungan hidup.
@@ -480,6 +536,10 @@ Pasal 66
 Setiap orang yang memperjuangkan hak atas lingkungan hidup yang baik dan sehat tidak dapat dituntut secara pidana maupun digugat secara perdata.
 Pasal 69 Ayat (1)
 Setiap orang dilarang melakukan perbuatan yang mengakibatkan pencemaran dan/atau perusakan lingkungan hidup serta membuang limbah ke media lingkungan hidup tanpa izin.
+Pasal 98 Ayat (1)
+Setiap orang yang dengan sengaja melakukan perbuatan yang mengakibatkan dilampauinya baku mutu udara ambien, baku mutu air sungai, atau kriteria baku kerusakan lingkungan hidup (pencemaran lingkungan hidup sebagaimana dimaksud dalam Pasal 69) dipidana dengan pidana penjara paling singkat 3 (tiga) tahun dan paling lama 10 (sepuluh) tahun dan denda paling sedikit Rp3.000.000.000,00 dan paling banyak Rp10.000.000.000,00.
+Pasal 104
+Setiap orang yang melakukan dumping atau pembuangan limbah dan/atau bahan beracun berbahaya ke media lingkungan hidup seperti sungai tanpa izin sebagaimana dimaksud dalam Pasal 60 dan Pasal 69 ayat (1) dipidana dengan pidana penjara paling lama 3 (tiga) tahun dan denda paling banyak Rp3.000.000.000,00.
 TEXT,
             ],
             [
@@ -520,102 +580,10 @@ TEXT,
             ],
         ];
 
-        // Tambahkan 55 dokumen JDIH tematik (JDIH-026 s.d. JDIH-080) sehingga tepat 80 dokumen JDIH
-        $thematicTemplates = [
-            [
-                'category' => 'Administrasi Kependudukan',
-                'type' => 'Peraturan Menteri Dalam Negeri',
-                'prefix' => 'Permendagri No.',
-                'title_base' => 'Petunjuk Teknis Pelayanan Pendaftaran Penduduk dan Pencatatan Sipil',
-                'summary' => 'Mengatur tata cara teknis penerbitan KTP-el, Kartu Identitas Anak (KIA), Surat Keterangan Pindah, Akta Kelahiran, dan layanan jemput bola kependudukan.',
-                'pasal_1' => 'Dinas Kependudukan dan Pencatatan Sipil wajib menyelenggarakan pelayanan terpadu dan daring tanpa memungut biaya administrasi maupun denda keterlambatan pelaporan.',
-                'pasal_2' => 'Dalam hal blangko KTP-el mengalami keterbatasan ketersediaan, Disdukcapil wajib menerbitkan Identitas Kependudukan Digital (IKD) atau Biodata Penduduk yang memiliki kekuatan hukum setara.',
-            ],
-            [
-                'category' => 'Pelayanan Kesehatan',
-                'type' => 'Peraturan Menteri Kesehatan',
-                'prefix' => 'Permenkes No.',
-                'title_base' => 'Standar Pelayanan Kegawatdaruratan Medis dan Rujukan Pasien',
-                'summary' => 'Mengatur triase pasien IGD, kewajiban stabilisasi pasien darurat sebelum rujukan, layanan ambulans, dan hak informasi medis pasien.',
-                'pasal_1' => 'Setiap Instalasi Gawat Darurat (IGD) wajib melakukan pemeriksaan triase dalam waktu kurang dari 5 (lima) menit sejak pasien tiba dan segera memberikan tindakan penyelamatan nyawa.',
-                'pasal_2' => 'Rumah Sakit dilarang merujuk pasien gawat darurat ke fasilitas kesehatan lain sebelum kondisi klinis pasien distabilkan dan dipastikan ketersediaan tempat tidur di rumah sakit tujuan.',
-            ],
-            [
-                'category' => 'Infrastruktur',
-                'type' => 'Peraturan Daerah',
-                'prefix' => 'Perda No.',
-                'title_base' => 'Penyelenggaraan Prasarana Jalan Lingkungan, Drainase, dan Penerangan Umum',
-                'summary' => 'Mengatur tanggung jawab pemerintah daerah dalam pemeliharaan jalan lingkungan, saluran drainase pencegahan banjir, dan penanganan aduan kerusakan infrastruktur.',
-                'pasal_1' => 'Pemerintah Daerah melalui Dinas Pekerjaan Umum wajib melakukan pemeriksaan lapangan paling lambat 3 (tiga) hari kerja setelah menerima laporan masyarakat mengenai jalan rusak berlubang atau drainase tersumbat.',
-                'pasal_2' => 'Perbaikan darurat terhadap kerusakan jalan atau jembatan yang membahayakan keselamatan warga wajib segera dipasang rambu pengaman dan ditangani melalui anggaran pemeliharaan rutin.',
-            ],
-            [
-                'category' => 'Dugaan Pungutan Liar',
-                'type' => 'Peraturan Bupati',
-                'prefix' => 'Perbup No.',
-                'title_base' => 'Pedoman Pengawasan Internal, Pencegahan Pungutan Liar, dan Pengelolaan Pengaduan',
-                'summary' => 'Mengatur mekanisme pelaporan pungutan liar di unit pelayanan daerah, perlindungan kerahasiaan pelapor, dan pemeriksaan oleh Inspektorat Daerah.',
-                'pasal_1' => 'Setiap unit penyelenggara pelayanan publik wajib memasang maklumat pelayanan yang memuat rincian tarif resmi Rp0 (gratis) untuk layanan dasar serta kanal resmi pengaduan pungutan liar.',
-                'pasal_2' => 'Laporan masyarakat mengenai permintaan uang pelicin, biaya tambahan tanpa kuitansi resmi, atau percaloan wajib ditindaklanjuti oleh Inspektorat Daerah dalam waktu paling lama 5 (lima) hari kerja.',
-            ],
-            [
-                'category' => 'Bantuan Hukum',
-                'type' => 'Peraturan Daerah',
-                'prefix' => 'Perda No.',
-                'title_base' => 'Penyelenggaraan Bantuan Hukum bagi Masyarakat Miskin dan Kelompok Rentan',
-                'summary' => 'Mengatur fasilitasi anggaran daerah untuk pendampingan hukum gratis melalui Organisasi Bantuan Hukum (OBH) terakreditasi bagi warga tidak mampu.',
-                'pasal_1' => 'Pemerintah Daerah menyediakan pembiayaan Bantuan Hukum bagi warga miskin yang berhadapan dengan hukum baik sebagai korban, saksi, penggugat, tergugat, maupun tersangka.',
-                'pasal_2' => 'Warga cukup melampirkan Kartu Tanda Penduduk, Surat Keterangan Tidak Mampu (SKTM) atau kartu bantuan sosial, serta kronologi permasalahan untuk memperoleh pendampingan advokat OBH secara gratis.',
-            ],
-            [
-                'category' => 'Ketenagakerjaan',
-                'type' => 'Peraturan Menteri Ketenagakerjaan',
-                'prefix' => 'Permenaker No.',
-                'title_base' => 'Tata Cara Mediasi Perselisihan Hubungan Industrial dan Perlindungan Hak Pekerja',
-                'summary' => 'Mengatur prosedur pencatatan perselisihan hak, perselisihan PHK, pembayaran Tunjangan Hari Raya (THR), dan pemeriksaan oleh mediator hubungan industrial.',
-                'pasal_1' => 'Apabila perundingan bipartit tidak mencapai kesepakatan dalam waktu 30 (tiga puluh) hari kerja, salah satu atau kedua belah pihak mencatatkan perselisihan kepada instansi ketenagakerjaan setempat dengan melampirkan bukti perundingan.',
-                'pasal_2' => 'Mediator Hubungan Industrial wajib mengeluarkan anjuran tertulis paling lambat 10 (sepuluh) hari kerja sejak sidang mediasi pertama untuk menyelesaikan sengketa upah, pesangon, atau PHK.',
-            ],
-            [
-                'category' => 'Pertanahan',
-                'type' => 'Peraturan Pemerintah',
-                'prefix' => 'PP No.',
-                'title_base' => 'Hak Pengelolaan, Hak Atas Tanah, dan Mediasi Sengketa Batas Bidang Tanah',
-                'summary' => 'Mengatur pendaftaran tanah sistematis lengkap (PTSL), penyelesaian keberatan batas tanah secara musyawarah di tingkat desa/kelurahan, dan perlindungan pemegang hak.',
-                'pasal_1' => 'Dalam hal terdapat keberatan atau perselisihan mengenai tanda batas bidang tanah antara tetangga yang berbatasan, Kepala Desa/Lurah memfasilitasi musyawarah penetapan batas bersama para pihak dan saksi batas.',
-                'pasal_2' => 'Setiap perubahan atau pemindahan tanda batas tanah (patok) secara sepihak tanpa persetujuan pemilik berbatasan dan petugas ukur berwenang tidak sah secara hukum dan dapat dilaporkan untuk pemulihan batas.',
-            ],
-            [
-                'category' => 'Perlindungan Konsumen & Digital',
-                'type' => 'Undang-Undang',
-                'prefix' => 'UU No.',
-                'title_base' => 'Informasi dan Transaksi Elektronik serta Perlindungan dari Penipuan Daring',
-                'summary' => 'Mengatur keabsahan bukti elektronik, larangan penyebaran berita bohong yang merugikan konsumen dalam transaksi elektronik, serta pelaporan ancaman dan pemerasan digital.',
-                'pasal_1' => 'Informasi Elektronik dan/atau Dokumen Elektronik seperti tangkapan layar percakapan, bukti transfer, dan rekaman elektronik merupakan alat bukti hukum yang sah dalam laporan pengaduan maupun peradilan.',
-                'pasal_2' => 'Setiap orang dilarang dengan sengaja dan tanpa hak menyebarkan berita bohong yang mengakibatkan kerugian konsumen dalam Transaksi Elektronik atau mengirimkan informasi yang berisi ancaman kekerasan dan pemerasan.',
-            ],
-            [
-                'category' => 'Perlindungan Perempuan & Anak',
-                'type' => 'Undang-Undang',
-                'prefix' => 'UU No.',
-                'title_base' => 'Perlindungan Anak dan Layanan Terpadu Korban Kekerasan',
-                'summary' => 'Mengatur perlindungan khusus bagi anak dan perempuan korban kekerasan, hak visum dan pemulihan psikologis gratis, serta pendampingan oleh UPTD PPA.',
-                'pasal_1' => 'Pemerintah Daerah wajib menyelenggarakan layanan terpadu bagi perempuan dan anak korban kekerasan yang meliputi pengaduan, penjangkauan, pengelolaan kasus, penampungan sementara (rumah aman), mediasi, dan pendampingan hukum.',
-                'pasal_2' => 'Biaya pemeriksaan medis, visum et repertum, dan pemulihan psikologis bagi korban kekerasan dalam rumah tangga serta kekerasan terhadap anak yang melapor melalui UPTD PPA ditanggung oleh pemerintah.',
-            ],
-            [
-                'category' => 'Keterbukaan Informasi & Anggaran',
-                'type' => 'Peraturan Menteri Dalam Negeri',
-                'prefix' => 'Permendagri No.',
-                'title_base' => 'Pengelolaan Keuangan Desa dan Transparansi Penyaluran Bantuan Sosial',
-                'summary' => 'Mengatur kewajiban publikasi baliho/informasi APBDes, musyawarah desa penetapan penerima bantuan sosial, dan saluran pengaduan penyimpangan anggaran.',
-                'pasal_1' => 'Pemerintah Desa wajib mempublikasikan ringkasan Anggaran Pendapatan dan Belanja Desa (APBDes) serta laporan realisasi pelaksanaan kegiatan melalui media informasi yang mudah diakses oleh seluruh warga desa.',
-                'pasal_2' => 'Warga yang menemukan ketidaksesuaian data penerima bantuan sosial atau indikasi pemotongan dana bantuan berhak menyampaikan sanggahan dan pengaduan melalui musyawarah desa maupun portal pengaduan daerah.',
-            ],
-        ];
-
+        $manifestEntries = app(JdihManifestService::class)->loadAll();
         $documents = [];
         foreach ($coreDocuments as $doc) {
+            $manifest = $manifestEntries[$doc['id']] ?? null;
             $documents[] = [
                 'id' => $doc['id'],
                 'title' => $doc['title'],
@@ -626,43 +594,13 @@ TEXT,
                 'summary' => $doc['summary'],
                 'body' => $doc['body'],
                 'source_url' => '/rujukan/'.$doc['id'],
+                'source_page_url' => $manifest['url_halaman'] ?? null,
+                'status_berlaku' => $manifest['status'] ?? 'berlaku',
+                'diubah_oleh' => ($manifest['diubah_oleh'] ?? '') !== '' ? $manifest['diubah_oleh'] : null,
+                'dicabut_oleh' => ($manifest['dicabut_oleh'] ?? '') !== '' ? $manifest['dicabut_oleh'] : null,
                 'filename' => strtolower($doc['id']).'.pdf',
                 'extraction' => 'Berhasil',
-                'status' => 'Terindeks',
-                'updated' => $today,
-            ];
-        }
-
-        for ($i = 26; $i <= 80; $i++) {
-            $tpl = $thematicTemplates[($i - 26) % count($thematicTemplates)];
-            $id = sprintf('JDIH-%03d', $i);
-            $year = 2015 + ($i % 12);
-            $num = ($i * 2) - 35;
-            $articleBase = 10 + ($i % 25);
-
-            $body = sprintf(
-                "Pasal %d Ayat (1)\n%s\nPasal %d Ayat (2)\n%s\nPasal %d Ayat (1)\nSetiap warga masyarakat yang mengalami kendala pada layanan %s berhak menyampaikan laporan disertai kronologi kejadian melalui kanal layanan BHIMA untuk memperoleh verifikasi dan tindak lanjut resmi.",
-                $articleBase,
-                $tpl['pasal_1'],
-                $articleBase,
-                $tpl['pasal_2'],
-                $articleBase + 1,
-                strtolower($tpl['category'])
-            );
-
-            $documents[] = [
-                'id' => $id,
-                'title' => $tpl['title_base'].' Seri '.$num,
-                'type' => $tpl['type'],
-                'number' => sprintf('%s %d Tahun %d', $tpl['prefix'], $num, $year),
-                'year' => $year,
-                'category' => $tpl['category'],
-                'summary' => $tpl['summary'],
-                'body' => $body,
-                'source_url' => '/rujukan/'.$id,
-                'filename' => strtolower($id).'.pdf',
-                'extraction' => 'Berhasil',
-                'status' => 'Terindeks',
+                'status' => ($manifest['status'] ?? 'berlaku') === 'dicabut' ? 'Dicabut (Arsip)' : 'Terindeks',
                 'updated' => $today,
             ];
         }
@@ -818,6 +756,8 @@ Pasal 1 Ayat (1) Penerimaan Laporan Darurat Korban Kekerasan
 Korban, keluarga, atau tetangga yang mengetahui terjadinya KDRT atau kekerasan terhadap perempuan dan anak dapat segera melapor melalui UPTD Perlindungan Perempuan dan Anak (PPA), Kepolisian (Unit PPA), atau Portal Pengaduan BHIMA dengan prioritas penanganan Tinggi.
 Pasal 2 Ayat (1) Penjangkauan, Visum Gratis, dan Rumah Aman
 Petugas UPTD PPA dalam waktu 1 x 24 jam memberikan pendampingan darurat meliputi rujukan pemeriksaan medis/visum gratis di RSUD, penempatan di Rumah Aman (Shelter) bila keselamatan korban terancam, konseling psikologis, dan pendampingan pelaporan kepolisian.
+Pasal 3 Ayat (1) Penanganan Pelecehan Seksual di Tempat Kerja dan Perundungan (Bullying) Anak di Sekolah
+Korban pelecehan atau kekerasan seksual di tempat kerja/kantor maupun orang tua yang anaknya mengalami kekerasan fisik, psikis, atau perundungan (bullying) oleh teman di lingkungan sekolah (SMP/SMA/SD) difasilitasi oleh UPTD PPA dan Unit PPA Kepolisian untuk mendapatkan pemulihan trauma psikologis anak, visum gratis, mediasi dengan pihak sekolah/instansi, serta pendampingan proses hukum perlindungan perempuan dan anak.
 TEXT,
             ],
             [
@@ -912,6 +852,8 @@ TEXT,
                 'body' => <<<'TEXT'
 Pasal 1 Ayat (1) Persyaratan Surat Keterangan Waris
 Para ahli waris mengajukan permohonan dengan melampirkan Akta Kematian pewaris, Kartu Keluarga dan KTP seluruh ahli waris, buku nikah pewaris, serta surat pernyataan ahli waris yang ditandatangani bersama di hadapan dua orang saksi untuk diregistrasi oleh Lurah/Kepala Desa dan Camat dalam waktu paling lama 3 (tiga) hari kerja tanpa pungutan liar.
+Pasal 2 Ayat (1) Mediasi Kekeluargaan dan Penyelesaian Sengketa Pembagian Warisan
+Apabila terjadi perselisihan pembagian harta warisan atau penguasaan sepihak rumah/harta warisan orang tua oleh salah satu ahli waris (seperti kakak atau saudara kandung yang menolak membagi warisan kepada adik-adiknya), Pemerintah Desa/Kelurahan memfasilitasi musyawarah kekeluargaan untuk mencapai kesepakatan pembagian waris secara damai. Apabila musyawarah tidak mencapai kesepakatan, ahli waris yang dirugikan dapat mengajukan gugatan pembagian waris ke Pengadilan Agama (bagi Muslim) atau Pengadilan Negeri serta memohon pendampingan Posbakum.
 TEXT,
             ],
             [
