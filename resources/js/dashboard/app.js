@@ -1,6 +1,7 @@
 import { statuses, categories } from './data';
 import { createDemoService, createApiService } from './service';
-import { escape as e, currency, date, icons, badge, empty, stat, bars, trend } from './ui';
+import '../../css/budget-comparison.css';
+import { escape as e, currency, date, icons, badge, empty, stat, bars, budgetComparison, trend } from './ui';
 
 const root = document.getElementById('dashboard');
 if (root) initialize();
@@ -61,7 +62,7 @@ async function initialize() {
   const yearOptions=['<option value="">Semua tahun</option>',...years.map(year=>'<option value="'+e(year)+'" '+(filters.year===year?'selected':'')+'>'+e(year)+'</option>')].join('');
   const tableRows=rows.map(record=>'<tr><td><strong>'+e(record.title)+'</strong></td><td>'+e(record.year)+'</td><td>'+currency(record.allocation)+'</td><td>'+currency(record.realized)+'</td><td>'+(record.allocation?Math.round(record.realized/record.allocation*100):0)+'%</td><td class="actions"><button class="text-button" data-edit="budgets" data-id="'+e(record.id)+'">Edit</button><button class="text-button danger-text" data-delete="budgets" data-id="'+e(record.id)+'">Hapus</button></td></tr>').join('');
   return '<div class="stats four">'+stat('Total pagu',currency(allocation),'◈','Untuk data pada filter')+stat('Total realisasi',currency(realized),'✓','Untuk data pada filter')+stat('Sisa anggaran',currency(remaining),'◈','Pagu dikurangi realisasi')+stat('Penyerapan',absorption+'%','▦','Realisasi dari pagu')+'</div>'+
-   bars('Realisasi per bidang',all.map(record=>({label:record.title+' ('+record.year+')',value:Number(record.realized)})),{money:true})+
+   budgetComparison('Pagu dan realisasi per bidang',all.map(record=>({label:record.title+' ('+record.year+')',allocation:Number(record.allocation),realized:Number(record.realized)})))+
    '<section class="panel table-panel"><div class="panel-heading"><div><h2>Rincian anggaran</h2><p class="muted">'+all.length+' data pada filter</p></div><button class="primary" data-add="budgets">＋ Tambah data</button></div>'+
    '<div class="table-toolbar"><label>Tahun anggaran<select data-filter="year" aria-label="Filter tahun anggaran">'+yearOptions+'</select></label><label class="search-field"><span>Cari anggaran</span><input type="search" data-filter="search" placeholder="Cari bidang kegiatan…" aria-label="Cari anggaran" value="'+e(filters.search)+'"></label></div>'+
    (rows.length?'<div class="table-scroll"><table><thead><tr><th>Bidang kegiatan</th><th>Tahun</th><th>Pagu</th><th>Realisasi</th><th>Penyerapan</th><th>Aksi</th></tr></thead><tbody>'+tableRows+'</tbody></table></div>':empty('Belum ada data yang cocok','Coba ubah tahun anggaran atau pencarian Anda.'))+
