@@ -1,6 +1,6 @@
 // Fixtures only. These records are never presented as operational data.
 export const statuses = ['Baru', 'Menunggu Verifikasi', 'Menunggu Kelengkapan', 'Dalam Proses', 'Menunggu Disposisi', 'Selesai', 'Ditolak'];
-export const categories = ['Administrasi Kependudukan', 'Pelayanan Kesehatan', 'Infrastruktur', 'Dugaan Pungutan Liar'];
+export const categories = ['Administrasi Kependudukan', 'Pelayanan Kesehatan', 'Infrastruktur', 'Dugaan Pungutan Liar', 'Pungutan Liar', 'Pelayanan Lambat', 'Prosedur Tidak Jelas', 'Ketenagakerjaan', 'Pertanahan', 'Maladministrasi Lainnya'];
 export const fixtures = {
     complaints: Array.from({length: 32}, (_, i) => ({
         id: `BHM-2026-${String(i + 1).padStart(4, '0')}`, date: `2026-10-${String(28 - i % 27).padStart(2, '0')}`,

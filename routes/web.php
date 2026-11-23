@@ -1,13 +1,18 @@
 <?php
 
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
 use App\Http\Controllers\PublicComplaintController;
+use App\Http\Controllers\ServiceContentController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [ConsultationController::class, 'index'])->name('consultation.home');
+Route::get('/', [ConsultationController::class, 'home'])->name('consultation.home');
+Route::get('/beranda', [ConsultationController::class, 'home'])->name('consultation.beranda');
+Route::get('/api/beranda/cari', [ConsultationController::class, 'searchPortal'])->middleware('throttle:30,1')->name('consultation.search');
+Route::get('/api/beranda/lacak', [ConsultationController::class, 'trackTicketQuick'])->middleware('throttle:30,1')->name('consultation.track.quick');
 Route::get('/konsultasi', [ConsultationController::class, 'index'])->name('consultation.index');
 Route::get('/api/konsultasi/riwayat', [ConsultationController::class, 'history'])->name('consultation.history');
 Route::post('/api/konsultasi/pesan', [ConsultationController::class, 'send'])->name('consultation.send');
@@ -17,10 +22,31 @@ Route::get('/rujukan/{key}', [ConsultationController::class, 'reference'])
     ->where('key', '[A-Za-z0-9_-]+')
     ->name('consultation.reference');
 
-Route::get('/pengaduan', [PublicComplaintController::class, 'create'])->name('complaint.index');
-Route::get('/pengaduan/buat', [PublicComplaintController::class, 'create'])->name('complaint.create');
-Route::post('/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.store');
-Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->name('complaint.api.store');
+Route::get('/pengaduan', [ComplaintController::class, 'create'])->name('complaint.index');
+Route::get('/pengaduan/buat', [ComplaintController::class, 'create'])->name('complaint.create');
+Route::post('/pengaduan', [ComplaintController::class, 'store'])->middleware('throttle:15,1')->name('complaint.store');
+Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->middleware('throttle:15,1')->name('complaint.api.store');
+
+// Fitur 5 (KF-14): lacak tiket
+Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');
+Route::post('/lacak', [ComplaintController::class, 'track'])->middleware('throttle:20,1')->name('complaint.track.submit');
+Route::post('/lacak/{tiket}/lengkapi', [ComplaintController::class, 'submitCompleteness'])
+    ->middleware('throttle:10,1')
+    ->where('tiket', 'BHM-[0-9]{4}-[A-Z0-9]{4,}')
+    ->name('complaint.completeness');
+
+// Service catalog uses the existing contents collection.
+Route::get('/layanan', [ServiceContentController::class, 'index'])->name('services.index');
+Route::get('/layanan/{key}/dokumen', [ServiceContentController::class, 'download'])->name('services.download');
+Route::get('/layanan/{key}', [ServiceContentController::class, 'show'])->name('services.show');
+Route::middleware(DashboardAccess::class)->group(function () {
+    Route::get('/admin/konten', [ServiceContentController::class, 'manage'])->name('services.manage');
+    Route::get('/admin/konten/tambah', [ServiceContentController::class, 'create'])->name('services.create');
+    Route::post('/admin/konten', [ServiceContentController::class, 'store'])->name('services.store');
+    Route::get('/admin/konten/{key}/edit', [ServiceContentController::class, 'edit'])->name('services.edit');
+    Route::put('/admin/konten/{key}', [ServiceContentController::class, 'store'])->name('services.update');
+    Route::delete('/admin/konten/{key}', [ServiceContentController::class, 'destroy'])->name('services.destroy');
+});
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {
@@ -42,6 +68,7 @@ Route::middleware(DashboardAccess::class)->group(function () {
     Route::post('/internal/data/{collection}', [DashboardDataController::class, 'save']);
     Route::delete('/internal/data/{collection}/{key}', [DashboardDataController::class, 'destroy']);
     Route::get('/internal/files/{key}', [DashboardDataController::class, 'download']);
+    Route::post('/internal/documents/{key}/process', [DashboardDataController::class, 'processDocument']);
     Route::get('/{role}/{page?}', function (string $role, ?string $page = null) {
         abort_unless(in_array($page ?? 'dashboard', ['dashboard', 'pengaduan', 'konten', 'jdih', 'basis-ai', 'anggaran', 'analitik', 'pencarian', 'akun', 'peran', 'aktivitas', 'pengaturan'], true), 404);
 

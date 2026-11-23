@@ -1,8 +1,62 @@
 import { escape as e } from '../dashboard/ui';
+import { hideDiscreteElement, showDiscreteElement } from '../components/motion';
+
+initLiquidHeaderDrawer();
 
 const root = document.getElementById('consultation-app');
 if (root) {
     initConsultationApp(root);
+}
+
+const berandaRoot = document.getElementById('beranda-app');
+if (berandaRoot) {
+    initBerandaApp(berandaRoot);
+}
+
+function initLiquidHeaderDrawer() {
+    const mobileMenuBtn = document.getElementById('beranda-mobile-menu-btn');
+    const mobileMenuIcon = document.getElementById('beranda-mobile-menu-icon');
+    const mobileDrawer = document.getElementById('beranda-mobile-drawer');
+    if (!mobileMenuBtn || !mobileDrawer) return;
+
+    function isDrawerOpen() {
+        return !mobileDrawer.hidden && !mobileDrawer.hasAttribute('data-closing');
+    }
+
+    function setDrawerOpen(isOpen) {
+        if (isOpen) {
+            showDiscreteElement(mobileDrawer);
+        } else {
+            hideDiscreteElement(mobileDrawer);
+        }
+        mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (mobileMenuIcon) {
+            mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
+        }
+    }
+
+    mobileMenuBtn.addEventListener('click', () => {
+        setDrawerOpen(!isDrawerOpen());
+    });
+
+    mobileDrawer.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
+        link.addEventListener('click', () => setDrawerOpen(false));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!isDrawerOpen()) return;
+        const target = event.target;
+        if (!mobileDrawer.contains(target) && !mobileMenuBtn.contains(target)) {
+            setDrawerOpen(false);
+        }
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isDrawerOpen()) {
+            setDrawerOpen(false);
+            mobileMenuBtn.focus();
+        }
+    });
 }
 
 function initConsultationApp(container) {
@@ -24,45 +78,8 @@ function initConsultationApp(container) {
     const sessionIdLabel = container.querySelector('#session-id-label');
     const jdihSidebarList = container.querySelector('#jdih-sidebar-list');
     const defaultSidebarHtml = jdihSidebarList ? jdihSidebarList.innerHTML : '';
-    const mobileMenuBtn = container.querySelector('#mobile-menu-btn');
-    const mobileMenuIcon = container.querySelector('#mobile-menu-icon');
-    const mobileNavClose = container.querySelector('#mobile-nav-close');
-    const mobileNavBackdrop = container.querySelector('#mobile-nav-backdrop');
-    const consultSidebar = container.querySelector('#consult-sidebar');
 
     let busy = false;
-
-    function setMobileDrawerOpen(isOpen) {
-        if (!consultSidebar) return;
-        if (isOpen) {
-            consultSidebar.classList.remove('-translate-x-full');
-            consultSidebar.classList.add('translate-x-0');
-            if (mobileNavBackdrop) mobileNavBackdrop.hidden = false;
-            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'true');
-            if (mobileMenuIcon) mobileMenuIcon.textContent = 'close';
-        } else {
-            consultSidebar.classList.add('-translate-x-full');
-            consultSidebar.classList.remove('translate-x-0');
-            if (mobileNavBackdrop) mobileNavBackdrop.hidden = true;
-            if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
-            if (mobileMenuIcon) mobileMenuIcon.textContent = 'menu';
-        }
-    }
-
-    mobileMenuBtn?.addEventListener('click', () => {
-        const isOpen = consultSidebar && !consultSidebar.classList.contains('-translate-x-full');
-        setMobileDrawerOpen(!isOpen);
-    });
-    mobileNavClose?.addEventListener('click', () => setMobileDrawerOpen(false));
-    mobileNavBackdrop?.addEventListener('click', () => setMobileDrawerOpen(false));
-    container.querySelectorAll('[data-drawer-link]').forEach((link) => {
-        link.addEventListener('click', () => setMobileDrawerOpen(false));
-    });
-    window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            setMobileDrawerOpen(false);
-        }
-    });
 
     function updateSessionBadge(id) {
         if (sessionIdLabel && id) {
@@ -98,7 +115,7 @@ function initConsultationApp(container) {
     }
 
     function formatAssistantBody(rawText) {
-        const lines = String(rawText || '').split('\n');
+        const lines = String(rawText || '').replace(/\s+\u2014\s+/g, ' - ').split('\n');
         return lines
             .map((line) => {
                 const trimmed = line.trim();
@@ -140,51 +157,63 @@ function initConsultationApp(container) {
         jdihSidebarList.innerHTML = uniqueDocs
             .map((c) => {
                 const isSop = c.category === 'SOP';
-                const iconBoxClass = isSop
-                    ? 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]'
-                    : 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]';
-                const iconName = isSop ? 'description' : 'picture_as_pdf';
+                const accentBarClass = isSop ? 'bg-[#0F766E]' : 'bg-[#1E3A8A]';
+                const iconBoxClass = isSop ? 'bg-[#E6F5F3] text-[#0F766E]' : 'bg-[#E6F0FC] text-[#1E3A8A]';
+                const eyebrowClass = isSop ? 'text-[#0F766E]' : 'text-[#1E3A8A]';
+                const iconName = isSop ? 'account_tree' : 'menu_book';
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
+                const detailUrl = c.source_url || '#jdih-reference-panel';
+                const officialUrl = c.source_page_url || c.source_url;
+                const openLabel = c.source_page_url ? 'Sumber Resmi' : 'Buka';
+                const statusBadge =
+                    c.status_berlaku === 'diubah' && c.diubah_oleh
+                        ? `<span class="mt-1 inline-block rounded-full border border-[#F5D07A] bg-[#FEF3C7] px-2 py-0.5 text-[10px] font-bold text-[#92400E]">Diubah: ${e(c.diubah_oleh)}</span>`
+                        : '';
 
                 return `
-                    <div class="p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] hover:border-[#0F766E] transition-all flex flex-col justify-between gap-2.5">
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-lg ${iconBoxClass} flex items-center justify-center shrink-0 mt-0.5 border">
-                                <span class="material-symbols-outlined text-[20px]">${iconName}</span>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-xs text-[#0F766E] font-bold block uppercase tracking-wider">
-                                    ${e(c.document_number || c.category || 'JDIH')} (${e(c.document_year || '-')})
+                    <div class="group relative flex flex-col overflow-hidden rounded-[20px] border border-[#DCE4F0] bg-white shadow-[0_6px_18px_rgba(20,30,80,0.05)]">
+                        <span class="h-1 w-full ${accentBarClass}" aria-hidden="true"></span>
+                        <div class="flex flex-1 flex-col gap-3 p-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${iconBoxClass}">
+                                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">${iconName}</span>
                                 </span>
-                                <h3 class="text-sm text-text-dark font-semibold truncate" title="${e(c.document_name)}">
-                                    ${e(c.document_name)}
-                                </h3>
-                                <div class="flex items-center gap-1.5 mt-1 text-text-muted text-[11px] sm:text-xs flex-wrap">
-                                    <span class="px-2 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded font-bold">
-                                        ${e(c.article_label || 'Pasal Terkait')}
+                                <div class="min-w-0 flex-1">
+                                    <span class="block text-[11px] font-bold uppercase tracking-wider ${eyebrowClass}">
+                                        ${e(c.document_number || c.category || 'JDIH')} (${e(c.document_year || '-')})
                                     </span>
-                                    <span>•</span>
-                                    <span>Kemiripan ${scorePct}%</span>
+                                    <h3 class="mt-0.5 text-sm font-bold leading-snug text-[#0B1020]" title="${e(c.document_name)}">
+                                        ${e(c.document_name)}
+                                    </h3>
+                                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#4A5366]">
+                                        <span class="rounded-full bg-[#F4F7FC] border border-[#DCE4F0] px-2 py-0.5 text-[10px] font-bold text-[#0B1020]">
+                                            ${e(c.article_label || 'Pasal Terkait')}
+                                        </span>
+                                        <span>Relevansi ${scorePct}%</span>
+                                    </div>
+                                    ${statusBadge}
                                 </div>
                             </div>
-                        </div>
-                        <div class="flex items-center gap-2 pt-1">
-                            <a
-                                href="${e(c.source_url)}"
-                                target="_blank"
-                                rel="noopener"
-                                class="flex-1 py-1.5 px-2 rounded-lg bg-white border border-[#CCECE6] hover:bg-[#E6F5F2] text-[#0F766E] font-semibold text-xs flex items-center justify-center gap-1 transition-colors"
-                            >
-                                <span class="material-symbols-outlined text-[16px]">visibility</span> Baca Pasal
-                            </a>
-                            <a
-                                href="${e(c.source_url)}"
-                                target="_blank"
-                                rel="noopener"
-                                class="py-1.5 px-3 rounded-lg bg-[#0F766E] hover:bg-[#115E59] text-white font-semibold text-xs flex items-center justify-center gap-1 shadow-sm transition-colors"
-                            >
-                                <span class="material-symbols-outlined text-[16px]">open_in_new</span> Sumber
-                            </a>
+                            <div class="mt-auto flex items-center gap-2 pt-1">
+                                <a
+                                    href="${e(detailUrl)}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="btn-primary !min-h-[44px] flex-1 px-3 text-xs flex items-center justify-center gap-1.5"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                                    <span>Baca Pasal</span>
+                                </a>
+                                <a
+                                    href="${e(officialUrl || detailUrl)}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="btn-glass !min-h-[44px] px-3.5 text-xs flex items-center justify-center gap-1"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
+                                    <span>${e(openLabel)}</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -198,19 +227,19 @@ function initConsultationApp(container) {
 
         if (isOutOfScope) {
             return `
-                <details class="w-fit max-w-[95%] sm:max-w-xl bg-white rounded-xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
-                    <summary class="bg-[#FEF3C7] text-[#92400E] px-3.5 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3 cursor-pointer select-none">
+                <details class="w-fit max-w-[96%] min-[641px]:max-w-xl bg-white rounded-2xl border border-[#FDE68A] shadow-sm overflow-hidden mt-1.5">
+                    <summary class="min-h-[44px] bg-[#FEF3C7] text-[#78350F] px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5 cursor-pointer select-none">
                         <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-[18px] text-[#D97706] shrink-0">warning</span>
-                            <span class="text-[11px] sm:text-xs font-bold text-[#78350F]">
+                            <span class="material-symbols-outlined text-[18px] text-[#92400E] shrink-0" aria-hidden="true">warning</span>
+                            <span class="text-xs font-bold text-[#78350F]">
                                 Sumber Rujukan (0 Pasal di Atas Ambang Kemiripan)
                             </span>
                         </div>
-                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-white text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">
-                            Di Luar Cakupan ▾
+                        <span class="px-2.5 py-0.5 rounded-full bg-white text-[#78350F] border border-[#FDE68A] text-[11px] font-bold">
+                            Di Luar Cakupan
                         </span>
                     </summary>
-                    <div class="p-3.5 sm:p-4 bg-white text-xs text-text-muted leading-relaxed">
+                    <div class="p-4 bg-white text-xs text-[#414754] leading-relaxed">
                         <p>
                             Sistem tidak menemukan potongan pasal JDIH atau SOP layanan yang melewati ambang kemiripan minimum untuk kronologi ini. Sesuai standar keamanan BHIMA, asisten tidak mengarang pasal atau substansi hukum.
                         </p>
@@ -227,27 +256,27 @@ function initConsultationApp(container) {
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
                 const isSop = c.category === 'SOP';
                 const iconName = isSop ? 'description' : 'account_balance';
-                const badgeBg = isSop ? 'bg-[#DCFCE7] text-[#166534]' : 'bg-[#E0F2FE] text-[#0369A1]';
+                const badgeBg = isSop ? 'bg-[#9CF2E8] text-[#00504A]' : 'bg-[#D6E3FF] text-[#00468D]';
                 const badgeLabel = isSop ? 'SOP Layanan' : 'Dokumen JDIH';
 
                 return `
-                    <div class="p-3 sm:p-3.5 bg-[#F0FAF8] rounded-xl border border-[#CCECE6] space-y-2">
-                        <div class="flex items-center justify-between flex-wrap gap-1.5 sm:gap-2">
-                            <span class="text-xs sm:text-sm font-bold text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[#0F766E] text-[17px] sm:text-[18px] shrink-0">${iconName}</span>
+                    <div class="p-3.5 bg-[#EFF4FB]/90 rounded-2xl border border-[#DEE3EA] space-y-2">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <span class="text-xs min-[641px]:text-sm font-bold text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[#005AB3] text-[18px] shrink-0" aria-hidden="true">${iconName}</span>
                                 <span>${e(c.document_number || c.document_key)} • Tahun ${e(c.document_year || '-')}</span>
                             </span>
                             <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="px-2 py-0.5 ${badgeBg} rounded-md text-[10px] sm:text-[11px] font-semibold">${badgeLabel}</span>
-                                <span class="px-2 py-0.5 bg-white border border-[#CCECE6] text-[#0F766E] rounded-md text-[10px] sm:text-[11px] font-bold">
+                                <span class="px-2.5 py-0.5 ${badgeBg} rounded-full text-[11px] font-bold">${badgeLabel}</span>
+                                <span class="px-2.5 py-0.5 bg-white border border-[#DEE3EA] text-[#0F766E] rounded-full text-[11px] font-bold">
                                     Relevansi ${scorePct}%
                                 </span>
                             </div>
                         </div>
-                        <p class="text-xs sm:text-sm text-text-dark font-semibold">
+                        <p class="text-xs min-[641px]:text-sm text-[#171C21] font-bold">
                             ${e(c.document_name)}
                         </p>
-                        <div class="bg-white p-2.5 rounded-lg border border-[#E2E8F0] space-y-1">
+                        <div class="bg-white p-3 rounded-xl border border-[#DEE3EA] space-y-1.5">
                             <div class="flex items-center justify-between gap-2 flex-wrap">
                                 <span class="text-[11px] text-[#0F766E] uppercase font-bold tracking-wide">
                                     Kutipan ${e(c.article_label)}:
@@ -256,13 +285,13 @@ function initConsultationApp(container) {
                                     href="${e(c.source_url)}"
                                     target="_blank"
                                     rel="noopener"
-                                    class="text-[11px] font-bold text-[#0F766E] hover:text-[#115E59] hover:underline flex items-center gap-1"
+                                    class="min-h-[44px] px-2.5 text-xs font-bold text-[#005AB3] hover:text-[#00468D] hover:underline inline-flex items-center gap-1"
                                 >
                                     <span>Buka Sumber (${e(c.document_key)})</span>
-                                    <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                                    <span class="material-symbols-outlined text-[14px]" aria-hidden="true">open_in_new</span>
                                 </a>
                             </div>
-                            <p class="text-xs text-text-body italic leading-relaxed">"${e(String(c.excerpt || '').trim())}"</p>
+                            <p class="text-xs text-[#171C21] italic leading-relaxed">"${e(String(c.excerpt || '').trim())}"</p>
                         </div>
                     </div>
                 `;
@@ -270,64 +299,63 @@ function initConsultationApp(container) {
             .join('');
 
         return `
-            <details class="w-full max-w-2xl bg-white rounded-2xl border border-[#CCECE6] shadow-sm overflow-hidden mt-1.5">
-                <summary class="bg-[#0F766E] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 cursor-pointer select-none">
-                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                        <span class="material-symbols-outlined text-[20px] sm:text-[22px] text-[#9cf2e8] shrink-0">balance</span>
+            <details class="w-full max-w-2xl bg-white rounded-[24px] border border-[#DCE4F0] shadow-[0_8px_24px_rgba(20,30,80,0.05)] overflow-hidden mt-1.5">
+                <summary class="min-h-[48px] bg-[#1E3A8A] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="material-symbols-outlined text-[21px] text-[#F2D8B3] shrink-0" aria-hidden="true">balance</span>
                         <div class="min-w-0">
-                            <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold tracking-tight text-white">
+                            <h3 class="text-xs min-[641px]:text-sm font-bold tracking-tight text-white">
                                 Sumber Rujukan &amp; Analisis Pasal (${count} Dokumen)
                             </h3>
-                            <p class="text-[10px] sm:text-[11px] text-[#CCECE6]">
+                            <p class="text-[11px] text-[#E2ECFF]">
                                 Klik untuk membuka kutipan pasal JDIH &amp; SOP Layanan
                             </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
-                        <span class="px-2 sm:px-2.5 py-0.5 rounded-full bg-[#115E59] text-[#9cf2e8] border border-[#2dd4bf]/40 text-[10px] sm:text-[11px] font-bold tracking-wide">
+                        <span class="px-2.5 py-0.5 rounded-full bg-white/15 text-white border border-white/25 text-[11px] font-bold tracking-wide">
                             Relevansi ${topScorePct}%
                         </span>
-                        <span class="material-symbols-outlined text-[18px] text-[#9cf2e8] transition-transform summary-chevron">expand_more</span>
+                        <span class="material-symbols-outlined text-[18px] text-white transition-transform summary-chevron" aria-hidden="true">expand_more</span>
                     </div>
                 </summary>
-                <div class="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-3.5 bg-white">
+                <div class="p-4 min-[641px]:p-5 space-y-3.5 bg-white">
                     ${itemsHtml}
 
-                    <!-- Official Advisory Disclaimer -->
-                    <div class="p-2.5 sm:p-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-xl flex items-start gap-2">
-                        <span class="material-symbols-outlined text-[#4B5563] text-[17px] sm:text-[18px] shrink-0 mt-0.5">info</span>
-                        <p class="text-[11px] sm:text-xs text-text-muted leading-relaxed">
-                            <strong class="text-text-dark font-semibold">Pemberitahuan Resmi:</strong>
-                            Hasil analisis ini diproses secara komputasi berdasarkan regulasi terpublikasi di JDIH resmi dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
+                    <div class="p-3 bg-[#F4F7FC] border border-[#DCE4F0] rounded-[16px] flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-[#4A5366] text-[18px] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                        <p class="text-xs text-[#4A5366] leading-relaxed">
+                            <strong class="text-[#0B1020] font-bold">Pemberitahuan Resmi:</strong>
+                            Hasil analisis diproses langsung dari basis data regulasi JDIH dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
                         </p>
                     </div>
 
-                    <!-- Action Button Matrix -->
-                    <div class="pt-1 flex flex-col sm:flex-row sm:flex-wrap gap-2 items-stretch sm:items-center">
+                    <div class="pt-1 flex flex-col min-[641px]:flex-row min-[641px]:flex-wrap gap-2 items-stretch min-[641px]:items-center">
                         <a
-                            class="flex-1 flex items-center justify-center gap-2 bg-[#0F766E] hover:bg-[#115E59] text-white py-2.5 px-3.5 sm:px-4 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:shadow transition-all active:scale-[0.99] text-center"
+                            class="btn-primary !min-h-[44px] flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-xs min-[641px]:text-sm text-center"
                             href="${e(primaryUrl)}"
                             target="_blank"
                             rel="noopener"
                         >
-                            <span class="material-symbols-outlined text-[17px] sm:text-[18px]">menu_book</span>
+                            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">menu_book</span>
                             <span>Lihat Dokumen Rujukan Lengkap</span>
                         </a>
                         <div class="flex items-center gap-2">
                             <a
-                                class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#E6F5F2] hover:bg-[#CCECE6] text-[#0F766E] border border-[#CCECE6] py-2.5 px-3.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
+                                class="btn-glass !min-h-[44px] flex-1 min-[641px]:flex-initial flex items-center justify-center gap-1.5 py-2.5 px-4 text-xs min-[641px]:text-sm"
                                 href="#posbakum-panel"
                             >
-                                <span class="material-symbols-outlined text-[17px] sm:text-[18px]">support_agent</span>
+                                <span class="material-symbols-outlined text-[18px] text-[#0066CC]" aria-hidden="true">support_agent</span>
                                 <span>Posbakum</span>
                             </a>
                             <button
                                 type="button"
                                 data-copy-answer="1"
-                                class="p-2.5 rounded-xl bg-white border border-[#E2E8F0] text-text-muted hover:text-[#0F766E] hover:border-[#CCECE6] hover:bg-[#F0FAF8] transition-colors cursor-pointer shrink-0"
+                                aria-label="Salin Ringkasan Jawaban"
+                                class="press-scale w-11 h-11 rounded-full bg-white border border-[#CBD5E4] text-[#4A5366] hover:text-[#0066CC] hover:bg-[#E6F0FC] transition-colors flex items-center justify-center shrink-0"
                                 title="Salin Ringkasan Jawaban"
                             >
-                                <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">content_copy</span>
                             </button>
                         </div>
                     </div>
@@ -372,43 +400,58 @@ function initConsultationApp(container) {
         const isError = analysis.meta?.status === 'error';
 
         const rujukanHtml = rujukan.length
-            ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            ? `<div class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-2.5">
                 ${rujukan
                     .map(
                         (r) => `
-                        <a
-                            href="${e(r.tautan || '#jdih-reference-panel')}"
-                            target="_blank"
-                            rel="noopener"
-                            class="p-2.5 rounded-xl bg-[#F0FAF8] hover:bg-[#E6F5F2] border border-[#CCECE6] flex items-start justify-between gap-2 transition-colors no-underline group"
-                        >
-                            <div class="min-w-0">
-                                <span class="text-[11px] font-bold text-[#0F766E] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
-                                <span class="text-xs font-semibold text-text-dark block truncate group-hover:text-[#0F766E]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
-                            </div>
-                            <span class="material-symbols-outlined text-[16px] text-[#0F766E] shrink-0 mt-0.5">open_in_new</span>
-                        </a>
+                        <div class="min-h-[44px] p-3 rounded-2xl bg-[#EFF4FB] border border-[#DEE3EA] flex flex-col justify-between gap-2">
+                            <a
+                                href="${e(r.tautan || '#jdih-reference-panel')}"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex items-start justify-between gap-2 no-underline group"
+                            >
+                                <div class="min-w-0">
+                                    <span class="text-[11px] font-bold text-[#005AB3] block uppercase tracking-wide">${e(r.nomor_tahun || '-')}</span>
+                                    <span class="text-xs font-bold text-[#171C21] block truncate group-hover:text-[#00468D]" title="${e(r.dokumen || '')}">${e(r.dokumen || '')}</span>
+                                    ${
+                                        r.status_berlaku === 'diubah' && r.diubah_oleh
+                                            ? `<span class="mt-1 inline-block px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#78350F] text-[10px] font-bold">Diubah oleh: ${e(r.diubah_oleh)}</span>`
+                                            : ''
+                                    }
+                                </div>
+                                <span class="material-symbols-outlined text-[16px] text-[#005AB3] shrink-0 mt-0.5" aria-hidden="true">open_in_new</span>
+                            </a>
+                            ${
+                                r.tautan_resmi
+                                    ? `<a href="${e(r.tautan_resmi)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-[#0F766E] hover:underline inline-flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[13px]" aria-hidden="true">verified</span>
+                                        <span>Cek Sumber Resmi JDIH</span>
+                                       </a>`
+                                    : ''
+                            }
+                        </div>
                     `
                     )
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Belum ada rujukan undang-undang yang cocok di atas ambang kemiripan.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Belum ada rujukan undang-undang yang cocok di atas ambang kemiripan.</p>`;
 
         const pasalHtml = pasalRelevan.length
             ? `<div class="space-y-2.5">
                 ${pasalRelevan
                     .map(
                         (p) => `
-                        <div class="p-3 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] space-y-1.5">
+                        <div class="p-3.5 rounded-2xl bg-[#EFF4FB] border border-[#DEE3EA] space-y-1.5">
                             <div class="flex items-center justify-between gap-2 flex-wrap">
-                                <span class="text-xs font-bold text-[#0F766E] flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-[16px]">gavel</span>
+                                <span class="text-xs font-bold text-[#005AB3] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">gavel</span>
                                     ${e(p.pasal || '')}
                                 </span>
-                                <span class="text-[11px] font-semibold text-text-muted">${e(p.dokumen || '')}</span>
+                                <span class="text-[11px] font-semibold text-[#414754]">${e(p.dokumen || '')}</span>
                             </div>
-                            <p class="text-xs text-text-dark leading-relaxed">${e(p.penjelasan_awam || '')}</p>
-                            <p class="text-[11px] text-text-muted leading-relaxed border-t border-[#CCECE6]/60 pt-1">
+                            <p class="text-xs text-[#171C21] leading-relaxed">${e(p.penjelasan_awam || '')}</p>
+                            <p class="text-[11px] text-[#414754] leading-relaxed border-t border-[#DEE3EA] pt-1.5">
                                 <strong class="text-[#0F766E]">Keterkaitan Kronologi:</strong> ${e(p.alasan_terkait_kronologi || '')}
                             </p>
                         </div>
@@ -416,13 +459,13 @@ function initConsultationApp(container) {
                     )
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak ditemukan pasal yang berpotensi terkait pada konteks dokumen.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Tidak ditemukan pasal yang berpotensi terkait pada konteks dokumen.</p>`;
 
         const sanksiBadgeMap = {
-            pidana: 'bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]',
-            administratif: 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]',
-            perdata: 'bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]',
-            lainnya: 'bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]',
+            pidana: 'bg-[#FFDAD6] text-[#93000A] border-[#BA1A1A]/30',
+            administratif: 'bg-[#D6E3FF] text-[#00468D] border-[#AEC6FF]',
+            perdata: 'bg-[#FEF3C7] text-[#78350F] border-[#FDE68A]',
+            lainnya: 'bg-[#EFF4FB] text-[#171C21] border-[#DEE3EA]',
         };
 
         const sanksiHtml = ancamanSanksi.length
@@ -432,20 +475,20 @@ function initConsultationApp(container) {
                         const jenisKey = String(s.jenis || 'lainnya').toLowerCase();
                         const badgeCls = sanksiBadgeMap[jenisKey] || sanksiBadgeMap.lainnya;
                         return `
-                            <div class="p-3 rounded-xl bg-white border border-[#E2E8F0] space-y-1">
+                            <div class="p-3.5 rounded-2xl bg-white border border-[#DEE3EA] space-y-1">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
-                                    <span class="text-xs font-bold text-text-dark">${e(s.pasal || '')} <span class="font-normal text-text-muted">• ${e(s.dokumen || '')}</span></span>
-                                    <span class="px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase ${badgeCls}">
+                                    <span class="text-xs font-bold text-[#171C21]">${e(s.pasal || '')} <span class="font-medium text-[#414754]">• ${e(s.dokumen || '')}</span></span>
+                                    <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase ${badgeCls}">
                                         ${e(jenisKey)}
                                     </span>
                                 </div>
-                                <p class="text-xs text-text-body leading-relaxed">${e(s.bunyi_sanksi_ringkas || '')}</p>
+                                <p class="text-xs text-[#414754] leading-relaxed">${e(s.bunyi_sanksi_ringkas || '')}</p>
                             </div>
                         `;
                     })
                     .join('')}
                </div>`
-            : `<p class="text-xs text-text-muted italic bg-[#F9FAFB] p-2.5 rounded-xl border border-[#E5E7EB]">Tidak tercantum dalam potongan pasal yang ditemukan.</p>`;
+            : `<p class="text-xs text-[#414754] italic bg-[#EFF4FB] p-3 rounded-2xl border border-[#DEE3EA]">Tidak tercantum dalam potongan pasal yang ditemukan.</p>`;
 
         // Bangun URL eskalasi ke formulir pengaduan dengan prefill otomatis
         const params = new URLSearchParams();
@@ -462,70 +505,68 @@ function initConsultationApp(container) {
         if (rujukan.length > 0) {
             params.set(
                 'rujukan',
-                rujukan.map((r) => `${r.dokumen} (${r.nomor_tahun}) — ${r.tautan}`).join('\n')
+                rujukan.map((r) => `${r.dokumen} (${r.nomor_tahun}) - ${r.tautan}`).join('\n')
             );
         }
         const escalationUrl = `/pengaduan/buat?${params.toString()}`;
 
-        const escalationButtonClass = perluEskalasi
-            ? 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-extrabold text-xs sm:text-sm shadow-md ring-2 ring-[#F59E0B]/30 transition-all no-underline'
-            : 'w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#0F766E] hover:bg-[#115E59] text-white font-bold text-xs sm:text-sm shadow-sm transition-all no-underline';
+        const escalationButtonClass = 'btn-primary w-full min-[641px]:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs min-[641px]:text-sm no-underline';
 
         const escalationBadge = perluEskalasi
-            ? `<span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] sm:text-[11px] font-bold">Disarankan Eskalasi</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-[10px] sm:text-[11px] font-bold">Terkendali</span>`;
+            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-[11px] font-bold">Disarankan Eskalasi</span>`
+            : `<span class="px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-[11px] font-bold">Terkendali</span>`;
 
         return `
             <section
-                class="legal-analysis-card w-full max-w-2xl bg-white rounded-2xl border-2 ${perluEskalasi ? 'border-[#F59E0B]/70' : 'border-[#CCECE6]'} shadow-sm overflow-hidden mt-1.5"
+                class="legal-analysis-card w-full max-w-2xl bg-white rounded-[24px] border ${perluEskalasi ? 'border-[#0066CC]/45' : 'border-[#DCE4F0]'} shadow-[0_12px_28px_rgba(20,30,80,0.06)] overflow-hidden mt-1.5"
                 aria-label="Hasil Analisis Pasal dan Estimasi Ancaman Sanksi"
             >
-                <div class="bg-[#115E59] text-white px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="bg-[#1E3A8A] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="material-symbols-outlined text-[20px] text-[#9cf2e8] shrink-0">policy</span>
-                        <h3 class="font-headline text-xs sm:text-sm md:text-base font-bold text-white truncate">
-                            Analisis Pasal &amp; Estimasi Ancaman Sanksi
+                        <span class="material-symbols-outlined text-[20px] text-[#F2D8B3] shrink-0" aria-hidden="true">assignment_turned_in</span>
+                        <h3 class="text-xs min-[641px]:text-sm font-bold text-white truncate">
+                            Ringkasan Validasi Regulasi &amp; Estimasi Sanksi
                         </h3>
                     </div>
                     ${escalationBadge}
                 </div>
 
-                <div class="p-3.5 sm:p-4 md:p-5 space-y-4">
+                <div class="p-4 min-[641px]:p-5 space-y-4">
                     ${
                         isError
-                            ? `<div role="alert" class="p-3 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#92400E] font-medium">${e(catatan)}</div>`
+                            ? `<div role="alert" class="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#78350F] font-bold">${e(catatan)}</div>`
                             : ''
                     }
 
                     <!-- 1. Rujukan Undang-Undang -->
-                    <div class="space-y-1.5">
-                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-[16px]" aria-hidden="true">menu_book</span>
                             Rujukan Undang-Undang &amp; Regulasi (${rujukan.length})
                         </h4>
                         ${rujukanHtml}
                     </div>
 
                     <!-- 2. Pasal Terkait -->
-                    <div class="space-y-1.5">
+                    <div class="space-y-2">
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[16px]">fact_check</span>
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">fact_check</span>
                                 Pasal yang Berpotensi Terkait (${pasalRelevan.length})
                             </h4>
-                            <span class="text-[10px] font-semibold text-text-muted">Berdasarkan kronologi, bukan putusan pelanggaran</span>
+                            <span class="text-[11px] font-semibold text-[#414754]">Berdasarkan kronologi, bukan putusan pelanggaran</span>
                         </div>
                         ${pasalHtml}
                     </div>
 
                     <!-- 3. Estimasi Ancaman Sanksi -->
-                    <div class="space-y-1.5">
+                    <div class="space-y-2">
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#0F766E] flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-[16px]">gavel</span>
+                            <h4 class="text-xs font-extrabold uppercase tracking-wider text-[#005AB3] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">gavel</span>
                                 Estimasi Ancaman Sanksi
                             </h4>
-                            <span class="px-2 py-0.5 rounded-md bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-[10px] font-bold">
+                            <span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] text-[10px] font-bold">
                                 ${e(sanctionLabel)}
                             </span>
                         </div>
@@ -534,18 +575,18 @@ function initConsultationApp(container) {
 
                     ${
                         !isError && catatan
-                            ? `<div class="p-2.5 rounded-xl bg-[#F0FAF8] border border-[#CCECE6] text-[11px] sm:text-xs text-text-body leading-relaxed">${e(catatan)}</div>`
+                            ? `<div class="p-3 rounded-2xl bg-[#D6E3FF]/35 border border-[#AEC6FF] text-xs text-[#171C21] leading-relaxed">${e(catatan)}</div>`
                             : ''
                     }
 
                     <!-- Disclaimer Singkat -->
-                    <p class="text-[11px] text-text-muted leading-relaxed">
-                        <strong>Disclaimer:</strong> ${e(disclaimer)}
+                    <p class="text-[11px] text-[#414754] leading-relaxed">
+                        <strong class="text-[#171C21]">Disclaimer:</strong> ${e(disclaimer)}
                     </p>
 
                     <!-- Tombol Eskalasi ke Formulir Pengaduan -->
-                    <div class="pt-2 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <span class="text-[11px] sm:text-xs font-semibold ${perluEskalasi ? 'text-[#92400E]' : 'text-text-muted'}">
+                    <div class="pt-3 border-t border-[#DEE3EA] flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-3">
+                        <span class="text-xs font-semibold ${perluEskalasi ? 'text-[#78350F]' : 'text-[#414754]'}">
                             ${
                                 perluEskalasi
                                     ? 'Permasalahan ini disarankan untuk dieskalasi ke petugas verifikator pengaduan.'
@@ -557,7 +598,7 @@ function initConsultationApp(container) {
                             data-escalate-complaint="1"
                             class="${escalationButtonClass}"
                         >
-                            <span class="material-symbols-outlined text-[18px]">campaign</span>
+                            <span class="material-symbols-outlined text-[18px]" aria-hidden="true">campaign</span>
                             <span>Ajukan Pengaduan</span>
                         </a>
                     </div>
@@ -574,36 +615,36 @@ function initConsultationApp(container) {
 
         if (isUser) {
             lastUserChronology = trimmedContent;
-            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1 pl-3 sm:pl-12 md:pl-16';
+            article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1.5 pl-3 min-[641px]:pl-12';
             article.innerHTML = `
-                <div class="flex items-center gap-1.5 mb-0.5">
-                    <span class="text-[11px] sm:text-xs font-medium text-text-muted">Kronologi Warga</span>
-                    <div class="w-5 h-5 rounded-full bg-[#CCECE6] flex items-center justify-center text-[#115E59]">
-                        <span class="material-symbols-outlined text-[13px]">person</span>
+                <div class="flex items-center gap-2 pr-1">
+                    <span class="text-xs font-semibold text-[#4A5366]">Kronologi Warga</span>
+                    <div class="w-6 h-6 rounded-full bg-[#E6F0FC] flex items-center justify-center text-[#005EB8]">
+                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">person</span>
                     </div>
                 </div>
-                <div class="${bubbleSizing} bg-[#115E59] text-white rounded-2xl rounded-tr-sm shadow-sm text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
-                <span class="text-[10px] sm:text-[11px] text-text-muted pr-1">
+                <div class="${bubbleSizing} bg-[#0066CC] text-white rounded-[20px] rounded-tr-sm shadow-[0_8px_20px_rgba(0,102,204,0.20)] text-xs min-[380px]:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
+                <span class="text-[11px] text-[#4A5366] pr-1">
                     Terkirim ${e(formatTime(msg.created_at))} WIB
                 </span>
             `;
         } else {
-            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 sm:pr-6 md:pr-8';
+            article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 min-[641px]:pr-6';
             const isOutOfScope = msg.retrieval_meta?.status === 'out_of_scope';
             const statusBadge = isOutOfScope
-                ? '<span class="px-2 sm:px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded-full text-[10px] sm:text-xs font-bold">Diarahkan ke Petugas</span>'
-                : '<span class="px-2 sm:px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] rounded-full text-[10px] sm:text-xs font-bold">Penalaran Peraturan Terverifikasi</span>';
+                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] rounded-full text-[11px] font-bold">Diarahkan ke Petugas</span>'
+                : '<span class="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] rounded-full text-[11px] font-bold">Penalaran Peraturan Terverifikasi</span>';
 
             article.innerHTML = `
-                <div class="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
-                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#0F766E] text-white flex items-center justify-center shadow-sm shrink-0">
-                        <span class="material-symbols-outlined text-[15px] sm:text-[17px]">smart_toy</span>
+                <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                    <div class="w-7 h-7 rounded-[10px] bg-[#0066CC] text-white flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
                     </div>
-                    <span class="text-xs sm:text-sm font-bold text-text-dark">Asisten Hukum Virtual BHIMA</span>
+                    <span class="text-xs min-[641px]:text-sm font-bold text-[#0B1020]">Asisten Hukum Virtual BHIMA</span>
                     ${statusBadge}
-                    <span class="text-[11px] sm:text-xs text-text-muted">${e(formatTime(msg.created_at))} WIB</span>
+                    <span class="text-[11px] text-[#4A5366]">${e(formatTime(msg.created_at))} WIB</span>
                 </div>
-                <div class="${bubbleSizing} bg-white text-text-body rounded-2xl rounded-tl-sm border border-[#E2E8F0] shadow-sm space-y-2 text-xs sm:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
+                <div class="${bubbleSizing} bg-white text-[#0B1020] rounded-[20px] rounded-tl-sm border border-[#DCE4F0] shadow-[0_6px_18px_rgba(20,30,80,0.04)] space-y-2 text-xs min-[380px]:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
                 ${renderLegalAnalysisCard(msg.legal_analysis, msg)}
                 ${renderSourcesSection(msg.citations, msg.retrieval_meta)}
             `;
@@ -767,7 +808,7 @@ function initConsultationApp(container) {
         });
     });
 
-    resetBtn?.addEventListener('click', async () => {
+    async function executeSessionReset() {
         if (busy) return;
         try {
             const res = await fetch('/api/konsultasi/reset', {
@@ -795,8 +836,222 @@ function initConsultationApp(container) {
         } catch {
             showError('Gagal mengatur ulang sesi percakapan.');
         }
-    });
+    }
+
+    const resetDialog = document.getElementById('confirm-reset-session-dialog');
+    if (resetDialog) {
+        resetDialog.addEventListener('bhima:dialog-result', (event) => {
+            if (event.detail?.confirmed) {
+                executeSessionReset();
+            }
+        });
+    } else {
+        resetBtn?.addEventListener('click', executeSessionReset);
+    }
+
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery && inputEl) {
+        inputEl.value = initialQuery.slice(0, maxLen);
+    }
 
     updateCounter();
     loadHistory();
+}
+
+function initBerandaApp(container) {
+    const searchForm = container.querySelector('#bhimaSearchForm');
+    const searchInput = container.querySelector('#bhimaSearchInput');
+    const searchSubmitBtn = container.querySelector('#bhimaSearchSubmitBtn');
+    const searchIdle = container.querySelector('#beranda-search-idle');
+    const searchLoading = container.querySelector('#beranda-search-loading');
+    const searchError = container.querySelector('#beranda-search-error');
+    const searchEmpty = container.querySelector('#beranda-search-empty');
+    const searchResults = container.querySelector('#beranda-search-results');
+    const searchSummary = container.querySelector('#beranda-search-summary');
+    const searchList = container.querySelector('#beranda-search-list');
+    const searchClose = container.querySelector('#beranda-search-close');
+
+    function setSearchState(state, message = '') {
+        if (searchIdle) searchIdle.hidden = state !== 'idle';
+        if (searchLoading) searchLoading.hidden = state !== 'loading';
+        if (searchError) {
+            searchError.hidden = state !== 'error';
+            searchError.textContent = message;
+        }
+        if (searchEmpty) searchEmpty.hidden = state !== 'empty';
+        if (searchResults) searchResults.hidden = state !== 'results';
+    }
+
+    async function runPortalSearch(rawQuery) {
+        const query = String(rawQuery || '').trim();
+        setSearchState('loading');
+        if (searchSubmitBtn) searchSubmitBtn.disabled = true;
+
+        try {
+            const url = `/api/beranda/cari?q=${encodeURIComponent(query || 'semua')}`;
+            const res = await fetch(url, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                setSearchState(
+                    'error',
+                    data.message || 'Pencarian dokumen belum dapat dimuat saat ini. Silakan coba kembali.'
+                );
+                return;
+            }
+
+            const items = Array.isArray(data.results) ? data.results : [];
+            if (items.length === 0) {
+                setSearchState('empty');
+                return;
+            }
+
+            if (searchSummary) {
+                searchSummary.textContent = query
+                    ? `Ditemukan ${items.length} Dokumen Terkait untuk "${query}"`
+                    : `Menampilkan ${items.length} Dokumen Rujukan Utama JDIH & SOP`;
+            }
+
+            if (searchList) {
+                searchList.innerHTML = items
+                    .map((item) => {
+                        const isSop = item.category === 'SOP';
+                        const badgeClass = isSop
+                            ? 'bg-[#D6E3FF] text-[#00468D] border-[#AEC6FF]'
+                            : 'bg-[#9CF2E8] text-[#00504A] border-[#7FD6CD]';
+                        const consultHref = `/konsultasi?q=${encodeURIComponent(
+                            query || `${item.document_name} (${item.document_number})`
+                        )}`;
+
+                        return `
+                            <article class="search-result-card card-interactive p-4 rounded-[20px] bg-white border border-[#DCE4F0] flex flex-col justify-between gap-3">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
+                                            ${e(item.category || 'JDIH')} · ${e(item.document_number || '')}
+                                        </span>
+                                        <span class="text-xs font-semibold text-[#4A5366]">${e(item.topic || '')}</span>
+                                    </div>
+                                    <h3 class="text-base font-bold text-[#0B1020] leading-snug">
+                                        ${e(item.document_name || '')}
+                                    </h3>
+                                    <p class="text-xs sm:text-sm text-[#4A5366] leading-relaxed">
+                                        ${e(item.excerpt || '')}
+                                    </p>
+                                </div>
+                                <div class="pt-2.5 border-t border-[#DCE4F0] flex flex-wrap items-center justify-between gap-2">
+                                    <a
+                                        href="${e(item.url || '#')}"
+                                        class="btn-glass !min-h-[44px] px-3.5 py-2 text-xs inline-flex items-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px] text-[#0066CC]" aria-hidden="true">menu_book</span>
+                                        <span>Baca Pasal (${e(item.article_label || 'Lengkap')})</span>
+                                    </a>
+                                    <a
+                                        href="${e(consultHref)}"
+                                        class="btn-primary !min-h-[44px] px-4 py-2 text-xs inline-flex items-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
+                                        <span>Tanya Asisten</span>
+                                    </a>
+                                </div>
+                            </article>
+                        `;
+                    })
+                    .join('');
+            }
+
+            setSearchState('results');
+        } catch {
+            setSearchState(
+                'error',
+                'Tidak dapat terhubung ke layanan pencarian dokumen. Periksa koneksi Anda atau buka Ruang Konsultasi.'
+            );
+        } finally {
+            if (searchSubmitBtn) searchSubmitBtn.disabled = false;
+        }
+    }
+
+    searchForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const val = searchInput ? searchInput.value.trim() : '';
+        if (!val) {
+            setSearchState('error', 'Silakan ketik kata kunci layanan, SOP, atau peraturan terlebih dahulu.');
+            searchInput?.focus();
+            return;
+        }
+        runPortalSearch(val);
+    });
+
+    container.querySelectorAll('[data-search-tag]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const tag = btn.getAttribute('data-search-tag') || '';
+            if (searchInput) {
+                searchInput.value = tag;
+            }
+            runPortalSearch(tag);
+        });
+    });
+
+    container.querySelectorAll('[data-show-all-docs]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            document.getElementById('pencarian-regulasi')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            runPortalSearch('semua');
+        });
+    });
+
+    searchClose?.addEventListener('click', () => {
+        setSearchState('idle');
+    });
+
+    const ticketForm = container.querySelector('#beranda-ticket-form');
+    const ticketInput = container.querySelector('#ticketCodeInput');
+    const ticketBtn = container.querySelector('#ticketTrackBtn');
+    const ticketStatusMsg = container.querySelector('#ticketStatusMsg');
+
+    ticketForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!ticketStatusMsg) return;
+
+        const val = ticketInput ? ticketInput.value.trim().toUpperCase() : '';
+        if (!val) {
+            ticketStatusMsg.textContent = 'Harap isi nomor tiket terlebih dahulu (contoh: BHM-2026-0001).';
+            ticketStatusMsg.className = 'text-xs font-bold text-[#991B1B] block mt-1.5';
+            ticketInput?.focus();
+            return;
+        }
+
+        ticketStatusMsg.textContent = `Memeriksa status tiket ${val}...`;
+        ticketStatusMsg.className = 'text-xs font-semibold text-[#0F766E] block mt-1.5';
+        if (ticketBtn) ticketBtn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/beranda/lacak?tiket=${encodeURIComponent(val)}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || !data.found) {
+                ticketStatusMsg.innerHTML = `${e(data.message || 'Tiket tidak ditemukan.')} <a href="/lacak?tiket=${encodeURIComponent(val)}" class="underline font-bold text-[#0F766E]">Buka halaman Lacak Tiket</a>`;
+                ticketStatusMsg.className = 'text-xs font-semibold text-[#991B1B] block mt-1.5';
+                return;
+            }
+
+            ticketStatusMsg.innerHTML = `Tiket <strong>${e(data.ticket)}</strong> (${e(data.category)}): Status <strong>${e(data.status)}</strong>. <a href="${e(data.detail_url)}" class="underline font-bold text-[#0F766E]">Lihat detail lengkap</a>`;
+            ticketStatusMsg.className = 'text-xs font-semibold text-[#166534] block mt-1.5';
+        } catch {
+            ticketStatusMsg.textContent = 'Gagal memeriksa tiket secara langsung. Silakan coba lagi.';
+            ticketStatusMsg.className = 'text-xs font-semibold text-[#991B1B] block mt-1.5';
+        } finally {
+            if (ticketBtn) ticketBtn.disabled = false;
+        }
+    });
 }

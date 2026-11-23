@@ -6,6 +6,7 @@ use App\Contracts\AnalysisProvider;
 use App\Exceptions\AnalysisProviderException;
 use App\Services\LegalAnalysisService;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -43,47 +44,32 @@ class DeepSeekProvider implements AnalysisProvider
             );
         }
 
-        $baseUrl = rtrim((string) config('legal_analysis.deepseek.base_url', 'https://api.deepseek.com/v1'), '/');
+        $baseUrl = rtrim((string) config('legal_analysis.deepseek.base_url', 'https://ai.paas.id'), '/');
         $endpoint = str_ends_with($baseUrl, '/chat/completions')
             ? $baseUrl
             : $baseUrl.'/chat/completions';
         $timeout = max(3, (int) config('legal_analysis.deepseek.timeout', 20));
         $maxRetries = max(0, min(1, (int) config('legal_analysis.deepseek.max_retries', 1)));
+        $sendResponseFormat = (bool) config('legal_analysis.deepseek.send_response_format', true);
 
-        $payload = $this->buildRequestPayload($chronology, $chunks);
+        $payload = $this->buildRequestPayload($chronology, $chunks, $sendResponseFormat);
 
         for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
-            try {
-                $response = Http::withToken($apiKey)
-                    ->acceptJson()
-                    ->timeout($timeout)
-                    ->post($endpoint, $payload);
-            } catch (ConnectionException $e) {
-                Log::error('DeepSeekProvider: Permintaan ke DeepSeek API mengalami timeout atau kegagalan jaringan.', [
+            $response = $this->sendChatCompletion($endpoint, $apiKey, $timeout, $payload, $attempt);
+
+            if ($sendResponseFormat
+                && in_array($response->status(), [400, 422], true)
+                && $this->isUnsupportedResponseFormatError($response->body())
+            ) {
+                Log::warning('DeepSeekProvider: Gateway menolak response_format json_object; mengulang tanpa field response_format.', [
                     'endpoint' => $endpoint,
+                    'status' => $response->status(),
                     'attempt' => $attempt + 1,
-                    'error' => $e->getMessage(),
                 ]);
 
-                throw new AnalysisProviderException(
-                    'Waktu tunggu koneksi ke layanan analisis hukum habis (timeout). Silakan coba beberapa saat lagi.',
-                    'timeout',
-                    0,
-                    $e
-                );
-            } catch (\Throwable $e) {
-                Log::error('DeepSeekProvider: Kesalahan tak terduga saat menghubungi DeepSeek API.', [
-                    'endpoint' => $endpoint,
-                    'attempt' => $attempt + 1,
-                    'error' => $e->getMessage(),
-                ]);
-
-                throw new AnalysisProviderException(
-                    'Maaf, layanan analisis hukum sedang mengalami kendala komunikasi. Silakan coba kembali.',
-                    'network_error',
-                    0,
-                    $e
-                );
+                $sendResponseFormat = false;
+                $payload = $this->buildRequestPayload($chronology, $chunks, false);
+                $response = $this->sendChatCompletion($endpoint, $apiKey, $timeout, $payload, $attempt);
             }
 
             if ($response->status() === 429) {
@@ -138,13 +124,14 @@ class DeepSeekProvider implements AnalysisProvider
      * @param  list<array<string, mixed>>  $chunks
      * @return array<string, mixed>
      */
-    public function buildRequestPayload(string $chronology, array $chunks): array
+    public function buildRequestPayload(string $chronology, array $chunks, ?bool $includeResponseFormat = null): array
     {
         $maskedChronology = self::maskPersonalIdentifiers($chronology);
         $systemPrompt = (string) config('legal_analysis.system_prompt');
-        $model = (string) config('legal_analysis.deepseek.model', 'deepseek-chat');
+        $model = (string) config('legal_analysis.deepseek.model', 'deepseek-v4.1-flash');
         $temperature = min(0.2, max(0.0, (float) config('legal_analysis.deepseek.temperature', 0.1)));
         $maxTokens = max(256, (int) config('legal_analysis.deepseek.max_tokens', 1500));
+        $useResponseFormat = $includeResponseFormat ?? (bool) config('legal_analysis.deepseek.send_response_format', true);
 
         $contextBlocks = [];
         foreach ($chunks as $idx => $chunk) {
@@ -155,14 +142,25 @@ class DeepSeekProvider implements AnalysisProvider
                 ? trim($docNumber.' Tahun '.$docYear)
                 : $docNumber;
 
+            $statusBerlaku = (string) ($chunk['status_berlaku'] ?? 'berlaku');
+            $diubahOleh = trim((string) ($chunk['diubah_oleh'] ?? ''));
+            $statusLabel = $statusBerlaku === 'diubah' && $diubahOleh !== ''
+                ? "diubah (diubah oleh {$diubahOleh})"
+                : $statusBerlaku;
+            $officialUrl = trim((string) ($chunk['source_page_url'] ?? ''));
+            $sanksiTeks = trim((string) ($chunk['sanksi_teks'] ?? ''));
+
             $contextBlocks[] = sprintf(
-                "[CHUNK #%d]\nDokumen: %s\nNomor/Tahun: %s\nPasal: %s\nKategori: %s\nTautan: %s\nTeks Pasal: %s",
+                "[CHUNK #%d]\nDokumen: %s\nNomor/Tahun: %s\nPasal: %s\nKategori: %s\nStatus Berlaku: %s\nTautan: %s%s%s\nTeks Pasal: %s",
                 $num,
                 (string) ($chunk['document_name'] ?? ''),
                 $nomorTahun,
                 (string) ($chunk['article_label'] ?? ''),
                 (string) ($chunk['category'] ?? 'JDIH'),
+                $statusLabel,
                 (string) ($chunk['source_url'] ?? ''),
+                $officialUrl !== '' ? "\nTautan Sumber Resmi: {$officialUrl}" : '',
+                $sanksiTeks !== '' ? "\nSanksi Eksplisit Terverifikasi: {$sanksiTeks}" : '',
                 self::maskPersonalIdentifiers((string) ($chunk['content'] ?? ''))
             );
         }
@@ -172,16 +170,67 @@ class DeepSeekProvider implements AnalysisProvider
             ."\n\nKONTEKS PASAL JDIH & SOP HASIL RETRIEVAL:\n"
             .implode("\n\n", $contextBlocks);
 
-        return [
+        $payload = [
             'model' => $model,
             'temperature' => $temperature,
             'max_tokens' => $maxTokens,
-            'response_format' => ['type' => 'json_object'],
             'messages' => [
                 ['role' => 'system', 'content' => $systemPrompt],
                 ['role' => 'user', 'content' => $userPrompt],
             ],
         ];
+
+        if ($useResponseFormat) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sendChatCompletion(string $endpoint, string $apiKey, int $timeout, array $payload, int $attempt): Response
+    {
+        try {
+            return Http::withToken($apiKey)
+                ->acceptJson()
+                ->timeout($timeout)
+                ->post($endpoint, $payload);
+        } catch (ConnectionException $e) {
+            Log::error('DeepSeekProvider: Permintaan ke DeepSeek API mengalami timeout atau kegagalan jaringan.', [
+                'endpoint' => $endpoint,
+                'attempt' => $attempt + 1,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new AnalysisProviderException(
+                'Waktu tunggu koneksi ke layanan analisis hukum habis (timeout). Silakan coba beberapa saat lagi.',
+                'timeout',
+                0,
+                $e
+            );
+        } catch (\Throwable $e) {
+            Log::error('DeepSeekProvider: Kesalahan tak terduga saat menghubungi DeepSeek API.', [
+                'endpoint' => $endpoint,
+                'attempt' => $attempt + 1,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new AnalysisProviderException(
+                'Maaf, layanan analisis hukum sedang mengalami kendala komunikasi. Silakan coba kembali.',
+                'network_error',
+                0,
+                $e
+            );
+        }
+    }
+
+    private function isUnsupportedResponseFormatError(string $responseBody): bool
+    {
+        $lower = mb_strtolower($responseBody, 'UTF-8');
+
+        return str_contains($lower, 'response_format') || str_contains($lower, 'json_object');
     }
 
     /**

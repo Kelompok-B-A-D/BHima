@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\LegalIngestionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -45,15 +47,47 @@ class DashboardDataController extends Controller
             'contents' => ['title' => 'required|string|max:200', 'category' => 'required|in:SOP,Panduan,Pengumuman,Informasi', 'body' => 'required|string|max:50000', 'status' => 'required|in:Draf,Terbit'],
             'documents' => ['title' => 'required|string|max:200', 'number' => 'required|string|max:100', 'year' => 'required|integer|min:1900|max:2100', 'category' => 'required|string|max:100', 'summary' => 'required|string|max:10000', 'file' => 'nullable|file|mimes:pdf|mimetypes:application/pdf|max:10240'],
             'budgets' => ['title' => 'required|string|max:200', 'year' => 'required|integer|min:1900|max:2100', 'allocation' => 'required|numeric|min:0|max:999999999999', 'realized' => 'required|numeric|min:0|lte:allocation'],
-            'complaints' => ['action' => 'required|in:verify,complete,reject,dispatch,status,note,assign', 'note' => 'required|string|min:5|max:5000', 'status' => ['nullable', Rule::in(self::STATUSES)], 'agency' => 'required_if:action,dispatch|nullable|string|max:200', 'assigned_to' => 'required_if:action,assign|nullable|integer|exists:users,id'],
+            'complaints' => [
+                'action' => 'required|in:verify,complete,reject,dispatch,status,note,assign',
+                'note' => 'required|string|min:5|max:5000',
+                'status' => ['nullable', Rule::in(self::STATUSES)],
+                'agency' => 'required_if:action,dispatch|nullable|string|max:200',
+                'assigned_to' => 'required_if:action,assign|nullable|integer|exists:users,id',
+                'requested_documents' => 'required_if:action,complete|nullable|string|max:2000',
+                'follow_up_summary' => 'nullable|string|max:5000',
+                'follow_up_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            ],
         };
         $input = $request->validate($rules);
+        if ($collection === 'budgets') {
+            $input['title'] = trim($input['title']);
+        }
         DB::transaction(function () use ($request, $collection, $base, $input, $admin) {
             // A user row lock serializes capacity checks and per-record changes for this internal workspace.
             DB::table('users')->orderBy('id')->lockForUpdate()->get(['id']);
             $record = DB::table('dashboard_records')->where('collection', $collection)->where('record_key', $base['id'])->lockForUpdate()->first();
             $old = $record ? json_decode($record->payload, true) : [];
             $assigned = $record?->assigned_to;
+            if ($collection === 'budgets') {
+                $title = $this->normalizedBudgetTitle($input['title']);
+                $duplicate = DB::table('dashboard_records')
+                    ->where('collection', 'budgets')
+                    ->where('record_key', '!=', $base['id'])
+                    ->lockForUpdate()
+                    ->get(['payload'])
+                    ->first(function ($budget) use ($input, $title) {
+                        $payload = json_decode($budget->payload, true);
+
+                        return (int) ($payload['year'] ?? 0) === (int) $input['year']
+                            && $this->normalizedBudgetTitle((string) ($payload['title'] ?? '')) === $title;
+                    });
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages([
+                        'title' => 'Bidang kegiatan sudah memiliki anggaran untuk tahun tersebut.',
+                    ]);
+                }
+            }
             if ($collection === 'complaints') {
                 abort_unless($record && ($admin || $assigned === $request->user()->id), 403);
                 $action = $input['action'];
@@ -79,10 +113,63 @@ class DashboardDataController extends Controller
                     if (! in_array($old['status'], $allowed, true)) {
                         throw ValidationException::withMessages(['action' => 'Tindakan tidak sesuai tahapan laporan. Muat ulang data.']);
                     }
-                    $old['status'] = $status;
-                    if ($action === 'dispatch') {
+                    if ($action === 'complete') {
+                        $documents = collect(preg_split('/\r\n|\r|\n/', (string) ($input['requested_documents'] ?? '')) ?: [])
+                            ->map(fn ($line) => trim(strip_tags($line)))
+                            ->filter(fn ($line) => $line !== '')
+                            ->values()
+                            ->all();
+                        if ($documents === []) {
+                            throw ValidationException::withMessages([
+                                'requested_documents' => 'Sebutkan minimal satu dokumen kelengkapan yang diminta.',
+                            ]);
+                        }
+                        $old['completeness_request'] = [
+                            'note' => $input['note'],
+                            'documents' => $documents,
+                            'requested_at' => now()->toIso8601String(),
+                            'requested_by' => $request->user()->name,
+                            'fulfilled_at' => null,
+                        ];
+                    } elseif ($action === 'reject') {
+                        $old['rejection_reason'] = $input['note'];
+                    } elseif ($action === 'dispatch') {
                         $old['agency'] = $input['agency'];
+                        $old['dispositions'] = is_array($old['dispositions'] ?? null) ? $old['dispositions'] : [];
+                        $old['dispositions'][] = [
+                            'agency' => $input['agency'],
+                            'date' => now()->toIso8601String(),
+                            'note' => $input['note'],
+                            'by' => $request->user()->name,
+                        ];
+                    } elseif ($action === 'status') {
+                        $summary = trim((string) ($input['follow_up_summary'] ?? ''));
+                        $existingSummary = trim((string) ($old['follow_up']['summary'] ?? ''));
+                        if ($status === 'Selesai' && $summary === '' && $existingSummary === '') {
+                            throw ValidationException::withMessages([
+                                'follow_up_summary' => 'Ringkasan hasil tindak lanjut wajib diisi sebelum menandai selesai.',
+                            ]);
+                        }
+                        if ($summary !== '' || $request->hasFile('follow_up_file')) {
+                            $followUp = is_array($old['follow_up'] ?? null) ? $old['follow_up'] : [];
+                            if ($summary !== '') {
+                                $followUp['summary'] = $summary;
+                            }
+                            if ($request->hasFile('follow_up_file')) {
+                                $file = $request->file('follow_up_file');
+                                $followUp['attachment'] = [
+                                    'name' => $file->getClientOriginalName(),
+                                    'path' => $file->store('complaints/'.$base['id'].'/tindak-lanjut', 'local'),
+                                    'mime' => $file->getMimeType(),
+                                    'size' => $file->getSize(),
+                                ];
+                            }
+                            $followUp['updated_at'] = now()->toIso8601String();
+                            $followUp['by'] = $request->user()->name;
+                            $old['follow_up'] = $followUp;
+                        }
                     }
+                    $old['status'] = $status;
                 }
                 $old['notes'][] = ['date' => now()->toIso8601String(), 'text' => $input['note'], 'by' => $request->user()->name];
                 $old['history'][] = ['date' => now()->toIso8601String(), 'text' => $input['action'].' · '.$old['status']];
@@ -146,6 +233,11 @@ class DashboardDataController extends Controller
     {
         abort_unless($request->user()->role === 'admin', 403);
         abort_unless(in_array($collection, ['contents', 'documents', 'budgets'], true), 403);
+        if ($collection === 'contents') {
+            app(ServiceContentController::class)->destroy($request, $key);
+
+            return response()->json(['message' => 'Data dihapus.']);
+        }
         DB::transaction(function () use ($request, $collection, $key) {
             if ($collection === 'documents') {
                 DB::table('knowledge_chunks')->where('document_key', $key)->delete();
@@ -167,8 +259,30 @@ class DashboardDataController extends Controller
         return Storage::disk('local')->download($record->file_path, basename(json_decode($record->payload, true)['filename']));
     }
 
+    public function processDocument(Request $request, string $key, LegalIngestionService $ingestionService)
+    {
+        abort_unless($request->user()->role === 'admin', 403);
+        abort_unless(preg_match('/^[A-Za-z0-9_-]{1,80}$/', $key), 404);
+
+        $result = $ingestionService->processDocument($key);
+        abort_if($result['status'] === 'not_found', 404);
+
+        if ($result['status'] === 'failed') {
+            return response()->json(['message' => $result['message']], 422);
+        }
+
+        $this->audit($request, 'Memproses dan mengindeks ulang dokumen '.$result['document_key']);
+
+        return response()->json($result);
+    }
+
     private function audit(Request $request, string $text): void
     {
         DB::table('dashboard_activities')->insert(['user_id' => $request->user()->id, 'text' => $text, 'created_at' => now(), 'updated_at' => now()]);
+    }
+
+    private function normalizedBudgetTitle(string $title): string
+    {
+        return Str::lower(preg_replace('/\s+/', ' ', trim($title)) ?? '');
     }
 }
