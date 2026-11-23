@@ -28,20 +28,20 @@
         <main id="portal-main-content" class="w-full pt-24 min-[641px]:pt-28 pb-10 min-[641px]:pb-14 bg-transparent relative min-h-[calc(100vh-280px)] stitch-print-full">
             <div class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 space-y-6 min-[641px]:space-y-8">
                 <!-- Screen Header & Context -->
-                <section class="space-y-2.5 max-w-3xl">
+                <section class="hero-enter space-y-2.5 max-w-3xl">
                     <p class="text-xs uppercase tracking-[0.12em] font-bold text-[#005EB8]">
                         Pelayanan Pengaduan Masyarakat Mandiri
                     </p>
                     <h1 class="type-h1 text-[#0B1020]">
                         Lacak Status Pengaduan
                     </h1>
-                    <p class="text-sm min-[641px]:text-base text-[#4A5366] leading-relaxed">
+                    <p class="prose-measure text-sm min-[641px]:text-base text-[#4A5366] leading-relaxed">
                         Masukkan nomor tiket untuk memantau perkembangan verifikasi dan disposisi laporan pengaduan Anda secara langsung, tanpa perlu membuat akun.
                     </p>
                 </section>
 
                 <!-- FLOATING CLEAR LIQUID GLASS TICKET SEARCH PILL -->
-                <section class="stitch-no-print" aria-label="Formulir Pencarian Nomor Tiket">
+                <section class="stitch-no-print hero-enter hero-enter-1" aria-label="Formulir Pencarian Nomor Tiket">
                     <form
                         id="trackTicketForm"
                         method="POST"
@@ -52,7 +52,7 @@
                         <div class="glass-input min-[641px]:!border-0 min-[641px]:!bg-transparent min-[641px]:!shadow-none flex items-center gap-3 px-3.5 min-[641px]:pl-4 min-[641px]:pr-2 flex-1 min-w-0 py-2 min-[641px]:py-0">
                             <span class="material-symbols-outlined text-[#0066CC] text-[24px] shrink-0" aria-hidden="true">confirmation_number</span>
                             <div class="flex flex-col flex-1 min-w-0">
-                                <label for="ticket-input" class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold leading-tight">
+                                <label for="ticket-input" class="text-xs text-[#4A5366] uppercase tracking-wider font-bold leading-tight">
                                     Nomor Resi / Tiket Aduan
                                 </label>
                                 <input
@@ -88,13 +88,33 @@
                     </form>
                 </section>
 
+                <!-- Flash Success Message -->
+                @if (session('completeness_submitted'))
+                    <div role="status" class="rounded-[20px] bg-[#DCFCE7] border border-[#BBF7D0] text-[#166534] p-4 min-[641px]:p-5 flex items-start gap-3">
+                        <span class="material-symbols-outlined text-[22px] shrink-0 mt-0.5" aria-hidden="true">check_circle</span>
+                        <div class="space-y-1 text-xs min-[641px]:text-sm">
+                            <strong class="font-bold block">Kelengkapan Berkas Diterima</strong>
+                            <p>{{ session('completeness_submitted') }}</p>
+                        </div>
+                    </div>
+                @endif
+
                 <!-- Server Validation Errors -->
                 @if ($errors->any())
                     <div role="alert" class="rounded-[20px] bg-[#FEE2E2] border border-[#FCA5A5] text-[#991B1B] p-4 min-[641px]:p-5 flex items-start gap-3">
                         <span class="material-symbols-outlined text-[22px] shrink-0 mt-0.5" aria-hidden="true">error</span>
                         <div class="space-y-1 text-xs min-[641px]:text-sm">
-                            <strong class="font-bold block">Format Nomor Tiket Belum Sesuai</strong>
-                            <p>{{ $errors->first() }} Pastikan format tiket diawali <span class="font-mono font-bold">BHM-</span> (contoh: <span class="font-mono font-bold">BHM-2026-0001</span>).</p>
+                            @if ($errors->has('tiket'))
+                                <strong class="font-bold block">Format Nomor Tiket Belum Sesuai</strong>
+                                <p>{{ $errors->first('tiket') }} Pastikan format tiket diawali <span class="font-mono font-bold">BHM-</span> (contoh: <span class="font-mono font-bold">BHM-2026-0001</span>).</p>
+                            @else
+                                <strong class="font-bold block">Pengiriman Kelengkapan Belum Sesuai</strong>
+                                <ul class="list-disc pl-5 space-y-0.5">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            @endif
                         </div>
                     </div>
                 @endif
@@ -174,12 +194,78 @@
                                 </div>
 
                                 @if ($needsFix)
-                                    <div class="rounded-[20px] bg-[#FEF3C7] border border-[#F5D07A] text-[#92400E] p-5 flex items-start gap-3">
-                                        <span class="material-symbols-outlined text-[22px] shrink-0 mt-0.5" aria-hidden="true">warning</span>
-                                        <div class="text-xs min-[641px]:text-sm space-y-1">
-                                            <strong class="font-bold block">Perlu Dilengkapi</strong>
-                                            <p>Petugas verifikator meminta kelengkapan berkas tambahan untuk menindaklanjuti laporan ini.</p>
+                                    <div class="rounded-[20px] bg-[#FEF3C7] border border-[#F5D07A] text-[#92400E] p-5 min-[641px]:p-6 space-y-4">
+                                        <div class="flex items-start gap-3">
+                                            <span class="material-symbols-outlined text-[22px] shrink-0 mt-0.5" aria-hidden="true">warning</span>
+                                            <div class="text-xs min-[641px]:text-sm space-y-2 min-w-0 flex-1">
+                                                <strong class="font-bold block text-[#78350F]">Perlu Dilengkapi</strong>
+                                                <p class="leading-relaxed">
+                                                    {{ $result['request_note'] ?: 'Petugas verifikator meminta kelengkapan berkas tambahan untuk menindaklanjuti laporan ini.' }}
+                                                </p>
+                                                @if (! empty($result['requested_documents']))
+                                                    <div class="pt-1 space-y-1">
+                                                        <span class="text-xs font-bold uppercase tracking-wider text-[#78350F] block">Dokumen yang Diminta</span>
+                                                        <ul class="list-disc pl-5 space-y-1 text-[#78350F] font-medium">
+                                                            @foreach ($result['requested_documents'] as $doc)
+                                                                <li>{{ $doc }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('complaint.completeness', $result['ticket']) }}"
+                                            enctype="multipart/form-data"
+                                            class="stitch-no-print rounded-[16px] bg-white border border-[#F5D07A] p-4 min-[641px]:p-5 space-y-4 text-[#0B1020]"
+                                        >
+                                            @csrf
+                                            <div class="space-y-1.5">
+                                                <label for="completeness-note" class="block text-xs font-bold uppercase tracking-wider text-[#333E52]">
+                                                    Catatan Kelengkapan
+                                                </label>
+                                                <textarea
+                                                    id="completeness-note"
+                                                    name="catatan"
+                                                    rows="3"
+                                                    required
+                                                    minlength="5"
+                                                    maxlength="2000"
+                                                    placeholder="Jelaskan berkas tambahan yang Anda lampirkan..."
+                                                    class="w-full rounded-[14px] border border-[#CBD5E1] bg-[#F8FAFC] px-3.5 py-2.5 text-sm text-[#0B1020] placeholder:text-[#4A5366] focus:border-[#0066CC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066CC]/20"
+                                                >{{ old('catatan') }}</textarea>
+                                            </div>
+
+                                            <div class="space-y-1.5">
+                                                <label for="completeness-files" class="block text-xs font-bold uppercase tracking-wider text-[#333E52]">
+                                                    Unggah Berkas Tambahan (PDF, JPG, PNG; maks. 5 berkas, 10 MB per berkas)
+                                                </label>
+                                                <input
+                                                    id="completeness-files"
+                                                    type="file"
+                                                    name="lampiran[]"
+                                                    multiple
+                                                    accept=".pdf,.jpg,.jpeg,.png"
+                                                    required
+                                                    class="w-full min-h-[44px] rounded-[14px] border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2 text-xs min-[641px]:text-sm text-[#0B1020] file:mr-3 file:rounded-full file:border-0 file:bg-[#E6F0FC] file:px-3.5 file:py-1.5 file:text-xs file:font-bold file:text-[#005EB8] hover:file:bg-[#D5E6FA]"
+                                                >
+                                            </div>
+
+                                            <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                                                <p class="text-xs text-[#4A5366]">
+                                                    Berkas disimpan secara privat dan hanya dapat diperiksa petugas berwenang.
+                                                </p>
+                                                <button
+                                                    type="submit"
+                                                    class="btn-primary !min-h-[44px] px-6 text-xs min-[641px]:text-sm inline-flex items-center justify-center gap-2"
+                                                >
+                                                    <span class="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span>
+                                                    <span>Kirim Kelengkapan</span>
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 @endif
 
@@ -187,9 +273,15 @@
                                     <div class="rounded-[20px] bg-[#FEE2E2] border border-[#FCA5A5] text-[#991B1B] p-5 space-y-3">
                                         <div class="flex items-start gap-3">
                                             <span class="material-symbols-outlined text-[22px] shrink-0 mt-0.5" aria-hidden="true">cancel</span>
-                                            <div class="text-xs min-[641px]:text-sm space-y-1">
+                                            <div class="text-xs min-[641px]:text-sm space-y-2 min-w-0 flex-1">
                                                 <strong class="font-bold block">Laporan Ditolak</strong>
                                                 <p>Laporan berada di luar kewenangan layanan atau belum memenuhi syarat administrasi. Anda dapat mengajukan laporan baru dengan data yang sesuai.</p>
+                                                @if (! empty($result['rejection_reason']))
+                                                    <div class="rounded-[14px] bg-white border border-[#FCA5A5] p-3.5 text-[#7F1D1D] space-y-1">
+                                                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#991B1B] block">Alasan Penolakan</span>
+                                                        <p class="whitespace-pre-line leading-relaxed font-medium">{{ $result['rejection_reason'] }}</p>
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                         <a href="{{ route('complaint.create') }}" class="press-scale min-h-[44px] px-5 rounded-full bg-[#991B1B] hover:bg-[#7F1D1D] text-white text-xs font-bold inline-flex items-center gap-2 transition-colors">
@@ -273,7 +365,43 @@
                                             {{ $result['agency'] ? 'Laporan telah diteruskan ke instansi di atas untuk pemeriksaan dan klarifikasi lebih lanjut.' : 'Setelah verifikator menyelesaikan pemeriksaan berkas awal, instansi tujuan disposisi akan ditampilkan di sini.' }}
                                         </p>
                                     </div>
+                                    @if (! empty($result['dispositions']))
+                                        <div class="space-y-2.5 pt-1">
+                                            <h3 class="text-xs font-bold uppercase tracking-wider text-[#4A5366]">Riwayat Disposisi</h3>
+                                            <ul class="space-y-2">
+                                                @foreach ($result['dispositions'] as $disposition)
+                                                    <li class="surface-nested flex flex-col min-[481px]:flex-row min-[481px]:items-center justify-between gap-1 p-3">
+                                                        <span class="text-xs min-[641px]:text-sm font-bold text-[#0B1020]">{{ $disposition['agency'] }}</span>
+                                                        <span class="text-xs font-semibold text-[#4A5366]">{{ $disposition['date'] ?? '-' }}</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
                                 </div>
+
+                                @if (! empty($result['follow_up']['summary']))
+                                    <!-- Hasil Tindak Lanjut -->
+                                    <div class="surface-card p-6 min-[641px]:p-7 space-y-4">
+                                        <div class="flex items-start justify-between gap-3 flex-wrap">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-11 h-11 rounded-[16px] bg-[#DCFCE7] flex items-center justify-center text-[#166534] shrink-0">
+                                                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">assignment_turned_in</span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold block">Ringkasan Penanganan</span>
+                                                    <h2 class="text-base min-[641px]:text-lg font-bold text-[#0B1020] leading-snug">Hasil Tindak Lanjut</h2>
+                                                </div>
+                                            </div>
+                                            @if (! empty($result['follow_up']['updated_at']))
+                                                <span class="text-xs font-semibold text-[#4A5366]">{{ $result['follow_up']['updated_at'] }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="surface-nested p-4">
+                                            <p class="whitespace-pre-line text-xs min-[641px]:text-sm text-[#0B1020] leading-relaxed">{{ $result['follow_up']['summary'] }}</p>
+                                        </div>
+                                    </div>
+                                @endif
 
                                 <!-- Riwayat Penanganan Log -->
                                 <div class="surface-card p-6 min-[641px]:p-7 space-y-4">
@@ -372,7 +500,7 @@
                 @else
                     <!-- Initial Empty Guidance State (Asymmetric 5 + 7 cols) -->
                     <div class="grid grid-cols-1 min-[641px]:grid-cols-12 gap-6">
-                        <div class="surface-card min-[641px]:col-span-5 p-6 min-[641px]:p-7 space-y-3">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[641px]:col-span-5 p-6 min-[641px]:p-7 space-y-3">
                             <div class="w-11 h-11 rounded-[16px] bg-[#E6F0FC] text-[#005EB8] flex items-center justify-center">
                                 <span class="material-symbols-outlined text-[24px]" aria-hidden="true">receipt_long</span>
                             </div>
@@ -382,7 +510,7 @@
                             </p>
                         </div>
 
-                        <div class="surface-card min-[641px]:col-span-7 p-6 min-[641px]:p-7 flex flex-col justify-between gap-5">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[641px]:col-span-7 p-6 min-[641px]:p-7 flex flex-col justify-between gap-5">
                             <div class="space-y-3">
                                 <div class="w-11 h-11 rounded-[16px] bg-[#E6F5F3] text-[#0F766E] flex items-center justify-center">
                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">campaign</span>

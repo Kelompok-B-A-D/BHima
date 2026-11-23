@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Services\Analysis\MockProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -86,6 +87,94 @@ class LegalIngestionService
             'sop_count' => $sopCount,
             'chunks_indexed' => $chunksIndexed,
         ];
+    }
+
+    /**
+     * Proses ulang satu dokumen JDIH yang dikelola dashboard. Dipakai oleh
+     * perintah admin dan endpoint internal agar unggahan baru tidak perlu
+     * menunggu re-ingestion seluruh korpus.
+     *
+     * @return array{status: 'indexed'|'failed'|'not_found', document_key: string, chunks_indexed: int, message: string}
+     */
+    public function processDocument(string $documentKey, ?string $manifestPath = null, ?string $pdfDir = null): array
+    {
+        $documentKey = trim($documentKey);
+        if ($documentKey === '' || ! preg_match('/^[A-Za-z0-9_-]{1,80}$/', $documentKey)) {
+            throw new \InvalidArgumentException('Kunci dokumen tidak valid.');
+        }
+
+        $manifestKey = strtoupper($documentKey);
+        $manifestEntries = $this->manifestService->loadAll($manifestPath);
+        $this->syncManifestDocumentsWithLocalPdfs($manifestEntries, $pdfDir, $manifestKey);
+
+        $record = DB::table('dashboard_records')
+            ->where('collection', 'documents')
+            ->where('record_key', $documentKey)
+            ->first();
+
+        if (! $record) {
+            return [
+                'status' => 'not_found',
+                'document_key' => $documentKey,
+                'chunks_indexed' => 0,
+                'message' => 'Dokumen JDIH tidak ditemukan.',
+            ];
+        }
+
+        try {
+            $chunksIndexed = DB::transaction(function () use ($documentKey, $manifestKey, $manifestEntries, $pdfDir): int {
+                $lockedRecord = DB::table('dashboard_records')
+                    ->where('collection', 'documents')
+                    ->where('record_key', $documentKey)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $lockedRecord) {
+                    throw new \RuntimeException('Dokumen tidak tersedia untuk diproses.');
+                }
+
+                $payload = json_decode((string) $lockedRecord->payload, true) ?: [];
+                $payload['status'] = 'Memproses';
+                $payload['extraction'] = 'Memproses';
+                unset($payload['processing_error']);
+
+                DB::table('dashboard_records')
+                    ->where('id', $lockedRecord->id)
+                    ->update([
+                        'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                        'updated_at' => now(),
+                    ]);
+
+                $manifest = $manifestEntries[$manifestKey] ?? null;
+                $count = $this->ingestRecord($lockedRecord, $payload, $manifest, $pdfDir);
+                if ($count === 0) {
+                    throw new \RuntimeException('Tidak ada teks yang dapat diekstrak dari dokumen.');
+                }
+
+                return $count;
+            }, 3);
+
+            return [
+                'status' => 'indexed',
+                'document_key' => $documentKey,
+                'chunks_indexed' => $chunksIndexed,
+                'message' => "Dokumen berhasil diekstrak dan {$chunksIndexed} potongan terindeks.",
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Pemrosesan dokumen JDIH gagal.', [
+                'document_key' => $documentKey,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->markProcessingFailed($documentKey);
+
+            return [
+                'status' => 'failed',
+                'document_key' => $documentKey,
+                'chunks_indexed' => 0,
+                'message' => 'Dokumen belum dapat diproses. Periksa PDF, metadata, dan coba kembali.',
+            ];
+        }
     }
 
     /**
@@ -239,9 +328,11 @@ class LegalIngestionService
 
         // Perbarui status ekstraksi dan indeksasi pada dokumen JDIH
         $targetStatus = $statusBerlaku === 'dicabut' ? 'Dicabut (Arsip)' : 'Terindeks';
-        if ($isJdih && (($payload['status'] ?? '') !== $targetStatus || ($payload['extraction'] ?? '') !== 'Berhasil')) {
+        if ($isJdih && (($payload['status'] ?? '') !== $targetStatus || ($payload['extraction'] ?? '') !== 'Berhasil' || isset($payload['processing_error']))) {
             $payload['extraction'] = 'Berhasil';
             $payload['status'] = $targetStatus;
+            $payload['indexed_at'] = $now->toIso8601String();
+            unset($payload['processing_error']);
             $payload['status_berlaku'] = $statusBerlaku;
             if ($sourcePageUrl !== '') {
                 $payload['source_page_url'] = $sourcePageUrl;
@@ -567,7 +658,7 @@ class LegalIngestionService
      *
      * @param  array<string, array<string, mixed>>  $manifestEntries
      */
-    private function syncManifestDocumentsWithLocalPdfs(array $manifestEntries, ?string $pdfDir = null): void
+    private function syncManifestDocumentsWithLocalPdfs(array $manifestEntries, ?string $pdfDir = null, ?string $onlyDocumentKey = null): void
     {
         if (empty($manifestEntries)) {
             return;
@@ -577,6 +668,10 @@ class LegalIngestionService
         $today = $now->toDateString();
 
         foreach ($manifestEntries as $docKey => $entry) {
+            if ($onlyDocumentKey !== null && strcasecmp($docKey, $onlyDocumentKey) !== 0) {
+                continue;
+            }
+
             $pdfPath = $this->manifestService->findLocalPdfPath($docKey, $pdfDir);
             if ($pdfPath === null) {
                 continue;
@@ -621,6 +716,30 @@ class LegalIngestionService
                 ['payload', 'updated_at']
             );
         }
+    }
+
+    private function markProcessingFailed(string $documentKey): void
+    {
+        $record = DB::table('dashboard_records')
+            ->where('collection', 'documents')
+            ->where('record_key', $documentKey)
+            ->first();
+
+        if (! $record) {
+            return;
+        }
+
+        $payload = json_decode((string) $record->payload, true) ?: [];
+        $payload['status'] = 'Gagal';
+        $payload['extraction'] = 'Gagal';
+        $payload['processing_error'] = 'Teks PDF tidak dapat diekstrak. Periksa berkas atau gunakan PDF berbasis teks.';
+
+        DB::table('dashboard_records')
+            ->where('id', $record->id)
+            ->update([
+                'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                'updated_at' => now(),
+            ]);
     }
 
     /**
@@ -749,4 +868,3 @@ class LegalIngestionService
         return 'Peraturan Perundang-undangan';
     }
 }
-

@@ -49,9 +49,9 @@
                             <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_back</span>
                         </a>
                         <a class="min-h-[44px] inline-flex items-center hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}">Beranda</a>
-                        <span class="material-symbols-outlined text-[16px] text-[#94A3B8]" aria-hidden="true">chevron_right</span>
+                        <span class="material-symbols-outlined text-[16px] text-[#5A657A]" aria-hidden="true">chevron_right</span>
                         <a class="min-h-[44px] inline-flex items-center hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}#layanan">Layanan Publik</a>
-                        <span class="material-symbols-outlined text-[16px] text-[#94A3B8]" aria-hidden="true">chevron_right</span>
+                        <span class="material-symbols-outlined text-[16px] text-[#5A657A]" aria-hidden="true">chevron_right</span>
                         <span class="text-[#005EB8] font-bold">Formulir Pengaduan</span>
                     </div>
 
@@ -66,7 +66,7 @@
                     <!-- LEFT PRIMARY COLUMN: Header, Prefill Summary & 3-Step Form -->
                     <section class="min-[1008px]:col-span-7 flex flex-col gap-6" aria-label="Formulir Pengaduan Masyarakat">
                         <!-- Intro Header Card -->
-                        <div class="surface-card p-6 min-[641px]:p-7 space-y-3">
+                        <div class="surface-card hero-enter p-6 min-[641px]:p-7 space-y-3">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="space-y-1.5">
                                     <p class="text-xs uppercase tracking-[0.12em] font-bold text-[#005EB8]">
@@ -80,7 +80,7 @@
                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">gavel</span>
                                 </div>
                             </div>
-                            <p class="text-sm text-[#4A5366] leading-relaxed">
+                            <p class="prose-measure text-sm text-[#4A5366] leading-relaxed">
                                 Sampaikan laporan dugaan pungutan liar, pelayanan lambat, atau ketidakjelasan prosedur loket desa dan kelurahan. Setiap laporan tercatat resmi dan ditelaah oleh verifikator BHIMA.
                             </p>
                         </div>
@@ -166,7 +166,7 @@
                             enctype="multipart/form-data"
                             novalidate
                             data-initial-step="{{ $initialStep }}"
-                            class="surface-card p-5 min-[641px]:p-7 flex flex-col gap-6"
+                            class="surface-card hero-enter hero-enter-1 p-5 min-[641px]:p-7 flex flex-col gap-6"
                         >
                             @csrf
                             <input type="hidden" name="session_uuid" value="{{ $prefill['session_uuid'] ?? '' }}">
@@ -222,7 +222,7 @@
                                     </div>
 
                                     <!-- Segmented Privacy Mode Switch -->
-                                    <div class="inline-flex p-1 bg-[#E4EAF3] rounded-full border border-[#CBD5E4] shrink-0 self-start min-[641px]:self-center">
+                                    <div class="inline-flex p-1 bg-[#E4EAF3] rounded-full border border-[#75849B] shrink-0 self-start min-[641px]:self-center">
                                         <button
                                             type="button"
                                             id="btnAnonMode"
@@ -408,7 +408,7 @@
                                     <button
                                         type="button"
                                         id="uploadTriggerBtn"
-                                        class="press-scale w-full p-6 rounded-[20px] bg-[#F4F7FC] hover:bg-[#E6F0FC]/60 border-2 border-dashed border-[#B7C5DB] hover:border-[#0066CC] transition-all text-center flex flex-col items-center justify-center gap-2"
+                                        class="press-scale w-full p-6 rounded-[20px] bg-[#F4F7FC] hover:bg-[#E6F0FC]/60 border-2 border-dashed border-[#6C7B93] hover:border-[#0066CC] transition-all text-center flex flex-col items-center justify-center gap-2"
                                     >
                                         <div class="w-12 h-12 rounded-full bg-white text-[#0066CC] border border-[#DCE4F0] flex items-center justify-center">
                                             <span class="material-symbols-outlined text-[26px]" aria-hidden="true">cloud_upload</span>
@@ -546,7 +546,7 @@
                         @endif
 
                         <!-- 3-Stage Post Submission Timeline -->
-                        <div class="surface-card p-6 min-[641px]:p-7 space-y-5">
+                        <div class="surface-card reveal-on-scroll p-6 min-[641px]:p-7 space-y-5">
                             <div class="flex items-center gap-2 text-[#0B1020]">
                                 <span class="material-symbols-outlined text-[#0066CC] text-[22px]" aria-hidden="true">timeline</span>
                                 <h2 class="text-base min-[641px]:text-lg font-bold">Tahapan Penanganan Pasca Pengiriman</h2>
@@ -583,6 +583,36 @@
 
         @include('partials.liquid-footer')
         @include('partials.liquid-bottom-nav', ['activeNav' => 'formulir-pengaduan'])
+
+        <!-- Accessible Pre-Submission Confirmation Modal (Clear Liquid Glass + Backdrop Blur) -->
+        <x-confirm-dialog
+            id="confirm-submit-complaint-dialog"
+            title="Konfirmasi Pengiriman Pengaduan"
+            description="Periksa ringkasan laporan Anda di bawah ini sebelum diteruskan ke tim verifikator BHIMA."
+            confirm-label="Ya, Kirim Pengaduan"
+            cancel-label="Periksa Kembali"
+            icon="send"
+            tone="primary"
+        >
+            <dl class="surface-nested grid grid-cols-1 min-[481px]:grid-cols-2 gap-3 p-4 text-xs">
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Mode Pelaporan</dt>
+                    <dd id="confirmSummaryMode" class="font-bold text-[#0B1020] mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Kategori Pengaduan</dt>
+                    <dd id="confirmSummaryCategory" class="font-bold text-[#0B1020] mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Instansi Terlapor</dt>
+                    <dd id="confirmSummaryEntity" class="font-bold text-[#0B1020] mt-0.5">-</dd>
+                </div>
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Lokasi Kejadian</dt>
+                    <dd id="confirmSummaryLocation" class="font-bold text-[#0B1020] mt-0.5">-</dd>
+                </div>
+            </dl>
+        </x-confirm-dialog>
     </div>
 
     <script>
@@ -820,10 +850,35 @@
                     return;
                 }
 
+                const confirmDialog = document.getElementById('confirm-submit-complaint-dialog');
+                if (confirmDialog && typeof confirmDialog.showModal === 'function' && form.dataset.confirmedSubmit !== '1') {
+                    event.preventDefault();
+                    const modeEl = document.getElementById('confirmSummaryMode');
+                    const catSummaryEl = document.getElementById('confirmSummaryCategory');
+                    const entitySummaryEl = document.getElementById('confirmSummaryEntity');
+                    const locSummaryEl = document.getElementById('confirmSummaryLocation');
+                    if (modeEl) modeEl.textContent = anonToggle?.checked ? 'Anonim Terlindungi' : (reporterName?.value?.trim() || 'Data Terbuka');
+                    if (catSummaryEl) catSummaryEl.textContent = cat.value;
+                    if (entitySummaryEl) entitySummaryEl.textContent = entity.value.trim();
+                    if (locSummaryEl) locSummaryEl.textContent = locEl.value.trim();
+                    confirmDialog.showModal();
+                    return;
+                }
+
                 if (submitBtn && submitLabel) {
                     submitBtn.disabled = true;
                     submitLabel.textContent = 'Mengirim Pengaduan...';
                 }
+            });
+
+            document.getElementById('confirm-submit-complaint-dialog')?.addEventListener('bhima:dialog-result', (event) => {
+                if (!event.detail?.confirmed) return;
+                form.dataset.confirmedSubmit = '1';
+                if (submitBtn && submitLabel) {
+                    submitBtn.disabled = true;
+                    submitLabel.textContent = 'Mengirim Pengaduan...';
+                }
+                form.submit();
             });
 
             // Copy Ticket Button & Mobile Auto-Focus on Success Card

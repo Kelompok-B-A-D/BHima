@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
-use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\PublicComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +29,10 @@ Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->midd
 // Fitur 5 (KF-14): lacak tiket
 Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');
 Route::post('/lacak', [ComplaintController::class, 'track'])->middleware('throttle:20,1')->name('complaint.track.submit');
+Route::post('/lacak/{tiket}/lengkapi', [ComplaintController::class, 'submitCompleteness'])
+    ->middleware('throttle:10,1')
+    ->where('tiket', 'BHM-[0-9]{4}-[A-Z0-9]{4,}')
+    ->name('complaint.completeness');
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {
@@ -50,6 +54,7 @@ Route::middleware(DashboardAccess::class)->group(function () {
     Route::post('/internal/data/{collection}', [DashboardDataController::class, 'save']);
     Route::delete('/internal/data/{collection}/{key}', [DashboardDataController::class, 'destroy']);
     Route::get('/internal/files/{key}', [DashboardDataController::class, 'download']);
+    Route::post('/internal/documents/{key}/process', [DashboardDataController::class, 'processDocument']);
     Route::get('/{role}/{page?}', function (string $role, ?string $page = null) {
         abort_unless(in_array($page ?? 'dashboard', ['dashboard', 'pengaduan', 'konten', 'jdih', 'basis-ai', 'anggaran', 'analitik', 'pencarian', 'akun', 'peran', 'aktivitas', 'pengaturan'], true), 404);
 
