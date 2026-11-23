@@ -235,4 +235,87 @@ class ComplaintWorkflowPbi16Pbi17Test extends TestCase
         $this->assertCount($notesBefore, $payload['notes']);
         $this->assertSame('kelengkapan diterima · Menunggu Verifikasi', end($payload['history'])['text']);
     }
+
+    public function test_public_track_shows_request_rejection_and_follow_up_without_internal_notes(): void
+    {
+        Storage::fake('local');
+        $verifier = $this->user();
+        $verifier->name = 'Petugas Verifikator Rahasia';
+        $verifier->save();
+
+        $this->complaint('BHM-2026-0013', $verifier->id, [
+            'notes' => [['date' => now()->toIso8601String(), 'text' => 'RAHASIA INTERNAL', 'by' => 'Petugas']],
+            'attachments' => [[
+                'name' => 'bukti.pdf',
+                'path' => 'complaints/BHM-2026-0013/rahasia-path.pdf',
+                'mime' => 'application/pdf',
+                'size' => 120,
+            ]],
+        ]);
+        $this->complaint('BHM-2026-0019', $verifier->id, [
+            'notes' => [['date' => now()->toIso8601String(), 'text' => 'CATATAN INTERNAL SELESAI', 'by' => 'Petugas']],
+        ]);
+        $this->actingAs($verifier);
+
+        $this->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0013',
+            'action' => 'complete',
+            'note' => 'Lampiran belum lengkap.',
+            'requested_documents' => 'KTP',
+        ])->assertOk();
+
+        $this->get('/lacak?tiket=BHM-2026-0013')
+            ->assertOk()
+            ->assertSee('KTP')
+            ->assertSee('Lampiran belum lengkap.')
+            ->assertSee('Kirim Kelengkapan')
+            ->assertDontSee('RAHASIA INTERNAL')
+            ->assertDontSee('rahasia-path.pdf')
+            ->assertDontSee('Petugas Verifikator Rahasia');
+
+        $this->actingAs($verifier)->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0013',
+            'action' => 'reject',
+            'note' => 'Bukan kewenangan desa.',
+        ])->assertOk();
+
+        $this->get('/lacak?tiket=BHM-2026-0013')
+            ->assertOk()
+            ->assertSee('Bukan kewenangan desa.')
+            ->assertDontSee('RAHASIA INTERNAL');
+
+        $this->actingAs($verifier)->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0019',
+            'action' => 'verify',
+            'note' => 'Dokumen valid dan lengkap.',
+        ])->assertOk();
+
+        $this->actingAs($verifier)->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0019',
+            'action' => 'dispatch',
+            'note' => 'CATATAN DISPOSISI RAHASIA',
+            'agency' => 'Inspektorat Daerah',
+        ])->assertOk();
+
+        $this->actingAs($verifier)->post('/internal/data/complaints', [
+            'id' => 'BHM-2026-0019',
+            'action' => 'status',
+            'note' => 'CATATAN SELESAI INTERNAL',
+            'status' => 'Selesai',
+            'follow_up_summary' => 'Inspektorat telah melakukan klarifikasi dan menerbitkan rekomendasi perbaikan layanan.',
+            'follow_up_file' => UploadedFile::fake()->createWithContent('laporan-hasil.pdf', '%PDF-1.4'),
+        ], ['Accept' => 'application/json'])->assertOk();
+
+        $followUpPayload = $this->payload('BHM-2026-0019');
+
+        $this->get('/lacak?tiket=BHM-2026-0019')
+            ->assertOk()
+            ->assertSee('Inspektorat Daerah')
+            ->assertSee('Inspektorat telah melakukan klarifikasi dan menerbitkan rekomendasi perbaikan layanan.')
+            ->assertDontSee('CATATAN INTERNAL SELESAI')
+            ->assertDontSee('CATATAN DISPOSISI RAHASIA')
+            ->assertDontSee('CATATAN SELESAI INTERNAL')
+            ->assertDontSee('Petugas Verifikator Rahasia')
+            ->assertDontSee($followUpPayload['follow_up']['attachment']['path']);
+    }
 }

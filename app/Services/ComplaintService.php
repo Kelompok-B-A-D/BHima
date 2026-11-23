@@ -269,6 +269,20 @@ class ComplaintService
             'date' => isset($p['date']) ? \Carbon\Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
             'agency' => $p['agency'] ?? null,
             'history' => $history,
+            'rejection_reason' => $p['rejection_reason'] ?? null,
+            'requested_documents' => array_values(array_filter(
+                is_array($p['completeness_request']['documents'] ?? null) ? $p['completeness_request']['documents'] : [],
+                fn ($item) => is_string($item) && trim($item) !== ''
+            )),
+            'request_note' => $p['completeness_request']['note'] ?? null,
+            'dispositions' => collect($p['dispositions'] ?? [])->map(fn ($d) => [
+                'agency' => $d['agency'] ?? null,
+                'date' => $fmt($d['date'] ?? null),
+            ])->filter(fn ($d) => ! empty($d['agency']))->values()->all(),
+            'follow_up' => isset($p['follow_up']) && is_array($p['follow_up']) && ! empty($p['follow_up']['summary']) ? [
+                'summary' => $p['follow_up']['summary'],
+                'updated_at' => $fmt($p['follow_up']['updated_at'] ?? null),
+            ] : null,
         ];
     }
 }
