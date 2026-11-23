@@ -161,6 +161,21 @@
                             </div>
                         </div>
 
+                        <!-- Fallback Mode Banner (PBI 3: Kuota Harian / Gangguan AI -> Katalog JDIH) -->
+                        <div
+                            id="chat-fallback-banner"
+                            hidden
+                            role="status"
+                            aria-live="polite"
+                            class="mx-4 min-[641px]:mx-6 my-2.5 p-4 bg-[#FEF3C7] border border-[#F5D07A] rounded-[16px] flex items-start gap-3 text-[#92400E]"
+                        >
+                            <span class="material-symbols-outlined text-[20px] text-[#92400E] shrink-0 mt-0.5" aria-hidden="true">library_books</span>
+                            <div class="text-xs min-[641px]:text-sm min-w-0 space-y-0.5">
+                                <strong class="block font-bold text-[#78350F]">Mode Katalog JDIH Aktif</strong>
+                                <span id="chat-fallback-banner-text" class="block leading-relaxed">Layanan analisis AI sedang dibatasi. Berikut rekomendasi pasal dari katalog JDIH.</span>
+                            </div>
+                        </div>
+
                         <!-- Error Banner -->
                         <div
                             id="chat-error"

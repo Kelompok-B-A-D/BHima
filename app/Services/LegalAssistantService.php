@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\Analysis\DeepSeekProvider;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -47,7 +49,8 @@ class LegalAssistantService
     ];
 
     public function __construct(
-        private readonly LegalRetrievalService $retrievalService
+        private readonly LegalRetrievalService $retrievalService,
+        private readonly ?LlmQuotaService $quotaService = null,
     ) {}
 
     /**
@@ -62,7 +65,7 @@ class LegalAssistantService
      *     retrieval_meta: array<string, mixed>
      * }
      */
-    public function answerChronology(string $chronology, ?int $topK = null, ?float $minSimilarity = null): array
+    public function answerChronology(string $chronology, ?int $topK = null, ?float $minSimilarity = null, ?string $sessionUuid = null): array
     {
         $sanitizedChronology = $this->sanitizeChronology($chronology);
         $verdictRequested = $this->detectVerdictRequest($sanitizedChronology);
@@ -93,6 +96,8 @@ class LegalAssistantService
                 'citations' => [],
                 'retrieval_meta' => [
                     'status' => 'out_of_scope',
+                    'mode' => 'ai',
+                    'fallback_reason' => null,
                     'llm_called' => false,
                     'top_score' => $retrieval['top_score'],
                     'threshold' => $retrieval['threshold'],
@@ -105,7 +110,7 @@ class LegalAssistantService
         }
 
         // Kirim ke LLM hanya kronologi warga dan chunk hasil retrieval
-        $generation = $this->generateFromContext($sanitizedChronology, $chunks, $verdictRequested, $revokedNotices);
+        $generation = $this->generateFromContext($sanitizedChronology, $chunks, $verdictRequested, $revokedNotices, $sessionUuid);
 
         // Validasi semua sitasi terhadap chunk yang benar-benar diambil
         $validated = $this->validateCitations(
@@ -124,6 +129,8 @@ class LegalAssistantService
             'citations' => $validated['citations'],
             'retrieval_meta' => [
                 'status' => 'answered',
+                'mode' => $generation['mode'],
+                'fallback_reason' => $generation['fallback_reason'],
                 'llm_called' => $generation['llm_called'],
                 'provider' => $generation['provider'],
                 'top_score' => $retrieval['top_score'],
@@ -260,13 +267,16 @@ class LegalAssistantService
      *
      * @param  list<array<string, mixed>>  $chunks
      * @param  list<string>  $revokedNotices
-     * @return array{answer: string, citations: list<array<string, mixed>>, llm_called: bool, provider: string}
+     * @return array{answer: string, citations: list<array<string, mixed>>, llm_called: bool, provider: string, mode: string, fallback_reason: ?string}
      */
-    private function generateFromContext(string $chronology, array $chunks, bool $verdictRequested, array $revokedNotices = []): array
+    private function generateFromContext(string $chronology, array $chunks, bool $verdictRequested, array $revokedNotices = [], ?string $sessionUuid = null): array
     {
         $provider = (string) config('rag.llm.provider', 'local_grounded');
-        $apiKey = (string) config('rag.llm.api_key', '');
+        $apiKey = trim((string) config('rag.llm.api_key', ''));
         $systemPrompt = (string) config('rag.system_prompt');
+        $quotaService = $this->quotaService ?? app(LlmQuotaService::class);
+        $fallbackReason = null;
+        $fallbackTriggered = false;
 
         // Format konteks yang dikirim ke LLM: HANYA kronologi warga dan chunk hasil retrieval beserta status & tautan resmi
         $contextBlocks = [];
@@ -304,62 +314,129 @@ class LegalAssistantService
             ? "\n\nCATATAN ARSIP PERATURAN DICABUT:\n".implode("\n", $revokedNotices)
             : '';
 
-        $userPrompt = "KRONOLOGI WARGA:\n".$chronology.$archivePrefix."\n\nPOTONGAN KONTEKS HUKUM & SOP:\n".implode("\n\n", $contextBlocks);
+        $maskedChronology = DeepSeekProvider::maskPersonalIdentifiers($chronology);
+        $userPrompt = "KRONOLOGI WARGA:\n".$maskedChronology.$archivePrefix."\n\nPOTONGAN KONTEKS HUKUM & SOP:\n".implode("\n\n", $contextBlocks);
 
-        if ($provider === 'api' && $apiKey !== '') {
-            try {
-                $baseUrl = rtrim((string) config('rag.llm.base_url', 'https://ai.paas.id'), '/');
-                $endpoint = str_ends_with($baseUrl, '/chat/completions')
-                    ? $baseUrl
-                    : $baseUrl.'/chat/completions';
+        if ($provider === 'api') {
+            if ($apiKey === '') {
+                $quotaService->recordBlocked('consultation', 'api', LlmQuotaService::REASON_MISSING_API_KEY, $sessionUuid);
+                $fallbackTriggered = true;
+                $fallbackReason = LlmQuotaService::REASON_MISSING_API_KEY;
+            } else {
+                $allowance = $quotaService->checkAllowance();
+                if (! $allowance['allowed']) {
+                    $fallbackReason = (string) ($allowance['reason'] ?? LlmQuotaService::REASON_QUOTA_EXCEEDED);
+                    $quotaService->recordBlocked('consultation', 'api', $fallbackReason, $sessionUuid);
+                    $fallbackTriggered = true;
+                } else {
+                    try {
+                        $baseUrl = rtrim((string) config('rag.llm.base_url', 'https://ai.paas.id'), '/');
+                        $endpoint = str_ends_with($baseUrl, '/chat/completions')
+                            ? $baseUrl
+                            : $baseUrl.'/chat/completions';
 
-                $response = Http::withToken($apiKey)
-                    ->acceptJson()
-                    ->timeout((int) config('rag.llm.timeout', 20))
-                    ->post($endpoint, [
-                        'model' => config('rag.llm.model', 'deepseek-v4.1-flash'),
-                        'temperature' => (float) config('rag.llm.temperature', 0.1),
-                        'max_tokens' => (int) config('rag.llm.max_tokens', 1200),
-                        'messages' => [
-                            ['role' => 'system', 'content' => $systemPrompt],
-                            ['role' => 'user', 'content' => $userPrompt],
-                        ],
-                    ]);
+                        $response = Http::withToken($apiKey)
+                            ->acceptJson()
+                            ->timeout((int) config('rag.llm.timeout', 20))
+                            ->post($endpoint, [
+                                'model' => config('rag.llm.model', 'deepseek-v4.1-flash'),
+                                'temperature' => (float) config('rag.llm.temperature', 0.1),
+                                'max_tokens' => (int) config('rag.llm.max_tokens', 1200),
+                                'messages' => [
+                                    ['role' => 'system', 'content' => $systemPrompt],
+                                    ['role' => 'user', 'content' => $userPrompt],
+                                ],
+                            ]);
 
-                if ($response->successful()) {
-                    $llmText = trim((string) $response->json('choices.0.message.content', ''));
-                    if ($llmText !== '') {
-                        if (! empty($revokedNotices)) {
-                            $llmText = implode("\n", $revokedNotices)."\n\n".$llmText;
+                        if ($response->successful()) {
+                            $usage = $response->json('usage');
+                            $promptTokens = is_array($usage) ? (int) ($usage['prompt_tokens'] ?? 0) : 0;
+                            $completionTokens = is_array($usage) ? (int) ($usage['completion_tokens'] ?? 0) : 0;
+                            $totalTokens = is_array($usage) && isset($usage['total_tokens'])
+                                ? (int) $usage['total_tokens']
+                                : ($promptTokens + $completionTokens);
+
+                            $llmText = trim((string) $response->json('choices.0.message.content', ''));
+                            if ($llmText !== '') {
+                                $quotaService->recordUsage(
+                                    'consultation',
+                                    'api',
+                                    $promptTokens,
+                                    $completionTokens,
+                                    $totalTokens,
+                                    $sessionUuid
+                                );
+
+                                if (! empty($revokedNotices)) {
+                                    $llmText = implode("\n", $revokedNotices)."\n\n".$llmText;
+                                }
+
+                                return [
+                                    'answer' => $llmText,
+                                    'citations' => array_map(fn (array $c) => $this->formatCitationFromChunk($c), $chunks),
+                                    'llm_called' => true,
+                                    'provider' => 'api',
+                                    'mode' => 'ai',
+                                    'fallback_reason' => null,
+                                ];
+                            }
+
+                            $quotaService->recordError(
+                                'consultation',
+                                'api',
+                                'invalid_response',
+                                $sessionUuid,
+                                true,
+                                $promptTokens,
+                                $completionTokens,
+                                $totalTokens
+                            );
+                            $fallbackTriggered = true;
+                            $fallbackReason = 'http_error';
+                        } elseif ($response->status() === 429) {
+                            $quotaService->recordError('consultation', 'api', 'rate_limit', $sessionUuid);
+                            $fallbackTriggered = true;
+                            $fallbackReason = 'rate_limit';
+                            Log::warning('LLM API mengembalikan HTTP 429 saat generasi jawaban konsultasi.', [
+                                'status' => 429,
+                            ]);
+                        } else {
+                            $quotaService->recordError('consultation', 'api', 'http_error', $sessionUuid);
+                            $fallbackTriggered = true;
+                            $fallbackReason = 'http_error';
+                            Log::error('LLM API mengembalikan status gagal saat generasi jawaban konsultasi.', [
+                                'status' => $response->status(),
+                            ]);
                         }
-
-                        return [
-                            'answer' => $llmText,
-                            'citations' => array_map(fn (array $c) => $this->formatCitationFromChunk($c), $chunks),
-                            'llm_called' => true,
-                            'provider' => 'api',
-                        ];
+                    } catch (ConnectionException $e) {
+                        $quotaService->recordError('consultation', 'api', 'timeout', $sessionUuid);
+                        $fallbackTriggered = true;
+                        $fallbackReason = 'timeout';
+                        Log::error('Koneksi LLM API timeout saat generasi jawaban konsultasi.', [
+                            'error' => $e->getMessage(),
+                        ]);
+                    } catch (\Throwable $e) {
+                        $quotaService->recordError('consultation', 'api', 'network_error', $sessionUuid);
+                        $fallbackTriggered = true;
+                        $fallbackReason = 'http_error';
+                        Log::error('Koneksi LLM API gagal saat generasi jawaban konsultasi.', [
+                            'error' => $e->getMessage(),
+                        ]);
                     }
                 }
-
-                Log::error('LLM API mengembalikan status gagal saat generasi jawaban konsultasi.', [
-                    'status' => $response->status(),
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Koneksi LLM API gagal atau timeout saat generasi jawaban konsultasi.', [
-                    'error' => $e->getMessage(),
-                ]);
             }
         }
 
-        // Penyusunan jawaban terstruktur berbasis konteks (Context-Grounded Synthesis)
+        // Penyusunan jawaban terstruktur berbasis konteks (Context-Grounded Synthesis / Catalog Fallback)
         $synthesized = $this->synthesizeGroundedAnswer($chronology, $chunks, $verdictRequested, $revokedNotices);
 
         return [
             'answer' => $synthesized,
             'citations' => array_map(fn (array $c) => $this->formatCitationFromChunk($c), $chunks),
-            'llm_called' => true,
-            'provider' => 'local_grounded',
+            'llm_called' => ! $fallbackTriggered,
+            'provider' => $fallbackTriggered ? 'catalog_fallback' : 'local_grounded',
+            'mode' => $fallbackTriggered ? 'fallback' : 'ai',
+            'fallback_reason' => $fallbackTriggered ? $fallbackReason : null,
         ];
     }
 

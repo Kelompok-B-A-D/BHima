@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\LegalIngestionService;
+use App\Services\LlmQuotaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,7 @@ class DashboardDataController extends Controller
 
     private const STATUSES = ['Baru', 'Menunggu Verifikasi', 'Menunggu Kelengkapan', 'Dalam Proses', 'Menunggu Disposisi', 'Selesai', 'Ditolak'];
 
-    public function index(Request $request)
+    public function index(Request $request, LlmQuotaService $quotaService)
     {
         $admin = $request->user()->role === 'admin';
         $result = array_fill_keys([...self::COLLECTIONS, 'searches', 'activities'], []);
@@ -28,6 +29,7 @@ class DashboardDataController extends Controller
         }
         if ($admin) {
             $result['accounts'] = User::all()->map(fn ($u) => ['id' => (string) $u->id, 'name' => $u->name, 'email' => $u->email, 'role' => $u->role, 'status' => $u->is_active ? 'Aktif' : 'Nonaktif', 'created' => $u->created_at->toDateString()])->all();
+            $result['llm_quota'] = $quotaService->status();
         }
         $result['activities'] = DB::table('dashboard_activities')->when(! $admin, fn ($q) => $q->where('user_id', $request->user()->id))->orderByDesc('id')->limit(200)->get()->map(fn ($a) => ['date' => $a->created_at, 'text' => $a->text])->all();
 
@@ -257,6 +259,56 @@ class DashboardDataController extends Controller
         abort_unless($record && $record->file_path && Storage::disk('local')->exists($record->file_path), 404);
 
         return Storage::disk('local')->download($record->file_path, basename(json_decode($record->payload, true)['filename']));
+    }
+
+    public function complaintAttachment(Request $request, string $key, int $index)
+    {
+        $payload = $this->authorizedComplaintPayload($request, $key);
+        $attachment = $payload['attachments'][$index] ?? null;
+
+        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
+    }
+
+    public function complaintFollowUp(Request $request, string $key)
+    {
+        $payload = $this->authorizedComplaintPayload($request, $key);
+        $attachment = $payload['follow_up']['attachment'] ?? null;
+
+        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
+    }
+
+    private function authorizedComplaintPayload(Request $request, string $key): array
+    {
+        $record = DB::table('dashboard_records')
+            ->where('collection', 'complaints')
+            ->where('record_key', $key)
+            ->first();
+        abort_unless($record, 404);
+        abort_unless(
+            $request->user()->role === 'admin'
+            || ($record->assigned_to !== null && (int) $record->assigned_to === (int) $request->user()->id),
+            403
+        );
+
+        return json_decode($record->payload, true) ?: [];
+    }
+
+    private function downloadComplaintFile(string $key, ?array $attachment)
+    {
+        $path = is_string($attachment['path'] ?? null) ? $attachment['path'] : '';
+        $prefix = "complaints/{$key}/";
+        abort_unless(
+            $path !== ''
+            && str_starts_with($path, $prefix)
+            && ! str_contains($path, '..')
+            && ! str_contains($path, '\\')
+            && Storage::disk('local')->exists($path),
+            404
+        );
+
+        $name = basename((string) ($attachment['name'] ?? 'lampiran'));
+
+        return Storage::disk('local')->download($path, $name !== '' ? $name : 'lampiran');
     }
 
     public function processDocument(Request $request, string $key, LegalIngestionService $ingestionService)

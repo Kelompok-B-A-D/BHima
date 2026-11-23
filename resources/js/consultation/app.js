@@ -69,6 +69,8 @@ function initConsultationApp(container) {
 
     const messagesEl = container.querySelector('#chat-messages');
     const loadingEl = container.querySelector('#chat-loading');
+    const fallbackBannerEl = container.querySelector('#chat-fallback-banner');
+    const fallbackBannerTextEl = container.querySelector('#chat-fallback-banner-text');
     const errorEl = container.querySelector('#chat-error');
     const formEl = container.querySelector('#consultation-form');
     const inputEl = container.querySelector('#chronology-input');
@@ -90,6 +92,29 @@ function initConsultationApp(container) {
     function updateCounter() {
         const len = inputEl.value.length;
         charCounter.textContent = `${len} / ${maxLen} karakter`;
+    }
+
+    const FALLBACK_BANNER_MESSAGE =
+        'Layanan analisis AI sedang dibatasi. Berikut rekomendasi pasal dari katalog JDIH.';
+
+    function setFallbackBanner(isFallback) {
+        if (!fallbackBannerEl) return;
+        if (!isFallback) {
+            fallbackBannerEl.hidden = true;
+            return;
+        }
+        if (fallbackBannerTextEl) {
+            fallbackBannerTextEl.textContent = FALLBACK_BANNER_MESSAGE;
+        }
+        fallbackBannerEl.hidden = false;
+    }
+
+    function isMessageFallback(msg, topMeta = null) {
+        return (
+            topMeta?.mode === 'fallback' ||
+            msg?.legal_analysis?.meta?.mode === 'fallback' ||
+            msg?.retrieval_meta?.mode === 'fallback'
+        );
     }
 
     function showError(message) {
@@ -397,7 +422,8 @@ function initConsultationApp(container) {
             analysis.meta?.disclaimer ||
                 'Informasi umum untuk edukasi awal warga, bukan nasihat hukum resmi maupun putusan pengadilan.'
         );
-        const isError = analysis.meta?.status === 'error';
+        const isFallback = analysis.meta?.mode === 'fallback';
+        const isError = analysis.meta?.status === 'error' && !isFallback;
 
         const rujukanHtml = rujukan.length
             ? `<div class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-2.5">
@@ -512,9 +538,13 @@ function initConsultationApp(container) {
 
         const escalationButtonClass = 'btn-primary w-full min-[641px]:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs min-[641px]:text-sm no-underline';
 
+        const sourceBadge = isFallback
+            ? `<span class="px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-xs font-bold">Katalog JDIH</span>`
+            : `<span class="px-2.5 py-1 rounded-full bg-white/15 text-white border border-white/25 text-xs font-bold">Analisis AI</span>`;
+
         const escalationBadge = perluEskalasi
-            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-[11px] font-bold">Disarankan Eskalasi</span>`
-            : `<span class="px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-[11px] font-bold">Terkendali</span>`;
+            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-xs font-bold">Disarankan Eskalasi</span>`
+            : `<span class="px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-xs font-bold">Terkendali</span>`;
 
         return `
             <section
@@ -525,16 +555,24 @@ function initConsultationApp(container) {
                     <div class="flex items-center gap-2 min-w-0">
                         <span class="material-symbols-outlined text-[20px] text-[#F2D8B3] shrink-0" aria-hidden="true">assignment_turned_in</span>
                         <h3 class="text-xs min-[641px]:text-sm font-bold text-white truncate">
-                            Ringkasan Validasi Regulasi &amp; Estimasi Sanksi
+                            ${isFallback ? 'Rekomendasi Pasal dari Katalog JDIH' : 'Ringkasan Validasi Regulasi &amp; Estimasi Sanksi'}
                         </h3>
                     </div>
-                    ${escalationBadge}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        ${sourceBadge}
+                        ${escalationBadge}
+                    </div>
                 </div>
 
                 <div class="p-4 min-[641px]:p-5 space-y-4">
                     ${
+                        isFallback
+                            ? `<div role="status" class="p-3.5 rounded-2xl bg-[#FEF3C7] border border-[#F5D07A] text-xs text-[#92400E] font-semibold flex items-start gap-2.5"><span class="material-symbols-outlined text-[18px] text-[#92400E] shrink-0 mt-0.5" aria-hidden="true">library_books</span><span>${e(FALLBACK_BANNER_MESSAGE)}</span></div>`
+                            : ''
+                    }
+                    ${
                         isError
-                            ? `<div role="alert" class="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#78350F] font-bold">${e(catatan)}</div>`
+                            ? `<div role="alert" class="p-3 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] text-xs text-[#78350F] font-bold">${e(FALLBACK_BANNER_MESSAGE)}</div>`
                             : ''
                     }
 
@@ -631,9 +669,12 @@ function initConsultationApp(container) {
         } else {
             article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 min-[641px]:pr-6';
             const isOutOfScope = msg.retrieval_meta?.status === 'out_of_scope';
+            const fallbackActive = isMessageFallback(msg);
             const statusBadge = isOutOfScope
-                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] rounded-full text-[11px] font-bold">Diarahkan ke Petugas</span>'
-                : '<span class="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] rounded-full text-[11px] font-bold">Penalaran Peraturan Terverifikasi</span>';
+                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] rounded-full text-xs font-bold">Diarahkan ke Petugas</span>'
+                : fallbackActive
+                    ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] rounded-full text-xs font-bold">Rekomendasi Katalog JDIH</span>'
+                    : '<span class="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] rounded-full text-xs font-bold">Penalaran Peraturan Terverifikasi</span>';
 
             article.innerHTML = `
                 <div class="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -706,12 +747,16 @@ function initConsultationApp(container) {
             }
             if (Array.isArray(data.messages) && data.messages.length > 0) {
                 let lastUserBubble = null;
+                let lastAssistantMsg = null;
                 data.messages.forEach((msg) => {
                     const bubble = appendMessageBubble(msg);
                     if (msg.sender === 'user') {
                         lastUserBubble = bubble;
+                    } else if (msg.sender === 'assistant') {
+                        lastAssistantMsg = msg;
                     }
                 });
+                setFallbackBanner(isMessageFallback(lastAssistantMsg));
                 if (lastUserBubble) {
                     scrollToBubbleTop(lastUserBubble, 'auto');
                 }
@@ -779,6 +824,7 @@ function initConsultationApp(container) {
             }
             if (payload.assistant_message) {
                 appendMessageBubble(payload.assistant_message);
+                setFallbackBanner(isMessageFallback(payload.assistant_message, payload.meta));
             }
             if (userBubbleEl) {
                 scrollToBubbleTop(userBubbleEl, 'smooth');
@@ -830,6 +876,7 @@ function initConsultationApp(container) {
                 jdihSidebarList.innerHTML = defaultSidebarHtml;
             }
             showError('');
+            setFallbackBanner(false);
             inputEl.value = '';
             updateCounter();
             inputEl.focus();

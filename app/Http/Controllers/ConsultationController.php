@@ -288,8 +288,24 @@ class ConsultationController extends Controller
             }
 
             $topK = isset($validated['top_k']) ? (int) $validated['top_k'] : null;
-            $result = $this->assistantService->answerChronology($privacySafeChronology, $topK);
-            $legalAnalysis = $this->analysisService->analyze($privacySafeChronology, $result['citations']);
+            $result = $this->assistantService->answerChronology($privacySafeChronology, $topK, null, $sessionUuid);
+            $legalAnalysis = $this->analysisService->analyze($privacySafeChronology, $result['citations'], null, $sessionUuid);
+
+            $analysisMeta = is_array($legalAnalysis['meta'] ?? null) ? $legalAnalysis['meta'] : [];
+            $retrievalMeta = is_array($result['retrieval_meta'] ?? null) ? $result['retrieval_meta'] : [];
+            $isFallback = ($analysisMeta['mode'] ?? null) === 'fallback'
+                || ($retrievalMeta['mode'] ?? null) === 'fallback';
+            $fallbackReason = $analysisMeta['fallback_reason']
+                ?? $retrievalMeta['fallback_reason']
+                ?? null;
+
+            $responseMeta = [
+                'mode' => $isFallback ? 'fallback' : 'ai',
+                'fallback_reason' => $isFallback ? $fallbackReason : null,
+                'provider' => $isFallback
+                    ? 'catalog_fallback'
+                    : (string) ($analysisMeta['provider'] ?? $retrievalMeta['provider'] ?? 'local_grounded'),
+            ];
 
             $now = now();
             $userMsgId = 0;
@@ -354,6 +370,7 @@ class ConsultationController extends Controller
             return response()->json([
                 'session_id' => $sessionUuid,
                 'status' => $result['status'],
+                'meta' => $responseMeta,
                 'user_message' => [
                     'id' => $userMsgId,
                     'sender' => 'user',
@@ -436,7 +453,7 @@ class ConsultationController extends Controller
             $chunks = $retrieval['chunks'];
         }
 
-        $analysis = $this->analysisService->analyze($privacySafeChronology, $chunks);
+        $analysis = $this->analysisService->analyze($privacySafeChronology, $chunks, null, $sessionUuid);
 
         return response()->json($analysis);
     }
@@ -689,4 +706,3 @@ class ConsultationController extends Controller
         return $items;
     }
 }
-

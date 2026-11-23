@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Contracts\AnalysisProvider;
 use App\Services\Analysis\DeepSeekProvider;
 use App\Services\Analysis\MockProvider;
+use App\Services\Analysis\QuotaAwareProvider;
 use App\Services\LegalAnalysisService;
 use App\Services\LegalRetrievalService;
 use Database\Seeders\LegalKnowledgeSeeder;
@@ -391,7 +392,9 @@ class LegalAnalysisPbi2Test extends TestCase
         $this->assertInstanceOf(MockProvider::class, app(AnalysisProvider::class));
 
         config(['legal_analysis.provider' => 'deepseek']);
-        $this->assertInstanceOf(DeepSeekProvider::class, app(AnalysisProvider::class));
+        $resolvedProvider = app(AnalysisProvider::class);
+        $this->assertInstanceOf(QuotaAwareProvider::class, $resolvedProvider);
+        $this->assertInstanceOf(DeepSeekProvider::class, $resolvedProvider->inner());
 
         $validMockJson = json_encode([
             'rujukan' => [
@@ -428,7 +431,7 @@ class LegalAnalysisPbi2Test extends TestCase
             ->push(['choices' => [['message' => ['content' => 'MASIH_TIDAK_VALID_1']]]], 200)
             ->push(['choices' => [['message' => ['content' => 'MASIH_TIDAK_VALID_2']]]], 200);
 
-        // 2. Uji ketika LLM_PROVIDER=deepseek tetapi DEEPSEEK_API_KEY kosong (tidak memanggil jaringan & tidak crash)
+        // 2. Uji ketika LLM_PROVIDER=deepseek tetapi DEEPSEEK_API_KEY kosong (tidak memanggil jaringan, fallback katalog JDIH)
         config([
             'legal_analysis.deepseek.api_key' => '',
             'legal_analysis.deepseek.base_url' => 'https://api.deepseek.test/v1',
@@ -436,8 +439,10 @@ class LegalAnalysisPbi2Test extends TestCase
         ]);
 
         $emptyKeyResult = $analysisService->analyze('Pengurusan KTP-el dimintai biaya tambahan.', $chunks);
-        $this->assertSame('error', $emptyKeyResult['meta']['status']);
-        $this->assertSame('missing_api_key', $emptyKeyResult['meta']['error']);
+        $this->assertSame('fallback', $emptyKeyResult['meta']['mode']);
+        $this->assertSame('missing_api_key', $emptyKeyResult['meta']['fallback_reason']);
+        $this->assertSame('catalog_fallback', $emptyKeyResult['meta']['provider']);
+        $this->assertNotEmpty($emptyKeyResult['pasal_relevan']);
         $this->assertTrue($emptyKeyResult['perlu_eskalasi']);
         Http::assertNothingSent();
 
@@ -448,18 +453,23 @@ class LegalAnalysisPbi2Test extends TestCase
 
         $retrySuccess = $analysisService->analyze('Pengurusan KTP-el dimintai biaya tambahan.', $chunks);
         $this->assertSame('ok', $retrySuccess['meta']['status']);
+        $this->assertSame('ai', $retrySuccess['meta']['mode']);
         $this->assertCount(1, $retrySuccess['pasal_relevan']);
 
-        // 4. Uji ketika DeepSeek mengembalikan HTTP 429 Rate Limit
+        // 4. Uji ketika DeepSeek mengembalikan HTTP 429 Rate Limit -> fallback katalog JDIH tanpa crash
         $rateLimited = $analysisService->analyze('Pengurusan KTP-el dimintai biaya tambahan.', $chunks);
-        $this->assertSame('error', $rateLimited['meta']['status']);
-        $this->assertSame('rate_limit', $rateLimited['meta']['error']);
+        $this->assertSame('fallback', $rateLimited['meta']['mode']);
+        $this->assertSame('rate_limit', $rateLimited['meta']['fallback_reason']);
+        $this->assertSame('catalog_fallback', $rateLimited['meta']['provider']);
+        $this->assertNotEmpty($rateLimited['pasal_relevan']);
         $this->assertTrue($rateLimited['perlu_eskalasi']);
 
-        // 5. Uji ketika JSON tetap tidak valid setelah retry maksimal (1x retry)
+        // 5. Uji ketika JSON tetap tidak valid setelah retry maksimal (1x retry) -> fallback katalog JDIH tanpa crash
         $invalidJsonResult = $analysisService->analyze('Pengurusan KTP-el dimintai biaya tambahan.', $chunks);
-        $this->assertSame('error', $invalidJsonResult['meta']['status']);
-        $this->assertSame('invalid_json', $invalidJsonResult['meta']['error']);
+        $this->assertSame('fallback', $invalidJsonResult['meta']['mode']);
+        $this->assertSame('invalid_json', $invalidJsonResult['meta']['fallback_reason']);
+        $this->assertSame('catalog_fallback', $invalidJsonResult['meta']['provider']);
+        $this->assertNotEmpty($invalidJsonResult['pasal_relevan']);
         $this->assertTrue($invalidJsonResult['perlu_eskalasi']);
     }
 

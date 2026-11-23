@@ -5,6 +5,7 @@ namespace App\Services\Analysis;
 use App\Contracts\AnalysisProvider;
 use App\Exceptions\AnalysisProviderException;
 use App\Services\LegalAnalysisService;
+use App\Services\LlmQuotaService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -12,9 +13,20 @@ use Illuminate\Support\Facades\Log;
 
 class DeepSeekProvider implements AnalysisProvider
 {
+    private ?string $sessionUuid = null;
+
+    public function __construct(
+        private readonly LlmQuotaService $quotaService,
+    ) {}
+
     public function name(): string
     {
         return 'deepseek';
+    }
+
+    public function setSessionUuid(?string $sessionUuid): void
+    {
+        $this->sessionUuid = $sessionUuid;
     }
 
     /**
@@ -53,6 +65,9 @@ class DeepSeekProvider implements AnalysisProvider
         $sendResponseFormat = (bool) config('legal_analysis.deepseek.send_response_format', true);
 
         $payload = $this->buildRequestPayload($chronology, $chunks, $sendResponseFormat);
+        $accumulatedPromptTokens = 0;
+        $accumulatedCompletionTokens = 0;
+        $accumulatedTotalTokens = 0;
 
         for ($attempt = 0; $attempt <= $maxRetries; $attempt++) {
             $response = $this->sendChatCompletion($endpoint, $apiKey, $timeout, $payload, $attempt);
@@ -96,10 +111,29 @@ class DeepSeekProvider implements AnalysisProvider
                 );
             }
 
+            $usage = $response->json('usage');
+            if (is_array($usage)) {
+                $prompt = max(0, (int) ($usage['prompt_tokens'] ?? 0));
+                $completion = max(0, (int) ($usage['completion_tokens'] ?? 0));
+                $total = isset($usage['total_tokens']) ? max(0, (int) $usage['total_tokens']) : ($prompt + $completion);
+                $accumulatedPromptTokens += $prompt;
+                $accumulatedCompletionTokens += $completion;
+                $accumulatedTotalTokens += $total;
+            }
+
             $rawContent = trim((string) $response->json('choices.0.message.content', ''));
             $decoded = $this->parseJsonContent($rawContent);
 
             if (is_array($decoded) && LegalAnalysisService::isValidSchema($decoded)) {
+                $this->quotaService->recordUsage(
+                    'analysis',
+                    $this->name(),
+                    $accumulatedPromptTokens,
+                    $accumulatedCompletionTokens,
+                    $accumulatedTotalTokens,
+                    $this->sessionUuid
+                );
+
                 return $decoded;
             }
 
@@ -113,7 +147,12 @@ class DeepSeekProvider implements AnalysisProvider
 
         throw new AnalysisProviderException(
             'Maaf, format hasil analisis hukum belum dapat diverifikasi saat ini. Silakan coba lagi atau langsung gunakan tombol Ajukan Pengaduan.',
-            'invalid_json'
+            'invalid_json',
+            0,
+            null,
+            $accumulatedPromptTokens,
+            $accumulatedCompletionTokens,
+            $accumulatedTotalTokens
         );
     }
 

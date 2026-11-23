@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Contracts\AnalysisProvider;
 use App\Services\Analysis\DeepSeekProvider;
 use App\Services\Analysis\MockProvider;
+use App\Services\Analysis\QuotaAwareProvider;
+use App\Services\LlmQuotaService;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,9 +20,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AnalysisProvider::class, function ($app) {
             $provider = strtolower(trim((string) config('legal_analysis.provider', 'mock')));
 
-            return $provider === 'deepseek'
-                ? $app->make(DeepSeekProvider::class)
-                : $app->make(MockProvider::class);
+            if ($provider === 'deepseek') {
+                return new QuotaAwareProvider(
+                    $app->make(DeepSeekProvider::class),
+                    $app->make(LlmQuotaService::class),
+                );
+            }
+
+            return $app->make(MockProvider::class);
         });
     }
 
