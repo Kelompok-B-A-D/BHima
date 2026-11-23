@@ -179,15 +179,15 @@
                                     <!-- 3-Column Metadata Ribbon -->
                                     <dl class="surface-nested grid grid-cols-1 min-[481px]:grid-cols-3 gap-4 p-4">
                                         <div class="space-y-1">
-                                            <dt class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold">Tanggal Masuk</dt>
+                                            <dt class="text-xs text-[#4A5366] uppercase tracking-wider font-bold">Tanggal Masuk</dt>
                                             <dd class="text-sm text-[#0B1020] font-bold">{{ $result['date'] ?? '-' }}</dd>
                                         </div>
                                         <div class="space-y-1">
-                                            <dt class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold">Klasifikasi Kasus</dt>
+                                            <dt class="text-xs text-[#4A5366] uppercase tracking-wider font-bold">Klasifikasi Kasus</dt>
                                             <dd class="text-sm text-[#0B1020] font-bold">{{ $result['category'] ?? 'Pengaduan Publik' }}</dd>
                                         </div>
                                         <div class="space-y-1">
-                                            <dt class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold">Saluran Pelacakan</dt>
+                                            <dt class="text-xs text-[#4A5366] uppercase tracking-wider font-bold">Saluran Pelacakan</dt>
                                             <dd class="text-sm text-[#0F766E] font-bold">Tanpa Akun (Publik)</dd>
                                         </div>
                                     </dl>
@@ -234,7 +234,7 @@
                                                     minlength="5"
                                                     maxlength="2000"
                                                     placeholder="Jelaskan berkas tambahan yang Anda lampirkan..."
-                                                    class="w-full rounded-[14px] border border-[#CBD5E1] bg-[#F8FAFC] px-3.5 py-2.5 text-sm text-[#0B1020] placeholder:text-[#4A5366] focus:border-[#0066CC] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0066CC]/20"
+                                                    class="glass-input w-full px-3.5 py-2.5 text-sm placeholder:text-[#4A5366]"
                                                 >{{ old('catatan') }}</textarea>
                                             </div>
 
@@ -249,7 +249,7 @@
                                                     multiple
                                                     accept=".pdf,.jpg,.jpeg,.png"
                                                     required
-                                                    class="w-full min-h-[44px] rounded-[14px] border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2 text-xs min-[641px]:text-sm text-[#0B1020] file:mr-3 file:rounded-full file:border-0 file:bg-[#E6F0FC] file:px-3.5 file:py-1.5 file:text-xs file:font-bold file:text-[#005EB8] hover:file:bg-[#D5E6FA]"
+                                                    class="glass-input w-full min-h-[44px] px-3 py-2 text-xs min-[641px]:text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[#E6F0FC] file:px-3.5 file:py-1.5 file:text-xs file:font-bold file:text-[#005EB8] hover:file:bg-[#D5E6FA]"
                                                 >
                                             </div>
 
@@ -278,7 +278,7 @@
                                                 <p>Laporan berada di luar kewenangan layanan atau belum memenuhi syarat administrasi. Anda dapat mengajukan laporan baru dengan data yang sesuai.</p>
                                                 @if (! empty($result['rejection_reason']))
                                                     <div class="rounded-[14px] bg-white border border-[#FCA5A5] p-3.5 text-[#7F1D1D] space-y-1">
-                                                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#991B1B] block">Alasan Penolakan</span>
+                                                        <span class="text-xs font-bold uppercase tracking-wider text-[#991B1B] block">Alasan Penolakan</span>
                                                         <p class="whitespace-pre-line leading-relaxed font-medium">{{ $result['rejection_reason'] }}</p>
                                                     </div>
                                                 @endif
@@ -328,7 +328,7 @@
                                                         <div class="flex items-center justify-between gap-2 flex-wrap">
                                                             <span class="text-sm font-bold {{ $isCurrent ? 'text-[#005EB8]' : 'text-[#0B1020]' }}">{{ $stage }}</span>
                                                             @if ($isCurrent)
-                                                                <span class="px-2.5 py-0.5 rounded-full bg-[#0066CC] text-white text-[10px] font-bold uppercase tracking-wider">Aktif</span>
+                                                                <span class="px-2.5 py-0.5 rounded-full bg-[#0066CC] text-white text-xs font-bold uppercase tracking-wider">Aktif</span>
                                                             @elseif ($isDone)
                                                                 <span class="text-xs font-bold text-[#0F766E]">Selesai</span>
                                                             @endif
@@ -353,7 +353,7 @@
                                             <span class="material-symbols-outlined text-[24px]" aria-hidden="true">corporate_fare</span>
                                         </div>
                                         <div>
-                                            <span class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold block">Instansi Tujuan Disposisi</span>
+                                            <span class="text-xs text-[#4A5366] uppercase tracking-wider font-bold block">Instansi Tujuan Disposisi</span>
                                             <h2 class="text-base min-[641px]:text-lg font-bold text-[#0B1020] leading-snug">
                                                 {{ $result['agency'] ?: 'Dalam Antrean Verifikasi & Disposisi' }}
                                             </h2>
@@ -389,7 +389,7 @@
                                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">assignment_turned_in</span>
                                                 </div>
                                                 <div>
-                                                    <span class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold block">Ringkasan Penanganan</span>
+                                                    <span class="text-xs text-[#4A5366] uppercase tracking-wider font-bold block">Ringkasan Penanganan</span>
                                                     <h2 class="text-base min-[641px]:text-lg font-bold text-[#0B1020] leading-snug">Hasil Tindak Lanjut</h2>
                                                 </div>
                                             </div>

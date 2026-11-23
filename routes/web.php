@@ -68,6 +68,8 @@ Route::middleware(DashboardAccess::class)->group(function () {
     Route::post('/internal/data/{collection}', [DashboardDataController::class, 'save']);
     Route::delete('/internal/data/{collection}/{key}', [DashboardDataController::class, 'destroy']);
     Route::get('/internal/files/{key}', [DashboardDataController::class, 'download']);
+    Route::get('/internal/complaints/{key}/lampiran/{index}', [DashboardDataController::class, 'complaintAttachment'])->whereNumber('index');
+    Route::get('/internal/complaints/{key}/tindak-lanjut', [DashboardDataController::class, 'complaintFollowUp']);
     Route::post('/internal/documents/{key}/process', [DashboardDataController::class, 'processDocument']);
     Route::get('/{role}/{page?}', function (string $role, ?string $page = null) {
         abort_unless(in_array($page ?? 'dashboard', ['dashboard', 'pengaduan', 'konten', 'jdih', 'basis-ai', 'anggaran', 'analitik', 'pencarian', 'akun', 'peran', 'aktivitas', 'pengaturan'], true), 404);

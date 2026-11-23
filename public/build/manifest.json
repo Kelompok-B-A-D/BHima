@@ -1,6 +1,10 @@
 {
+  "_confirm-dialog-CNNV-ZxL.js": {
+    "file": "assets/confirm-dialog-CNNV-ZxL.js",
+    "name": "confirm-dialog"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-BMTF65uD.css",
+    "file": "assets/app-DG0HHy5Z.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,12 +13,24 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BcY-qpwL.js",
+    "file": "assets/app-DFw1-H3s.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
+    "imports": [
+      "_confirm-dialog-CNNV-ZxL.js"
+    ],
     "css": [
-      "assets/app-BFmLA7Ix.css"
+      "assets/app-BjtHYd1l.css"
+    ]
+  },
+  "resources/js/services.js": {
+    "file": "assets/services-IuCbsqlv.js",
+    "name": "services",
+    "src": "resources/js/services.js",
+    "isEntry": true,
+    "imports": [
+      "_confirm-dialog-CNNV-ZxL.js"
     ]
   }
 }

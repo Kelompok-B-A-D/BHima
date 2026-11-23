@@ -286,7 +286,7 @@
                                         Regulasi dan SOP terindeks yang terhubung dengan percakapan aktif.
                                     </p>
                                 </div>
-                                <span class="px-2.5 py-1 bg-[#E6F0FC] text-[#005EB8] text-[11px] font-bold rounded-full uppercase tracking-wider shrink-0">
+                                <span class="px-2.5 py-1 bg-[#E6F0FC] text-[#005EB8] text-xs font-bold rounded-full uppercase tracking-wider shrink-0">
                                     JDIH Terpadu
                                 </span>
                             </div>
@@ -303,7 +303,7 @@
                                     <span class="h-1 w-full bg-[#0066CC]" aria-hidden="true"></span>
                                     <div class="flex flex-1 flex-col gap-3 p-4">
                                         <div class="flex items-start justify-between gap-2">
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#E6F0FC] px-2.5 py-1 text-[11px] font-bold text-[#005EB8]">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-[#E6F0FC] px-2.5 py-1 text-xs font-bold text-[#005EB8]">
                                                 <span class="h-1.5 w-1.5 rounded-full bg-[#FF7A59]" aria-hidden="true"></span>
                                                 <span>UU No. 24 Tahun 2013</span>
                                             </span>
@@ -314,7 +314,7 @@
                                             <p class="text-xs leading-relaxed text-[#4A5366]">Pasal 79A dan 95B menegaskan pengurusan dokumen kependudukan tidak dipungut biaya.</p>
                                         </div>
                                         <div class="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
-                                            <span class="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-[#0066CC] px-4 text-xs font-bold text-white transition-colors group-hover:bg-[#0052A3]">
+                                            <span class="inline-flex min-h-[44px] items-center gap-1.5 rounded-full bg-[#0066CC] px-4 text-xs font-bold text-white transition-colors group-hover:bg-[#0052A3]">
                                                 <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
                                                 <span>Baca Pasal</span>
                                             </span>
@@ -338,12 +338,12 @@
                                                 <span class="material-symbols-outlined text-[20px]" aria-hidden="true">account_tree</span>
                                             </span>
                                             <div class="min-w-0 flex-1">
-                                                <span class="block text-[11px] font-bold uppercase tracking-wider text-[#0F766E]">SOP Layanan Publik</span>
+                                                <span class="block text-xs font-bold uppercase tracking-wider text-[#0F766E]">SOP Layanan Publik</span>
                                                 <h3 class="mt-0.5 text-sm font-bold leading-snug text-[#0B1020]">SOP Pengaduan Pungli &amp; Mediasi</h3>
                                                 <p class="mt-1 text-xs font-semibold text-[#4A5366]">Inspektorat Daerah · SOP-003</p>
                                             </div>
                                         </div>
-                                        <span class="mt-auto inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border border-[#CBD5E4] bg-[#F4F7FC] px-4 text-xs font-bold text-[#0B1020] transition-colors group-hover:bg-[#E6F0FC] group-hover:text-[#005EB8]">
+                                        <span class="mt-auto inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border border-[#75849B] bg-[#F4F7FC] px-4 text-xs font-bold text-[#0B1020] transition-colors group-hover:bg-[#E6F0FC] group-hover:text-[#005EB8]">
                                             <span>Lihat Prosedur</span>
                                             <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
                                         </span>
@@ -361,7 +361,7 @@
                                     <span class="h-1 w-full bg-[#1E3A8A]" aria-hidden="true"></span>
                                     <div class="p-4 flex flex-1 flex-col gap-2">
                                         <div class="flex items-start justify-between gap-2">
-                                            <span class="text-[11px] font-bold uppercase tracking-wider text-[#1E3A8A]">PP No. 24 Tahun 1997</span>
+                                            <span class="text-xs font-bold uppercase tracking-wider text-[#1E3A8A]">PP No. 24 Tahun 1997</span>
                                             <span class="material-symbols-outlined text-[18px] text-[#1E3A8A]" aria-hidden="true">fence</span>
                                         </div>
                                         <h3 class="text-base font-bold leading-snug text-[#0B1020]">Pendaftaran Tanah &amp; Batas</h3>
