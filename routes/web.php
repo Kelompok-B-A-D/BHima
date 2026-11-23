@@ -5,6 +5,7 @@ use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
 use App\Http\Controllers\PublicComplaintController;
+use App\Http\Controllers\ServiceContentController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,19 @@ Route::post('/lacak/{tiket}/lengkapi', [ComplaintController::class, 'submitCompl
     ->middleware('throttle:10,1')
     ->where('tiket', 'BHM-[0-9]{4}-[A-Z0-9]{4,}')
     ->name('complaint.completeness');
+
+// Service catalog uses the existing contents collection.
+Route::get('/layanan', [ServiceContentController::class, 'index'])->name('services.index');
+Route::get('/layanan/{key}/dokumen', [ServiceContentController::class, 'download'])->name('services.download');
+Route::get('/layanan/{key}', [ServiceContentController::class, 'show'])->name('services.show');
+Route::middleware(DashboardAccess::class)->group(function () {
+    Route::get('/admin/konten', [ServiceContentController::class, 'manage'])->name('services.manage');
+    Route::get('/admin/konten/tambah', [ServiceContentController::class, 'create'])->name('services.create');
+    Route::post('/admin/konten', [ServiceContentController::class, 'store'])->name('services.store');
+    Route::get('/admin/konten/{key}/edit', [ServiceContentController::class, 'edit'])->name('services.edit');
+    Route::put('/admin/konten/{key}', [ServiceContentController::class, 'store'])->name('services.update');
+    Route::delete('/admin/konten/{key}', [ServiceContentController::class, 'destroy'])->name('services.destroy');
+});
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {
