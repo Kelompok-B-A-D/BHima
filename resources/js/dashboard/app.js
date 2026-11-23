@@ -115,13 +115,85 @@ async function initialize() {
  });
  }
  function showDetail(id){const r=data.complaints.find(r=>r.id===id);if(!r)return;activeTab='informasi';
-  function body(){return `<div class="detail-overview"><div><p class="eyebrow">${e(r.id)}</p><h3>${e(r.summary)}</h3><p class="muted">Diterima ${date(r.date)} · ${e(r.category)}</p></div>${badge(r.status)}</div><div class="tabs">${[['informasi','Informasi laporan'],['hukum','Analisis & bukti'],['riwayat','Riwayat & catatan']].map(([key,label])=>`<button type="button" data-tab="${key}" class="${activeTab===key?'active':''}">${label}</button>`).join('')}</div><div id="detail-tab">${activeTab==='informasi'?`<dl class="detail-grid">${[['Pelapor',r.reporter],['Prioritas',r.priority],['Pihak terlapor',r.reported],['Lokasi kejadian',r.location],['Tanggal kejadian',date(r.incidentDate)],['Petugas',r.officer||'Belum ditugaskan'],['Instansi disposisi',r.agency||'Belum didisposisikan']].map(([label,value])=>`<div><dt>${label}</dt><dd>${e(value)}</dd></div>`).join('')}</dl><h3>Kronologi kejadian</h3><p class="preserve">${e(r.chronology)}</p>`:activeTab==='hukum'?`<h3>Lampiran bukti</h3>${r.attachments?.length?`<ul>${r.attachments.map(att=>`<li><strong>${e(att.name||'Berkas lampiran')}</strong> (${e(att.mime||'file')}, ${Math.max(1,Math.round((Number(att.size||0))/1024))} KB)</li>`).join('')}</ul>`:empty('Belum ada lampiran','Pelapor tidak menyertakan berkas lampiran pada pengaduan ini.')}<h3>Hasil pre-screening hukum AI</h3><div class="notice preserve">${e(r.ai||'Belum ada hasil analisis AI untuk laporan ini. Pemeriksaan dan keputusan tetap menjadi tanggung jawab petugas.')}</div><h3>Referensi peraturan JDIH</h3>${r.references?.length?`<ul>${r.references.map(ref=>`<li>${e(ref)}</li>`).join('')}</ul>`:'<p class="muted">Belum ada rujukan terverifikasi.</p>'}`:`<h3>Riwayat penanganan</h3><ol class="timeline">${r.history.map(a=>`<li><span class="timeline-dot"></span><div><strong>${e(a.text)}</strong><small>${date(a.date)}</small></div></li>`).join('')}</ol><h3>Catatan internal petugas</h3>${r.notes.length?r.notes.map(n=>`<div class="note"><p>${e(n.text)}</p><small>${e(n.by||role)} · ${date(n.date)}</small></div>`).join(''):'<p class="muted">Belum ada catatan internal.</p>'}`}</div><div class="detail-actions">${[['verify','Verifikasi laporan'],['complete','Minta kelengkapan'],['reject','Tandai tidak valid'],['dispatch','Disposisi'],['status','Perbarui status'],['note','Catatan internal'],...(admin&&!demo?[['assign','Tugaskan petugas']]:[])].filter(([key])=>key==='note'||key==='assign'||(['verify','complete','reject'].includes(key)&&['Baru','Menunggu Verifikasi','Menunggu Kelengkapan'].includes(r.status))||(key==='dispatch'&&r.status==='Menunggu Disposisi')||(key==='status'&&r.status==='Dalam Proses')).map(([key,label])=>`<button type="button" class="${key==='verify'?'primary':''}" data-action="${key}">${label}</button>`).join('')}</div>`;}
+  function complaintAttachments(){
+   if(!r.attachments?.length)return empty('Belum ada lampiran','Pelapor tidak menyertakan berkas lampiran pada pengaduan ini.');
+   return `<ul>${r.attachments.map((att,i)=>`<li>${demo?`<strong>${e(att.name||'Berkas lampiran')}</strong>`:`<a class="text-link" href="/internal/complaints/${encodeURIComponent(r.id)}/lampiran/${i}">${e(att.name||'Berkas lampiran')}</a>`} (${e(att.mime||'file')}, ${Math.max(1,Math.round((Number(att.size||0))/1024))} KB)</li>`).join('')}</ul>`;
+  }
+  function workflowBlocks(){
+   const blocks=[];
+   if(r.completeness_request){
+    const docs=Array.isArray(r.completeness_request.documents)?r.completeness_request.documents:[];
+    blocks.push(`<h3>Permintaan kelengkapan</h3><div class="notice"><p class="preserve">${e(r.completeness_request.note||'')}</p>${docs.length?`<ul>${docs.map(doc=>`<li>${e(doc)}</li>`).join('')}</ul>`:''}<small class="muted">${r.completeness_request.fulfilled_at?`Dilengkapi ${date(r.completeness_request.fulfilled_at)}`:'Menunggu kiriman pelapor'}${r.completeness_request.requested_at?` · Diminta ${date(r.completeness_request.requested_at)}`:''}</small></div>`);
+   }
+   if(r.completeness_submissions?.length){
+    blocks.push(`<h3>Kiriman kelengkapan pelapor</h3>${r.completeness_submissions.map(sub=>`<div class="note"><p class="preserve">${e(sub.note||'')}</p><small>${date(sub.date)} · ${sub.attachments?.length||0} berkas</small></div>`).join('')}`);
+   }
+   if(r.rejection_reason){
+    blocks.push(`<h3>Alasan penolakan</h3><div class="notice error preserve">${e(r.rejection_reason)}</div>`);
+   }
+   if(r.dispositions?.length){
+    blocks.push(`<h3>Riwayat disposisi</h3><ol class="timeline">${r.dispositions.map(d=>`<li><span class="timeline-dot"></span><div><strong>${e(d.agency||'Instansi tujuan')}</strong>${d.note?`<p class="preserve">${e(d.note)}</p>`:''}<small>${date(d.date)}${d.by?` · ${e(d.by)}`:''}</small></div></li>`).join('')}</ol>`);
+   }
+   if(r.follow_up?.summary||r.follow_up?.attachment){
+    const att=r.follow_up.attachment;
+    const attachmentMarkup=att?`<p>Berkas tindak lanjut: ${demo?`<strong>${e(att.name||'Berkas tindak lanjut')}</strong>`:`<a class="text-link" href="/internal/complaints/${encodeURIComponent(r.id)}/tindak-lanjut">${e(att.name||'Unduh berkas tindak lanjut')}</a>`}</p>`:'';
+    blocks.push(`<h3>Hasil tindak lanjut</h3><div class="notice">${r.follow_up.summary?`<p class="preserve">${e(r.follow_up.summary)}</p>`:''}${attachmentMarkup}<small class="muted">${r.follow_up.updated_at?`Diperbarui ${date(r.follow_up.updated_at)}`:''}${r.follow_up.by?` · ${e(r.follow_up.by)}`:''}</small></div>`);
+   }
+   return blocks.join('');
+  }
+  function body(){return `<div class="detail-overview"><div><p class="eyebrow">${e(r.id)}</p><h3>${e(r.summary)}</h3><p class="muted">Diterima ${date(r.date)} · ${e(r.category)}</p></div>${badge(r.status)}</div><div class="tabs">${[['informasi','Informasi laporan'],['hukum','Analisis & bukti'],['riwayat','Riwayat & catatan']].map(([key,label])=>`<button type="button" data-tab="${key}" class="${activeTab===key?'active':''}">${label}</button>`).join('')}</div><div id="detail-tab">${activeTab==='informasi'?`<dl class="detail-grid">${[['Pelapor',r.reporter],['Prioritas',r.priority],['Pihak terlapor',r.reported],['Lokasi kejadian',r.location],['Tanggal kejadian',date(r.incidentDate)],['Petugas',r.officer||'Belum ditugaskan'],['Instansi disposisi',r.agency||'Belum didisposisikan']].map(([label,value])=>`<div><dt>${label}</dt><dd>${e(value)}</dd></div>`).join('')}</dl><h3>Kronologi kejadian</h3><p class="preserve">${e(r.chronology)}</p>${workflowBlocks()}`:activeTab==='hukum'?`<h3>Lampiran bukti</h3>${complaintAttachments()}<h3>Hasil pre-screening hukum AI</h3><div class="notice preserve">${e(r.ai||'Belum ada hasil analisis AI untuk laporan ini. Pemeriksaan dan keputusan tetap menjadi tanggung jawab petugas.')}</div><h3>Referensi peraturan JDIH</h3>${r.references?.length?`<ul>${r.references.map(ref=>`<li>${e(ref)}</li>`).join('')}</ul>`:'<p class="muted">Belum ada rujukan terverifikasi.</p>'}`:`<h3>Riwayat penanganan</h3><ol class="timeline">${r.history.map(a=>`<li><span class="timeline-dot"></span><div><strong>${e(a.text)}</strong><small>${date(a.date)}</small></div></li>`).join('')}</ol><h3>Catatan internal petugas</h3>${r.notes.length?r.notes.map(n=>`<div class="note"><p>${e(n.text)}</p><small>${e(n.by||role)} · ${date(n.date)}</small></div>`).join(''):'<p class="muted">Belum ada catatan internal.</p>'}`}</div><div class="detail-actions">${[['verify','Verifikasi laporan'],['complete','Minta kelengkapan'],['reject','Tandai tidak valid'],['dispatch','Disposisi'],['status','Perbarui status'],['note','Catatan internal'],...(admin&&!demo?[['assign','Tugaskan petugas']]:[])].filter(([key])=>key==='note'||key==='assign'||(['verify','complete','reject'].includes(key)&&['Baru','Menunggu Verifikasi','Menunggu Kelengkapan'].includes(r.status))||(key==='dispatch'&&r.status==='Menunggu Disposisi')||(key==='status'&&r.status==='Dalam Proses')).map(([key,label])=>`<button type="button" class="${key==='verify'?'primary':''}" data-action="${key}">${label}</button>`).join('')}</div>`;}
   function bindDetail(){dialog.querySelectorAll('[data-tab]').forEach(el=>el.onclick=()=>{activeTab=el.dataset.tab;dialog.querySelector('.dialog-body').innerHTML=body();bindDetail();});dialog.querySelectorAll('[data-action]').forEach(el=>el.onclick=()=>action(r,el.dataset.action));}
   modal('Detail pengaduan',body());bindDetail();
  }
  function action(record,kind){const names={verify:'Verifikasi laporan',complete:'Minta kelengkapan dokumen',reject:'Tandai laporan tidak valid',dispatch:'Disposisi ke instansi',status:'Perbarui status',note:'Tambahkan catatan internal',assign:'Tugaskan petugas'};
-  const extra=kind==='dispatch'?field('Instansi tujuan','agency','','text','required maxlength="200"'):kind==='status'?select('Status tindak lanjut','status',['Dalam Proses','Selesai'],'Dalam Proses'):kind==='assign'?`<label>Petugas penanggung jawab<select name="assigned_to" required><option value="">Pilih verifikator</option>${data.accounts.filter(u=>u.role==='verifikator'&&u.status==='Aktif').map(u=>`<option value="${e(u.id)}">${e(u.name)}</option>`).join('')}</select></label>`:'';
-  close();modal(names[kind],`<p>Perubahan akan dicatat pada riwayat penanganan tiket <strong>${e(record.id)}</strong>.</p><form>${extra}${textarea('Catatan / alasan tindakan','note','','required minlength="5" maxlength="5000"')}<label class="confirm-check"><input type="checkbox" required> Saya mengonfirmasi tindakan ini sesuai kewenangan dan hasil pemeriksaan.</label><div class="form-actions"><button type="button" data-cancel>Batal</button><button class="primary" type="submit">Konfirmasi tindakan</button></div></form>`,async form=>{const input=Object.fromEntries(form.entries());if(demo){const updated=structuredClone(record);updated.status=({verify:'Menunggu Disposisi',complete:'Menunggu Kelengkapan',reject:'Ditolak',dispatch:'Dalam Proses',status:input.status})[kind]||updated.status;if(kind==='dispatch')updated.agency=input.agency;updated.notes.push({date:new Date().toISOString(),text:input.note,by:role});updated.history.push({date:new Date().toISOString(),text:`${names[kind]} · ${updated.status}`});await commit('complaints',updated);}else await commit('complaints',{id:record.id,action:kind,...input});});
+  const noteLabel=kind==='reject'?'Alasan penolakan (tampil ke pelapor)':'Catatan / alasan tindakan';
+  const extra=kind==='complete'?textarea('Dokumen yang diminta (satu per baris)','requested_documents','','required maxlength="2000"'):kind==='dispatch'?field('Instansi tujuan','agency','','text','required maxlength="200"'):kind==='status'?select('Status tindak lanjut','status',['Dalam Proses','Selesai'],record.status==='Selesai'?'Selesai':'Dalam Proses')+textarea('Ringkasan hasil tindak lanjut','follow_up_summary',record.follow_up?.summary||'','maxlength="5000"')+`<label>Berkas hasil tindak lanjut (opsional, PDF/JPG/PNG maks. 10 MB)<input name="follow_up_file" type="file" accept=".pdf,.jpg,.jpeg,.png"></label>`:kind==='assign'?`<label>Petugas penanggung jawab<select name="assigned_to" required><option value="">Pilih verifikator</option>${data.accounts.filter(u=>u.role==='verifikator'&&u.status==='Aktif').map(u=>`<option value="${e(u.id)}">${e(u.name)}</option>`).join('')}</select></label>`:'';
+  close();modal(names[kind],`<p>Perubahan akan dicatat pada riwayat penanganan tiket <strong>${e(record.id)}</strong>.</p><form>${extra}${textarea(noteLabel,'note','','required minlength="5" maxlength="5000"')}<label class="confirm-check"><input type="checkbox" required> Saya mengonfirmasi tindakan ini sesuai kewenangan dan hasil pemeriksaan.</label><div class="form-actions"><button type="button" data-cancel>Batal</button><button class="primary" type="submit">Konfirmasi tindakan</button></div></form>`,async form=>{
+   const input=Object.fromEntries(form.entries());
+   const followUpFile=form.get('follow_up_file');
+   if(kind==='complete'){
+    const docs=String(input.requested_documents||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+    if(!docs.length)throw new Error('Sebutkan minimal satu dokumen kelengkapan yang diminta.');
+   }
+   if(kind==='status'){
+    const summaryText=String(input.follow_up_summary||'').trim();
+    const existingSummary=String(record.follow_up?.summary||'').trim();
+    if(input.status==='Selesai'&&!summaryText&&!existingSummary)throw new Error('Ringkasan hasil tindak lanjut wajib diisi sebelum menandai selesai.');
+    if(followUpFile instanceof File&&followUpFile.size>0){
+     const lowerName=followUpFile.name.toLowerCase();
+     if(followUpFile.size>10*1024*1024||!['.pdf','.jpg','.jpeg','.png'].some(ext=>lowerName.endsWith(ext)))throw new Error('Berkas tindak lanjut harus berformat PDF, JPG, atau PNG maksimal 10 MB.');
+    }else delete input.follow_up_file;
+   }else delete input.follow_up_file;
+   if(demo){
+    const uploadedFile=followUpFile instanceof File&&followUpFile.size>0?followUpFile:null;
+    delete input.follow_up_file;
+    const updated=structuredClone(record);
+    updated.status=({verify:'Menunggu Disposisi',complete:'Menunggu Kelengkapan',reject:'Ditolak',dispatch:'Dalam Proses',status:input.status})[kind]||updated.status;
+    if(kind==='complete'){
+     updated.completeness_request={note:input.note,documents:String(input.requested_documents||'').split(/\r?\n/).map(line=>line.trim()).filter(Boolean),requested_at:new Date().toISOString(),requested_by:role,fulfilled_at:null};
+    }
+    if(kind==='reject')updated.rejection_reason=input.note;
+    if(kind==='dispatch'){
+     updated.agency=input.agency;
+     updated.dispositions=Array.isArray(updated.dispositions)?updated.dispositions:[];
+     updated.dispositions.push({agency:input.agency,date:new Date().toISOString(),note:input.note,by:role});
+    }
+    if(kind==='status'){
+     const summaryText=String(input.follow_up_summary||'').trim();
+     if(summaryText||uploadedFile){
+      const nextFollowUp={...(updated.follow_up||{})};
+      if(summaryText)nextFollowUp.summary=summaryText;
+      if(uploadedFile)nextFollowUp.attachment={name:uploadedFile.name};
+      nextFollowUp.updated_at=new Date().toISOString();
+      nextFollowUp.by=role;
+      updated.follow_up=nextFollowUp;
+     }
+    }
+    updated.notes.push({date:new Date().toISOString(),text:input.note,by:role});
+    updated.history.push({date:new Date().toISOString(),text:`${names[kind]} · ${updated.status}`});
+    await commit('complaints',updated);
+   }else await commit('complaints',{id:record.id,action:kind,...input});
+  });
  }
  await load();
 }
