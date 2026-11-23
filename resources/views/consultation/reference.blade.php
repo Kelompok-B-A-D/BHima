@@ -35,7 +35,7 @@
                         <span class="material-symbols-outlined text-[18px] text-[#0066CC]" aria-hidden="true">arrow_back</span>
                         <span>Kembali ke Ruang Konsultasi</span>
                     </a>
-                    <span class="hidden min-[641px]:inline text-[#94A3B8]">/</span>
+                    <span class="hidden min-[641px]:inline text-[#5A657A]">/</span>
                     <span class="hidden min-[641px]:inline text-[#0B1020] font-bold">Dokumen Rujukan {{ $document['key'] }}</span>
                 </div>
 
@@ -50,7 +50,7 @@
             </div>
 
             <!-- Document Metadata Overview Surface -->
-            <section class="surface-card p-6 min-[641px]:p-8 space-y-5">
+            <section class="surface-card hero-enter p-6 min-[641px]:p-8 space-y-5">
                 @php
                     $docStatus = strtolower((string) ($document['status_berlaku'] ?? 'berlaku'));
                     $statusBadgeClass = match ($docStatus) {
@@ -123,13 +123,13 @@
                 @if(!empty($document['summary']))
                     <div class="space-y-1.5 pt-1">
                         <h2 class="text-xs font-bold text-[#005EB8] uppercase tracking-wider">Ringkasan Dokumen</h2>
-                        <p class="text-sm text-[#333E52] leading-relaxed whitespace-pre-wrap">{{ $document['summary'] }}</p>
+                        <p class="prose-measure text-sm min-[641px]:text-base text-[#333E52] leading-relaxed whitespace-pre-wrap">{{ $document['summary'] }}</p>
                     </div>
                 @endif
             </section>
 
             <!-- Indexed Articles & Chunks Section -->
-            <section class="surface-card overflow-hidden">
+            <section class="surface-card hero-enter hero-enter-1 overflow-hidden">
                 <div class="bg-[#1E3A8A] text-white px-5 min-[641px]:px-7 py-4 min-[641px]:py-5 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-[24px] text-[#F2D8B3] shrink-0" aria-hidden="true">menu_book</span>
@@ -147,19 +147,19 @@
                         @endphp
                         <article
                             id="{{ $anchor }}"
-                            class="reference-chunk-card surface-nested p-4 min-[641px]:p-5 space-y-3 scroll-mt-28 transition-all"
+                            class="reference-chunk-card reveal-on-scroll surface-nested p-4 min-[641px]:p-5 space-y-3 scroll-mt-28 transition-all"
                         >
                             <div class="flex items-center justify-between gap-2 flex-wrap">
                                 <strong class="text-sm font-bold text-[#005EB8] flex items-center gap-1.5 flex-wrap">
                                     <span class="material-symbols-outlined text-[18px]" aria-hidden="true">gavel</span>
                                     <span>{{ $chunk->article_label }}</span>
                                     @if(!empty($chunk->is_ketentuan_pidana))
-                                        <span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-[10px] font-bold uppercase">
+                                        <span class="px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-xs font-bold uppercase">
                                             Ketentuan Sanksi ({{ strtoupper((string) ($chunk->sanksi_jenis ?? 'LAINNYA')) }})
                                         </span>
                                     @endif
                                     @if(!empty($chunk->rujuk_pasal))
-                                        <span class="px-2.5 py-0.5 rounded-full bg-[#E6F0FC] text-[#005EB8] text-[10px] font-bold">
+                                        <span class="px-2.5 py-0.5 rounded-full bg-[#E6F0FC] text-[#005EB8] text-xs font-bold">
                                             Rujuk: {{ $chunk->rujuk_pasal }}
                                         </span>
                                     @endif
@@ -168,7 +168,9 @@
                                     {{ $chunk->category }} · Bagian #{{ $chunk->chunk_index + 1 }}{{ !empty($chunk->pdf_page) ? ' · Hal. '.$chunk->pdf_page : '' }}
                                 </span>
                             </div>
-                            <p class="text-sm text-[#0B1020] leading-relaxed whitespace-pre-wrap bg-white p-4 rounded-[14px] border border-[#DCE4F0]">{{ $chunk->content }}</p>
+                            <div class="bg-white p-4 rounded-[14px] border border-[#DCE4F0]">
+                                <p class="prose-measure text-sm min-[641px]:text-base text-[#0B1020] leading-relaxed whitespace-pre-wrap">{{ $chunk->content }}</p>
+                            </div>
                         </article>
                     @empty
                         <div class="p-8 text-center text-[#4A5366] text-sm">

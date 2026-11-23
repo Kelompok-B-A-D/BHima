@@ -28,20 +28,20 @@
         <main id="portal-main-content" class="w-full pt-24 min-[641px]:pt-28 pb-10 min-[641px]:pb-14 bg-transparent relative min-h-[calc(100vh-280px)] stitch-print-full">
             <div class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 space-y-6 min-[641px]:space-y-8">
                 <!-- Screen Header & Context -->
-                <section class="space-y-2.5 max-w-3xl">
+                <section class="hero-enter space-y-2.5 max-w-3xl">
                     <p class="text-xs uppercase tracking-[0.12em] font-bold text-[#005EB8]">
                         Pelayanan Pengaduan Masyarakat Mandiri
                     </p>
                     <h1 class="type-h1 text-[#0B1020]">
                         Lacak Status Pengaduan
                     </h1>
-                    <p class="text-sm min-[641px]:text-base text-[#4A5366] leading-relaxed">
+                    <p class="prose-measure text-sm min-[641px]:text-base text-[#4A5366] leading-relaxed">
                         Masukkan nomor tiket untuk memantau perkembangan verifikasi dan disposisi laporan pengaduan Anda secara langsung, tanpa perlu membuat akun.
                     </p>
                 </section>
 
                 <!-- FLOATING CLEAR LIQUID GLASS TICKET SEARCH PILL -->
-                <section class="stitch-no-print" aria-label="Formulir Pencarian Nomor Tiket">
+                <section class="stitch-no-print hero-enter hero-enter-1" aria-label="Formulir Pencarian Nomor Tiket">
                     <form
                         id="trackTicketForm"
                         method="POST"
@@ -52,7 +52,7 @@
                         <div class="glass-input min-[641px]:!border-0 min-[641px]:!bg-transparent min-[641px]:!shadow-none flex items-center gap-3 px-3.5 min-[641px]:pl-4 min-[641px]:pr-2 flex-1 min-w-0 py-2 min-[641px]:py-0">
                             <span class="material-symbols-outlined text-[#0066CC] text-[24px] shrink-0" aria-hidden="true">confirmation_number</span>
                             <div class="flex flex-col flex-1 min-w-0">
-                                <label for="ticket-input" class="text-[11px] text-[#4A5366] uppercase tracking-wider font-bold leading-tight">
+                                <label for="ticket-input" class="text-xs text-[#4A5366] uppercase tracking-wider font-bold leading-tight">
                                     Nomor Resi / Tiket Aduan
                                 </label>
                                 <input
@@ -500,7 +500,7 @@
                 @else
                     <!-- Initial Empty Guidance State (Asymmetric 5 + 7 cols) -->
                     <div class="grid grid-cols-1 min-[641px]:grid-cols-12 gap-6">
-                        <div class="surface-card min-[641px]:col-span-5 p-6 min-[641px]:p-7 space-y-3">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[641px]:col-span-5 p-6 min-[641px]:p-7 space-y-3">
                             <div class="w-11 h-11 rounded-[16px] bg-[#E6F0FC] text-[#005EB8] flex items-center justify-center">
                                 <span class="material-symbols-outlined text-[24px]" aria-hidden="true">receipt_long</span>
                             </div>
@@ -510,7 +510,7 @@
                             </p>
                         </div>
 
-                        <div class="surface-card min-[641px]:col-span-7 p-6 min-[641px]:p-7 flex flex-col justify-between gap-5">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[641px]:col-span-7 p-6 min-[641px]:p-7 flex flex-col justify-between gap-5">
                             <div class="space-y-3">
                                 <div class="w-11 h-11 rounded-[16px] bg-[#E6F5F3] text-[#0F766E] flex items-center justify-center">
                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">campaign</span>

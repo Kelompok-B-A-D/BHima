@@ -115,11 +115,11 @@
         border-radius: 16px;
     }
 
-    /* Input fields: 16px radius, luminous border, soft inset shadow (DESIGN (1).md Section 5) */
+    /* Input fields: 16px radius, WCAG 1.4.11 >=3:1 boundary (#75849B = 3.80:1 on white), soft inset shadow */
     .glass-input {
         border-radius: 16px;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(11, 16, 32, 0.22);
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid #75849B;
         box-shadow:
             inset 0 1px 3px rgba(11, 16, 32, 0.06),
             0 1px 0 rgba(255, 255, 255, 0.90);
@@ -131,7 +131,7 @@
         background: #FFFFFF;
         border-color: #0066CC;
         box-shadow:
-            0 0 0 3px rgba(10, 132, 255, 0.22),
+            0 0 0 3px rgba(10, 132, 255, 0.24),
             inset 0 1px 2px rgba(11, 16, 32, 0.04);
         outline: none;
     }
@@ -169,14 +169,13 @@
     .btn-glass {
         min-height: 48px;
         border-radius: 9999px;
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(11, 16, 32, 0.16);
-        border-top-color: rgba(255, 255, 255, 0.94);
+        background: rgba(255, 255, 255, 0.80);
+        border: 1px solid #75849B;
         color: #0B1020;
         font-weight: 700;
         box-shadow:
             0 2px 6px rgba(11, 16, 32, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.92);
+            inset 0 1px 0 rgba(255, 255, 255, 0.94);
         transition:
             transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
             background-color 200ms ease,
@@ -184,8 +183,8 @@
     }
 
     .btn-glass:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.95);
-        border-color: rgba(0, 102, 204, 0.36);
+        background: #FFFFFF;
+        border-color: #0066CC;
         color: #0052A3;
     }
 
@@ -231,12 +230,13 @@
         transform: scale(0.97);
     }
 
-    /* Fluid Display / Heading Typography matching DESIGN (1).md Section 4 */
+    /* Fluid Display / Heading Typography matching DESIGN (1).md Section 4 & UI/UX Pro Max */
     .type-display {
         font-size: clamp(2rem, 1.35rem + 2.8vw, 3.65rem);
         font-weight: 700;
         letter-spacing: -0.03em;
         line-height: 1.08;
+        text-wrap: balance;
     }
 
     .type-h1 {
@@ -244,6 +244,7 @@
         font-weight: 700;
         letter-spacing: -0.025em;
         line-height: 1.12;
+        text-wrap: balance;
     }
 
     .type-h2 {
@@ -251,13 +252,19 @@
         font-weight: 600;
         letter-spacing: -0.02em;
         line-height: 1.2;
+        text-wrap: balance;
     }
 
     .type-h3 {
-        font-size: clamp(1.05rem, 0.98rem + 0.4vw, 1.35rem);
+        font-size: clamp(1.1rem, 1rem + 0.4vw, 1.35rem);
         font-weight: 600;
         letter-spacing: -0.015em;
         line-height: 1.3;
+        text-wrap: balance;
+    }
+
+    .prose-measure {
+        max-inline-size: 65ch;
     }
 
     /* Opaque fallback when transparency is reduced (DESIGN (1).md Section 10) */
@@ -265,14 +272,14 @@
         .liquid-glass,
         .liquid-glass--strong {
             background: #F7F9FC;
-            border-color: #C7D2E2;
+            border-color: #75849B;
             -webkit-backdrop-filter: none;
             backdrop-filter: none;
         }
 
         .liquid-glass--clear {
             background: #274596;
-            border-color: rgba(255, 255, 255, 0.45);
+            border-color: rgba(255, 255, 255, 0.55);
             -webkit-backdrop-filter: none;
             backdrop-filter: none;
         }
@@ -280,15 +287,153 @@
         .surface-card {
             background: #FFFFFF;
         }
+    }
+}
 
-        .dashboard-body .sidebar,
-        .dashboard-body .topbar,
-        .dashboard-body dialog,
-        .login-body .login-card {
-            background: #FFFFFF;
-            -webkit-backdrop-filter: none;
-            backdrop-filter: none;
+/*
+ * Top-Level Unscoped Native <dialog> Confirmation Modal Styles
+ * (Kept top-level outside @layer so @starting-style and ::backdrop cascade cleanly)
+ * Follows modern-web-guidance: dialog, light-dismiss-a-dialog,
+ * prevent-page-scroll-under-modal-dialog, and animate-to-from-top-layer.
+ */
+.bhima-dialog {
+    margin: auto;
+    padding: 0;
+    width: min(100% - 2rem, 32rem);
+    max-height: min(90dvh, 42rem);
+    border: 1px solid rgba(255, 255, 255, 0.90);
+    border-right-color: rgba(117, 132, 155, 0.50);
+    border-bottom-color: rgba(117, 132, 155, 0.60);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.88);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    backdrop-filter: blur(32px) saturate(160%);
+    color: #0B1020;
+    box-shadow:
+        0 4px 12px rgba(11, 16, 32, 0.08),
+        0 28px 72px rgba(11, 16, 32, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    overflow-y: auto;
+    opacity: 0;
+    transition-property: opacity, transform, display, overlay;
+    transition-duration: 280ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .bhima-dialog {
+        transform: scale(0.95) translateY(6px);
+    }
+}
+
+.bhima-dialog[open] {
+    display: block;
+}
+
+:is(.bhima-dialog[open], .dashboard-body dialog[open]):where(:not([data-closing])) {
+    opacity: 1;
+
+    @starting-style {
+        opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        transform: scale(1) translateY(0);
+
+        @starting-style {
+            transform: scale(0.95) translateY(6px);
         }
+    }
+}
+
+/* MANDATORY (both rules): prevent scroll chaining inside modal and over ::backdrop */
+dialog:modal {
+    overscroll-behavior: contain;
+}
+
+.bhima-dialog::backdrop,
+.dashboard-body dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background-color: rgba(11, 16, 32, 0);
+    -webkit-backdrop-filter: blur(0px);
+    backdrop-filter: blur(0px);
+    transition-property: background-color, backdrop-filter, display, overlay;
+    transition-duration: 280ms;
+    transition-timing-function: ease-out;
+    transition-behavior: allow-discrete;
+}
+
+:is(.bhima-dialog[open], .dashboard-body dialog[open]):where(:not([data-closing]))::backdrop {
+    background-color: rgba(11, 16, 32, 0.44);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+
+    @starting-style {
+        background-color: rgba(11, 16, 32, 0);
+        -webkit-backdrop-filter: blur(0px);
+        backdrop-filter: blur(0px);
+    }
+}
+
+.bhima-dialog__form {
+    display: flex;
+    flex-direction: column;
+}
+
+.bhima-dialog__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 16px;
+}
+
+.bhima-dialog__body {
+    padding: 0 24px 16px;
+    color: #333E52;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.bhima-dialog__footer {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 12px;
+    padding: 16px 24px 24px;
+    border-top: 1px solid #DCE4F0;
+}
+
+@media (min-width: 481px) {
+    .bhima-dialog__footer {
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .bhima-dialog,
+    .dashboard-body .sidebar,
+    .dashboard-body .topbar,
+    .dashboard-body dialog,
+    .login-body .login-card {
+        background: #FFFFFF;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    .bhima-dialog::backdrop,
+    .dashboard-body dialog::backdrop {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+
+    :is(.bhima-dialog[open], .dashboard-body dialog[open]):where(:not([data-closing]))::backdrop {
+        background-color: rgba(11, 16, 32, 0.64);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
     }
 }
 
@@ -352,8 +497,8 @@
     .dashboard-body button,
     .login-body button {
         cursor: pointer;
-        border: 1px solid rgba(11, 16, 32, 0.16);
-        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid #75849B;
+        background: rgba(255, 255, 255, 0.88);
         border-radius: 9999px;
         padding: 10px 16px;
         min-height: 44px;
@@ -406,9 +551,9 @@
     .dashboard-body select,
     .dashboard-body textarea,
     .login-body input {
-        border: 1px solid rgba(11, 16, 32, 0.22);
+        border: 1px solid #75849B;
         border-radius: 16px;
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.94);
         box-shadow: inset 0 1px 3px rgba(11, 16, 32, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
         color: var(--ink);
         padding: 10px 14px;
@@ -527,15 +672,18 @@
         color: var(--muted);
     }
 
-    /* Strong Clear Liquid Glass Modal (DESIGN (1).md Section 8: 32px radius, dimmed blurred backdrop) */
+    /* Strong Clear Liquid Glass Modal (32px radius, top-layer entry/exit animations, scroll containment) */
     .dashboard-body dialog {
+        margin: auto;
         padding: 0;
         max-width: 790px;
         width: calc(100% - 32px);
-        max-height: 90vh;
-        border: 1px solid rgba(255, 255, 255, 0.85);
+        max-height: 90dvh;
+        border: 1px solid rgba(255, 255, 255, 0.88);
+        border-right-color: rgba(117, 132, 155, 0.45);
+        border-bottom-color: rgba(117, 132, 155, 0.55);
         border-radius: 32px;
-        background: rgba(255, 255, 255, 0.84);
+        background: rgba(255, 255, 255, 0.88);
         -webkit-backdrop-filter: blur(32px) saturate(160%);
         backdrop-filter: blur(32px) saturate(160%);
         color: var(--ink);
@@ -545,12 +693,17 @@
             inset 0 1px 0 rgba(255, 255, 255, 0.96);
         font: inherit;
         overflow-y: auto;
+        opacity: 0;
+        transition-property: opacity, transform, display, overlay;
+        transition-duration: 280ms;
+        transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        transition-behavior: allow-discrete;
     }
 
-    .dashboard-body dialog::backdrop {
-        background: rgba(11, 16, 32, 0.45);
-        -webkit-backdrop-filter: blur(8px);
-        backdrop-filter: blur(8px);
+    @media (prefers-reduced-motion: no-preference) {
+        .dashboard-body dialog {
+            transform: scale(0.95) translateY(6px);
+        }
     }
 
     .dashboard-body footer {
@@ -1235,7 +1388,7 @@
 .search-field {
     display: flex;
     align-items: center;
-    border: 1px solid rgba(11, 16, 32, 0.22);
+    border: 1px solid #75849B;
     border-radius: 9999px;
     background: rgba(255, 255, 255, 0.94);
     box-shadow: inset 0 1px 3px rgba(11, 16, 32, 0.06);
@@ -1629,8 +1782,8 @@
 }
 
 .icon-button {
-    border: 1px solid rgba(11, 16, 32, 0.14);
-    background: rgba(255, 255, 255, 0.80);
+    border: 1px solid #75849B;
+    background: rgba(255, 255, 255, 0.88);
     width: 44px;
     height: 44px;
     padding: 0;
@@ -2038,25 +2191,320 @@
     }
 }
 
+/* =====================================================================
+ * FLUID LIQUID GLASS MOTION SYSTEM (modern-web-guidance & DESIGN (1).md)
+ * Compositor-only transforms/opacity, zero gradients, full reduced-motion support.
+ * ===================================================================== */
+html {
+    scroll-padding-top: 96px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* 1. Cross-Document MPA View Transitions (progressive enhancement) */
+    @view-transition {
+        navigation: auto;
+    }
+
+    ::view-transition-old(root) {
+        animation: bhima-page-out 220ms cubic-bezier(0.4, 0, 1, 1) both;
+    }
+
+    ::view-transition-new(root) {
+        animation: bhima-page-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes bhima-page-out {
+        to {
+            opacity: 0;
+            translate: 0 -6px;
+        }
+    }
+
+    @keyframes bhima-page-in {
+        from {
+            opacity: 0;
+            translate: 0 8px;
+        }
+    }
+
+    /* Keep floating glass chrome steady across page transitions */
+    .bhima-header-root {
+        view-transition-name: bhima-header;
+    }
+
+    .bhima-bottom-nav {
+        view-transition-name: bhima-bottom-nav;
+    }
+
+    /* 2. Above-the-Fold Hero & Page Header Stagger Entrance */
+    @keyframes bhima-hero-arrive {
+        from {
+            opacity: 0;
+            translate: 0 14px;
+            scale: 0.985;
+        }
+        to {
+            opacity: 1;
+            translate: 0 0;
+            scale: 1;
+        }
+    }
+
+    .hero-enter {
+        animation: bhima-hero-arrive 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .hero-enter-1 {
+        animation-delay: 60ms;
+    }
+
+    .hero-enter-2 {
+        animation-delay: 130ms;
+    }
+
+    .hero-enter-3 {
+        animation-delay: 200ms;
+    }
+
+    /* 3. Scroll-Driven Floating Clear Glass Header Elevation (native CSS scroll() timeline) */
+    @supports ((animation-timeline: scroll()) and (animation-range: 0% 100%)) {
+        @keyframes bhima-header-condense {
+            from {
+                translate: 0 0;
+                background-color: rgba(255, 255, 255, 0.48);
+                box-shadow:
+                    0 2px 6px rgba(11, 16, 32, 0.05),
+                    0 12px 32px rgba(20, 30, 80, 0.10),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+            }
+            to {
+                translate: 0 -4px;
+                background-color: rgba(255, 255, 255, 0.78);
+                box-shadow:
+                    0 4px 10px rgba(11, 16, 32, 0.08),
+                    0 18px 40px rgba(20, 30, 80, 0.14),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+            }
+        }
+
+        .bhima-header-pill {
+            animation: bhima-header-condense auto linear both;
+            animation-timeline: scroll(block root);
+            animation-range: 0px 120px;
+        }
+    }
+
+    /* Fallback class toggled by motion.js when scroll() timeline is unavailable */
+    .bhima-header-pill {
+        transition:
+            translate 260ms cubic-bezier(0.22, 1, 0.36, 1),
+            background-color 260ms ease,
+            box-shadow 260ms ease;
+    }
+
+    .bhima-header-pill.is-scrolled {
+        translate: 0 -4px;
+        background-color: rgba(255, 255, 255, 0.78);
+        box-shadow:
+            0 4px 10px rgba(11, 16, 32, 0.08),
+            0 18px 40px rgba(20, 30, 80, 0.14),
+            inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    }
+
+    /* 4. Scroll-Driven Reveal Effects (native CSS view() timeline with dual @supports check) */
+    @supports ((animation-timeline: view()) and (animation-range: entry)) {
+        @keyframes bhima-scroll-reveal {
+            from {
+                opacity: 0;
+                translate: 0 22px;
+                scale: 0.975;
+            }
+            to {
+                opacity: 1;
+                translate: 0 0;
+                scale: 1;
+            }
+        }
+
+        .reveal-on-scroll {
+            animation: bhima-scroll-reveal auto linear both;
+            animation-timeline: view(block);
+            animation-range: entry 0% entry 28%;
+        }
+
+        @keyframes bhima-bar-grow {
+            from {
+                transform: scaleX(0.15);
+            }
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        .topic-bar-fill {
+            transform-origin: left center;
+            animation: bhima-bar-grow auto linear both;
+            animation-timeline: view(block);
+            animation-range: entry 0% entry 36%;
+        }
+    }
+
+    /* IntersectionObserver fallback when native view() timeline is unavailable */
+    .motion-io-ready .reveal-on-scroll {
+        opacity: 0;
+        translate: 0 20px;
+        scale: 0.98;
+        transition:
+            opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+            translate 420ms cubic-bezier(0.22, 1, 0.36, 1),
+            scale 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .motion-io-ready .reveal-on-scroll.is-visible {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+    }
+
+    /* 5. Dynamic DOM Insertion & Step Panel Transitions (@starting-style) */
+    .chat-bubble,
+    .legal-analysis-card,
+    .search-result-card,
+    .step-section {
+        opacity: 1;
+        translate: 0 0;
+        transition:
+            opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+            translate 340ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @starting-style {
+        .chat-bubble,
+        .legal-analysis-card,
+        .search-result-card,
+        .step-section {
+            opacity: 0;
+            translate: 0 12px;
+        }
+    }
+
+    .dashboard-body .stat,
+    .dashboard-body .panel,
+    .login-body .login-card {
+        opacity: 1;
+        translate: 0 0;
+        transition:
+            opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+            translate 320ms cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 260ms ease;
+    }
+
+    @starting-style {
+        .dashboard-body .stat,
+        .dashboard-body .panel,
+        .login-body .login-card {
+            opacity: 0;
+            translate: 0 10px;
+        }
+    }
+
+    /* 6. Tactile Card Hover Elevation & Trailing Icon Nudge (pointer hover devices only) */
+    @media (hover: hover) {
+        .card-interactive {
+            transition:
+                translate 280ms cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 200ms ease;
+        }
+
+        .card-interactive:hover {
+            translate: 0 -3px;
+            box-shadow:
+                0 4px 10px rgba(11, 16, 32, 0.06),
+                0 18px 40px rgba(20, 30, 80, 0.11),
+                inset 0 1px 0 rgba(255, 255, 255, 0.98);
+        }
+
+        .icon-nudge {
+            transition: translate 220ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        a:hover .icon-nudge,
+        button:hover .icon-nudge,
+        .group:hover .icon-nudge {
+            translate: 3px 0;
+        }
+    }
+}
+
+/* 7. Discrete Mobile Glass Drawer Entry/Exit (modern-web-guidance: animate-element-entry-exit) */
+.bhima-drawer {
+    display: block;
+    opacity: 1;
+    translate: 0 0;
+    transition-property: display, opacity, translate;
+    transition-duration: 240ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    transition-behavior: allow-discrete;
+}
+
+@starting-style {
+    .bhima-drawer {
+        opacity: 0;
+        translate: 0 -10px;
+    }
+}
+
+.bhima-drawer:where([hidden], [data-closing]) {
+    opacity: 0;
+    translate: 0 -10px;
+}
+
+.bhima-drawer[hidden] {
+    display: none;
+}
+
+/* Reduced Motion: keep color/background transitions & calm 0.1s fades, disable spatial movement */
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation: none !important;
-        transition: none !important;
-        scroll-behavior: auto !important;
+    html {
+        scroll-behavior: auto;
+    }
+
+    dialog,
+    dialog::backdrop,
+    .bhima-drawer {
+        transition-duration: 0.1s;
+        transform: none;
+        translate: none;
+    }
+
+    @starting-style {
+        .bhima-drawer {
+            translate: none;
+        }
+    }
+
+    .bhima-drawer:where([hidden], [data-closing]) {
+        translate: none;
+    }
+
+    .btn-primary:active:not(:disabled),
+    .btn-glass:active:not(:disabled),
+    .btn-glass-dark:active:not(:disabled),
+    .press-scale:active:not(:disabled),
+    .dashboard-body button:active:not(:disabled),
+    .login-body button:active:not(:disabled) {
+        transform: none;
     }
 }
 
 /* =====================================================================
  * PUBLIC PORTAL INTERACTION & ACCESSIBILITY LAYER (BHIMA)
  * ===================================================================== */
-@media (prefers-reduced-motion: no-preference) {
-    html {
-        scroll-behavior: smooth;
-    }
-}
-
 .stitch-consultation-body,
 .stitch-beranda-body,
 .stitch-liquid-body {
@@ -2064,6 +2512,7 @@
     overflow-x: hidden;
     background-color: #E9EEF5;
     color: #0B1020;
+    line-height: 1.6;
 }
 
 .stitch-consultation-body a[href],
@@ -2145,6 +2594,10 @@
 
 .stitch-consultation-body details > summary::-webkit-details-marker {
     display: none;
+}
+
+.stitch-consultation-body details .summary-chevron {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .stitch-consultation-body details[open] .summary-chevron {
