@@ -253,6 +253,56 @@ class DashboardDataController extends Controller
         return Storage::disk('local')->download($record->file_path, basename(json_decode($record->payload, true)['filename']));
     }
 
+    public function complaintAttachment(Request $request, string $key, int $index)
+    {
+        $payload = $this->authorizedComplaintPayload($request, $key);
+        $attachment = $payload['attachments'][$index] ?? null;
+
+        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
+    }
+
+    public function complaintFollowUp(Request $request, string $key)
+    {
+        $payload = $this->authorizedComplaintPayload($request, $key);
+        $attachment = $payload['follow_up']['attachment'] ?? null;
+
+        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
+    }
+
+    private function authorizedComplaintPayload(Request $request, string $key): array
+    {
+        $record = DB::table('dashboard_records')
+            ->where('collection', 'complaints')
+            ->where('record_key', $key)
+            ->first();
+        abort_unless($record, 404);
+        abort_unless(
+            $request->user()->role === 'admin'
+            || ($record->assigned_to !== null && (int) $record->assigned_to === (int) $request->user()->id),
+            403
+        );
+
+        return json_decode($record->payload, true) ?: [];
+    }
+
+    private function downloadComplaintFile(string $key, ?array $attachment)
+    {
+        $path = is_string($attachment['path'] ?? null) ? $attachment['path'] : '';
+        $prefix = "complaints/{$key}/";
+        abort_unless(
+            $path !== ''
+            && str_starts_with($path, $prefix)
+            && ! str_contains($path, '..')
+            && ! str_contains($path, '\\')
+            && Storage::disk('local')->exists($path),
+            404
+        );
+
+        $name = basename((string) ($attachment['name'] ?? 'lampiran'));
+
+        return Storage::disk('local')->download($path, $name !== '' ? $name : 'lampiran');
+    }
+
     private function audit(Request $request, string $text): void
     {
         DB::table('dashboard_activities')->insert(['user_id' => $request->user()->id, 'text' => $text, 'created_at' => now(), 'updated_at' => now()]);

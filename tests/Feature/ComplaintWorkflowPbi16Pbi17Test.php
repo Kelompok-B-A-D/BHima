@@ -134,4 +134,72 @@ class ComplaintWorkflowPbi16Pbi17Test extends TestCase
         $this->assertSame('Ditolak', $rejectedPayload['status']);
         $this->assertSame('Laporan berada di luar kewenangan.', $rejectedPayload['rejection_reason']);
     }
+
+    public function test_verifier_downloads_evidence_only_for_assigned_complaint(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('complaints/BHM-2026-0011/bukti.pdf', '%PDF-1.4');
+        Storage::disk('local')->put('complaints/BHM-2026-0011/tindak-lanjut/hasil.pdf', '%PDF-1.4');
+        Storage::disk('local')->put('complaints/BHM-2026-OTHER/rahasia.pdf', '%PDF-1.4');
+
+        $verifier = $this->user();
+        $other = $this->user();
+        $admin = $this->user('admin');
+
+        $this->complaint('BHM-2026-0011', $verifier->id, [
+            'attachments' => [
+                [
+                    'name' => 'bukti.pdf',
+                    'path' => 'complaints/BHM-2026-0011/bukti.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => 8,
+                ],
+                [
+                    'name' => 'traversal.pdf',
+                    'path' => 'complaints/BHM-2026-0011/../BHM-2026-OTHER/rahasia.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => 8,
+                ],
+            ],
+            'follow_up' => [
+                'summary' => 'Sudah ditindaklanjuti.',
+                'attachment' => [
+                    'name' => 'hasil.pdf',
+                    'path' => 'complaints/BHM-2026-0011/tindak-lanjut/hasil.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => 8,
+                ],
+            ],
+        ]);
+
+        $this->get('/internal/complaints/BHM-2026-0011/lampiran/0')->assertRedirect('/login');
+
+        $this->actingAs($verifier)
+            ->get('/internal/complaints/BHM-2026-0011/lampiran/0')
+            ->assertDownload('bukti.pdf');
+
+        $this->actingAs($verifier)
+            ->get('/internal/complaints/BHM-2026-0011/tindak-lanjut')
+            ->assertDownload('hasil.pdf');
+
+        $this->actingAs($verifier)
+            ->get('/internal/complaints/BHM-2026-0011/lampiran/1')
+            ->assertNotFound();
+
+        $this->actingAs($admin)
+            ->get('/internal/complaints/BHM-2026-0011/lampiran/0')
+            ->assertDownload('bukti.pdf');
+
+        $this->actingAs($admin)
+            ->get('/internal/complaints/BHM-2026-0011/tindak-lanjut')
+            ->assertDownload('hasil.pdf');
+
+        $this->actingAs($other)
+            ->get('/internal/complaints/BHM-2026-0011/lampiran/0')
+            ->assertForbidden();
+
+        $this->actingAs($other)
+            ->get('/internal/complaints/BHM-2026-0011/tindak-lanjut')
+            ->assertForbidden();
+    }
 }
