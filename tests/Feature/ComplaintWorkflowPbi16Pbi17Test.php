@@ -202,4 +202,37 @@ class ComplaintWorkflowPbi16Pbi17Test extends TestCase
             ->get('/internal/complaints/BHM-2026-0011/tindak-lanjut')
             ->assertForbidden();
     }
+
+    public function test_reporter_can_submit_requested_completeness(): void
+    {
+        Storage::fake('local');
+        $verifier = $this->user();
+        $this->complaint('BHM-2026-0012', $verifier->id);
+
+        $this->actingAs($verifier)->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0012',
+            'action' => 'complete',
+            'note' => 'Lampiran belum lengkap.',
+            'requested_documents' => "KTP\nBukti pembayaran",
+        ])->assertOk();
+
+        $notesBefore = count($this->payload('BHM-2026-0012')['notes']);
+
+        $this->post('/lacak/BHM-2026-0012/lengkapi', [
+            'catatan' => 'Sudah saya lampirkan.',
+            'lampiran' => [UploadedFile::fake()->createWithContent('ktp.pdf', '%PDF-1.4')],
+        ])->assertRedirect(route('complaint.track', ['tiket' => 'BHM-2026-0012']));
+
+        $payload = $this->payload('BHM-2026-0012');
+        $this->assertSame('Menunggu Verifikasi', $payload['status']);
+        $this->assertCount(1, $payload['attachments']);
+        $this->assertSame('ktp.pdf', $payload['attachments'][0]['name']);
+        $this->assertStringStartsWith('complaints/BHM-2026-0012/', $payload['attachments'][0]['path']);
+        Storage::disk('local')->assertExists($payload['attachments'][0]['path']);
+        $this->assertNotNull($payload['completeness_request']['fulfilled_at']);
+        $this->assertCount(1, $payload['completeness_submissions']);
+        $this->assertSame('Sudah saya lampirkan.', $payload['completeness_submissions'][0]['note']);
+        $this->assertCount($notesBefore, $payload['notes']);
+        $this->assertSame('kelengkapan diterima · Menunggu Verifikasi', end($payload['history'])['text']);
+    }
 }

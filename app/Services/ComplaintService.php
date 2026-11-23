@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ComplaintService
 {
@@ -150,6 +151,76 @@ class ComplaintService
             DB::table('dashboard_records')->insert($insertData);
 
             return $ticket;
+        });
+    }
+
+    public function submitCompleteness(string $ticket, string $note, array $files = []): void
+    {
+        DB::transaction(function () use ($ticket, $note, $files) {
+            DB::table('users')->orderBy('id')->lockForUpdate()->get(['id']);
+
+            $record = DB::table('dashboard_records')
+                ->where('collection', 'complaints')
+                ->where('record_key', $ticket)
+                ->lockForUpdate()
+                ->first();
+
+            abort_unless($record, 404);
+
+            $payload = json_decode($record->payload, true) ?: [];
+
+            if (($payload['status'] ?? null) !== 'Menunggu Kelengkapan') {
+                throw ValidationException::withMessages([
+                    'lampiran' => 'Pengaduan ini tidak sedang menunggu kelengkapan dokumen.',
+                ]);
+            }
+
+            $existingAttachments = is_array($payload['attachments'] ?? null) ? $payload['attachments'] : [];
+            if (count($existingAttachments) + count($files) > 10) {
+                throw ValidationException::withMessages([
+                    'lampiran' => 'Jumlah total lampiran per tiket maksimal 10 berkas.',
+                ]);
+            }
+
+            $now = now();
+            $uploaded = [];
+            foreach ($files as $file) {
+                $uploaded[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->store('complaints/'.$ticket, 'local'),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ];
+            }
+
+            $payload['attachments'] = array_values([...$existingAttachments, ...$uploaded]);
+
+            $submissions = is_array($payload['completeness_submissions'] ?? null) ? $payload['completeness_submissions'] : [];
+            $submissions[] = [
+                'date' => $now->toIso8601String(),
+                'note' => $note,
+                'attachments' => $uploaded,
+            ];
+            $payload['completeness_submissions'] = $submissions;
+
+            $completenessRequest = is_array($payload['completeness_request'] ?? null) ? $payload['completeness_request'] : [];
+            $completenessRequest['fulfilled_at'] = $now->toIso8601String();
+            $payload['completeness_request'] = $completenessRequest;
+
+            $payload['status'] = 'Menunggu Verifikasi';
+            $payload['history'] = is_array($payload['history'] ?? null) ? $payload['history'] : [];
+            $payload['history'][] = [
+                'date' => $now->toIso8601String(),
+                'text' => 'kelengkapan diterima · Menunggu Verifikasi',
+            ];
+
+            DB::table('dashboard_records')
+                ->where('collection', 'complaints')
+                ->where('record_key', $ticket)
+                ->update([
+                    'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    'updated_at' => $now,
+                ]);
         });
     }
 

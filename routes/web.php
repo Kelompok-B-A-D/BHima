@@ -29,6 +29,10 @@ Route::post('/api/pengaduan', [PublicComplaintController::class, 'store'])->midd
 // Fitur 5 (KF-14): lacak tiket
 Route::get('/lacak', [ComplaintController::class, 'trackForm'])->name('complaint.track');
 Route::post('/lacak', [ComplaintController::class, 'track'])->middleware('throttle:20,1')->name('complaint.track.submit');
+Route::post('/lacak/{tiket}/lengkapi', [ComplaintController::class, 'submitCompleteness'])
+    ->middleware('throttle:10,1')
+    ->where('tiket', 'BHM-[0-9]{4}-[A-Z0-9]{4,}')
+    ->name('complaint.completeness');
 
 // Explicitly isolated demonstration. No operational records or authentication bypass.
 Route::get('/demo/{role}/{page?}', function (string $role, ?string $page = null) {
