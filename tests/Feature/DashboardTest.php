@@ -184,6 +184,89 @@ class DashboardTest extends TestCase
         $this->assertDatabaseMissing('knowledge_chunks', ['document_key' => 'D1']);
     }
 
+    public function test_admin_can_process_one_text_pdf_document_without_duplicate_chunks(): void
+    {
+        Storage::fake('local');
+        $admin = $this->user();
+        $metadata = [
+            'id' => 'D1',
+            'title' => 'Peraturan Uji Indeks',
+            'number' => 'UU No. 99 Tahun 2026',
+            'year' => 2026,
+            'category' => 'Pelayanan Publik',
+            'summary' => 'Ringkasan hanya dipakai bila teks PDF tidak tersedia.',
+        ];
+        $pdf = "%PDF-1.4\n"
+            ."1 0 obj << /Length 120 >> stream\n"
+            ."BT (Pasal 10 Ayat (1)) Tj (Setiap petugas wajib memberikan layanan tanpa biaya tidak resmi.) Tj ET\n"
+            ."endstream endobj\n"
+            ."2 0 obj << /Length 160 >> stream\n"
+            ."BT (Pasal 88) Tj (Setiap orang yang melanggar ketentuan sebagaimana dimaksud dalam Pasal 10 ayat (1) dipidana dengan pidana penjara paling lama 3 tahun dan denda paling banyak Rp50.000.000,00.) Tj ET\n"
+            ."endstream endobj\n%%EOF";
+
+        $this->actingAs($admin)
+            ->post('/internal/data/documents', [
+                ...$metadata,
+                'file' => UploadedFile::fake()->createWithContent('peraturan.pdf', $pdf),
+            ], ['Accept' => 'application/json'])
+            ->assertOk();
+
+        $this->postJson('/internal/documents/D1/process')
+            ->assertOk()
+            ->assertJsonPath('status', 'indexed')
+            ->assertJsonPath('chunks_indexed', 2);
+
+        $this->assertDatabaseHas('knowledge_chunks', [
+            'document_key' => 'D1',
+            'pasal_nomor' => '10',
+            'ayat' => '1',
+        ]);
+        $this->assertDatabaseHas('knowledge_chunks', [
+            'document_key' => 'D1',
+            'pasal_nomor' => '88',
+            'is_ketentuan_pidana' => true,
+        ]);
+
+        $this->postJson('/internal/documents/D1/process')->assertOk();
+        $this->assertDatabaseCount('knowledge_chunks', 2);
+        $this->getJson('/internal/data')
+            ->assertJsonPath('documents.0.status', 'Terindeks')
+            ->assertJsonPath('documents.0.extraction', 'Berhasil');
+
+        $this->actingAs($this->user('verifikator'))
+            ->postJson('/internal/documents/D1/process')
+            ->assertForbidden();
+    }
+
+    public function test_processing_document_without_text_marks_it_failed(): void
+    {
+        $admin = $this->user();
+        DB::table('dashboard_records')->insert([
+            'collection' => 'documents',
+            'record_key' => 'D1',
+            'payload' => json_encode([
+                'id' => 'D1',
+                'title' => 'Dokumen tanpa teks',
+                'number' => '1',
+                'year' => 2026,
+                'category' => 'Umum',
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->postJson('/internal/documents/D1/process')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Dokumen belum dapat diproses. Periksa PDF, metadata, dan coba kembali.');
+
+        $payload = json_decode((string) DB::table('dashboard_records')->where('record_key', 'D1')->value('payload'), true);
+        $this->assertSame('Gagal', $payload['status']);
+        $this->assertSame('Gagal', $payload['extraction']);
+        $this->assertArrayHasKey('processing_error', $payload);
+        $this->assertDatabaseMissing('knowledge_chunks', ['document_key' => 'D1']);
+    }
+
     public function test_login_logout_and_disabled_accounts(): void
     {
         $user = $this->user();

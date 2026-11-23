@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\LegalIngestionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -253,54 +254,21 @@ class DashboardDataController extends Controller
         return Storage::disk('local')->download($record->file_path, basename(json_decode($record->payload, true)['filename']));
     }
 
-    public function complaintAttachment(Request $request, string $key, int $index)
+    public function processDocument(Request $request, string $key, LegalIngestionService $ingestionService)
     {
-        $payload = $this->authorizedComplaintPayload($request, $key);
-        $attachment = $payload['attachments'][$index] ?? null;
+        abort_unless($request->user()->role === 'admin', 403);
+        abort_unless(preg_match('/^[A-Za-z0-9_-]{1,80}$/', $key), 404);
 
-        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
-    }
+        $result = $ingestionService->processDocument($key);
+        abort_if($result['status'] === 'not_found', 404);
 
-    public function complaintFollowUp(Request $request, string $key)
-    {
-        $payload = $this->authorizedComplaintPayload($request, $key);
-        $attachment = $payload['follow_up']['attachment'] ?? null;
+        if ($result['status'] === 'failed') {
+            return response()->json(['message' => $result['message']], 422);
+        }
 
-        return $this->downloadComplaintFile($key, is_array($attachment) ? $attachment : null);
-    }
+        $this->audit($request, 'Memproses dan mengindeks ulang dokumen '.$result['document_key']);
 
-    private function authorizedComplaintPayload(Request $request, string $key): array
-    {
-        $record = DB::table('dashboard_records')
-            ->where('collection', 'complaints')
-            ->where('record_key', $key)
-            ->first();
-        abort_unless($record, 404);
-        abort_unless(
-            $request->user()->role === 'admin'
-            || ($record->assigned_to !== null && (int) $record->assigned_to === (int) $request->user()->id),
-            403
-        );
-
-        return json_decode($record->payload, true) ?: [];
-    }
-
-    private function downloadComplaintFile(string $key, ?array $attachment)
-    {
-        $path = is_string($attachment['path'] ?? null) ? $attachment['path'] : '';
-        $prefix = "complaints/{$key}/";
-        abort_unless(
-            $path !== ''
-            && str_starts_with($path, $prefix)
-            && ! str_contains($path, '..')
-            && ! str_contains($path, '\\')
-            && Storage::disk('local')->exists($path),
-            404
-        );
-
-        $name = basename((string) ($attachment['name'] ?? 'lampiran'));
-
-        return Storage::disk('local')->download($path, $name !== '' ? $name : 'lampiran');
+        return response()->json($result);
     }
 
     private function audit(Request $request, string $text): void
