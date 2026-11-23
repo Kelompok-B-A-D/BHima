@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\ComplaintService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ComplaintController extends Controller
 {
@@ -111,5 +112,34 @@ class ComplaintController extends Controller
             'searched' => true,
             'result' => $this->complaints->trackByTicket($data['tiket']),
         ]);
+    }
+
+    public function submitCompleteness(Request $request, string $tiket)
+    {
+        $data = $request->validate([
+            'catatan' => 'required|string|min:5|max:2000',
+            'lampiran' => 'required|array|min:1|max:5',
+            'lampiran.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ], [
+            'catatan.required' => 'Catatan kelengkapan wajib diisi.',
+            'catatan.min' => 'Catatan kelengkapan minimal 5 karakter.',
+            'lampiran.required' => 'Unggah minimal satu berkas kelengkapan.',
+            'lampiran.max' => 'Maksimal 5 berkas untuk sekali pengiriman.',
+            'lampiran.*.mimes' => 'Berkas harus berformat PDF, JPG, atau PNG.',
+            'lampiran.*.max' => 'Setiap berkas maksimal 10 MB.',
+        ]);
+
+        $note = trim(strip_tags($data['catatan']));
+        if (mb_strlen($note) < 5) {
+            throw ValidationException::withMessages([
+                'catatan' => 'Catatan kelengkapan minimal 5 karakter.',
+            ]);
+        }
+
+        $this->complaints->submitCompleteness($tiket, $note, $request->file('lampiran', []));
+
+        return redirect()
+            ->route('complaint.track', ['tiket' => $tiket])
+            ->with('completeness_submitted', 'Kelengkapan berkas berhasil dikirim. Laporan Anda kembali masuk tahap pemeriksaan verifikator.');
     }
 }
