@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\DashboardDataController;
 use App\Http\Controllers\InternalAuthController;
-use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\PublicComplaintController;
 use App\Http\Middleware\DashboardAccess;
 use Illuminate\Support\Facades\Route;

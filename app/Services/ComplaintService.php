@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -254,7 +255,7 @@ class ComplaintService
                 return null;
             }
 
-            return \Carbon\Carbon::parse($iso)->setTimezone('Asia/Jakarta')->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+            return Carbon::parse($iso)->setTimezone('Asia/Jakarta')->locale('id')->translatedFormat('d M Y, H:i').' WIB';
         };
 
         $history = collect($p['history'] ?? [])->map(fn ($h) => [
@@ -266,7 +267,7 @@ class ComplaintService
             'ticket' => $ticket,
             'status' => $label($p['status'] ?? 'Baru'),
             'category' => $p['category'] ?? null,
-            'date' => isset($p['date']) ? \Carbon\Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
+            'date' => isset($p['date']) ? Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
             'agency' => $p['agency'] ?? null,
             'history' => $history,
             'rejection_reason' => $p['rejection_reason'] ?? null,
