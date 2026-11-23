@@ -4,7 +4,7 @@
     "name": "confirm-dialog"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DG0HHy5Z.css",
+    "file": "assets/app-L6uYvFCh.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,7 +13,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DFw1-H3s.js",
+    "file": "assets/app-Be7Ut5dI.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -32,5 +32,11 @@
     "imports": [
       "_confirm-dialog-CNNV-ZxL.js"
     ]
+  },
+  "resources/js/services.js": {
+    "file": "assets/services-BZQpZpz_.js",
+    "name": "services",
+    "src": "resources/js/services.js",
+    "isEntry": true
   }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\LegalIngestionService;
+use App\Services\LlmQuotaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,7 @@ class DashboardDataController extends Controller
 
     private const STATUSES = ['Baru', 'Menunggu Verifikasi', 'Menunggu Kelengkapan', 'Dalam Proses', 'Menunggu Disposisi', 'Selesai', 'Ditolak'];
 
-    public function index(Request $request)
+    public function index(Request $request, LlmQuotaService $quotaService)
     {
         $admin = $request->user()->role === 'admin';
         $result = array_fill_keys([...self::COLLECTIONS, 'searches', 'activities'], []);
@@ -28,6 +29,7 @@ class DashboardDataController extends Controller
         }
         if ($admin) {
             $result['accounts'] = User::all()->map(fn ($u) => ['id' => (string) $u->id, 'name' => $u->name, 'email' => $u->email, 'role' => $u->role, 'status' => $u->is_active ? 'Aktif' : 'Nonaktif', 'created' => $u->created_at->toDateString()])->all();
+            $result['llm_quota'] = $quotaService->status();
         }
         $result['activities'] = DB::table('dashboard_activities')->when(! $admin, fn ($q) => $q->where('user_id', $request->user()->id))->orderByDesc('id')->limit(200)->get()->map(fn ($a) => ['date' => $a->created_at, 'text' => $a->text])->all();
 

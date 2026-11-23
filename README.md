@@ -80,9 +80,16 @@ DEEPSEEK_TIMEOUT=20
 DEEPSEEK_TEMPERATURE=0.1
 DEEPSEEK_MAX_TOKENS=1500
 ANALYSIS_RATE_LIMIT_PER_MINUTE=15
+
+# Kuota Token Harian & Circuit Breaker LLM (PBI 3)
+LLM_DAILY_TOKEN_LIMIT=200000
+LLM_DAILY_REQUEST_LIMIT=500
+LLM_PER_REQUEST_TOKEN_CAP=3000
+LLM_CIRCUIT_FAILURE_THRESHOLD=3
+LLM_CIRCUIT_COOLDOWN_MINUTES=5
 ```
 
-System prompt asisten disimpan secara terpisah di [`config/rag.php`](config/rag.php), sedangkan system prompt dan aturan analisis pasal terstruktur (PBI 2) disimpan di [`config/legal_analysis.php`](config/legal_analysis.php).
+System prompt asisten disimpan secara terpisah di [`config/rag.php`](config/rag.php), system prompt dan aturan analisis pasal terstruktur (PBI 2) disimpan di [`config/legal_analysis.php`](config/legal_analysis.php), sedangkan batas kuota token harian dan circuit breaker (PBI 3) disimpan di [`config/llm_quota.php`](config/llm_quota.php).
 
 ### Cara Beralih dari `MockProvider` ke `DeepSeekProvider` (Gateway `paas.id`)
 
@@ -131,15 +138,29 @@ Berikut adalah 5 skenario uji utama (beserta skenario uji *guardrail*) yang dija
    - *Input Kronologi*: `"Tetangga menggeser patok batas bidang tanah pekarangan keluarga kami secara sepihak padahal kami memegang sertifikat hak milik (SHM)."`
    - *Hasil yang Diharapkan*: Menampilkan rujukan **PP No. 24 Tahun 1997** & **Permen ATR/BPN No. 21 Tahun 2020** (**Pasal 18 Ayat (1)**, **Pasal 6 Ayat (1)**, **Pasal 34 Ayat (1)**), keterangan `"Tidak tercantum dalam potongan pasal yang ditemukan"` pada pasal prosedur mediasi tanpa mengarang angka sanksi, serta tombol **Ajukan Pengaduan** yang mengisi otomatis formulir `/pengaduan/buat`.
 
-## 5. Cara Menguji
+## 5. Kuota Token Harian, Circuit Breaker & Fallback Katalog JDIH (PBI 3)
 
-1. **Menjalankan Seluruh Pengujian Otomatis (PHPUnit PBI 1 + PBI 2 + Dashboard)**:
+Seluruh pemanggilan LLM eksternal (`LegalAssistantService` pada `RAG_LLM_PROVIDER=api` dan `DeepSeekProvider` pada `LLM_PROVIDER=deepseek`) menggunakan **satu penghitung kuota harian bersama** (`LlmQuotaService`) pada tabel `llm_daily_usage` dan `llm_usage_logs` dengan reset otomatis setiap pergantian hari pada zona waktu `Asia/Jakarta`.
+
+- **Pembatasan Sebelum Panggilan Jaringan**: Apabila circuit breaker sedang terbuka (`circuit_open`), proyeksi token (`tokens_used + LLM_PER_REQUEST_TOKEN_CAP`) melebihi `LLM_DAILY_TOKEN_LIMIT`, atau jumlah permintaan mencapai `LLM_DAILY_REQUEST_LIMIT`, sistem tidak mengirim permintaan HTTP eksternal dan langsung mengembalikan rekomendasi pasal dari katalog JDIH (`CatalogFallbackService`).
+- **Circuit Breaker Otomatis**: Kegagalan beruntun (`429`, `5xx`, `timeout`, atau `invalid_json`) sebanyak `LLM_CIRCUIT_FAILURE_THRESHOLD` kali membuka circuit breaker selama `LLM_CIRCUIT_COOLDOWN_MINUTES` menit dan otomatis pulih kembali setelah masa pendinginan selesai.
+- **Kepatuhan Guardrail & Eskalasi**: Hasil mode fallback menggunakan potongan `knowledge_chunks` dari PBI 1, tetap melewati validasi skema JSON PBI 2, mempertahankan keterangan `"Tidak tercantum dalam potongan pasal yang ditemukan"` untuk pasal tanpa sanksi eksplisit, tetap menolak prediksi vonis, menampilkan banner ramah `"Layanan analisis AI sedang dibatasi. Berikut rekomendasi pasal dari katalog JDIH."`, serta menjaga tombol **Ajukan Pengaduan** tetap aktif dan mengisi otomatis `/pengaduan/buat`.
+- **Keamanan Informasi**: Respons publik tidak pernah menyertakan API key maupun angka pemakaian kuota rinci. Administrator dapat memantau kuota harian melalui halaman internal dashboard (`/admin/analitik` atau `/admin/basis-ai`) maupun perintah CLI:
+  ```sh
+  php artisan bhima:quota-status
+  ```
+- **Mode Lokal (`mock` / `local_grounded`)**: Saat `LLM_PROVIDER=mock` dan `RAG_LLM_PROVIDER=local_grounded`, sistem berjalan tanpa panggilan jaringan dan tidak dicatat sebagai pemakaian token harian.
+
+## 6. Cara Menguji
+
+1. **Menjalankan Seluruh Pengujian Otomatis (PHPUnit PBI 1 + PBI 2 + PBI 3 + Dashboard)**:
    ```sh
    php artisan test
    ```
-   Untuk menjalankan khusus pengujian PBI 2:
+   Untuk menjalankan khusus pengujian PBI 2 atau PBI 3:
    ```sh
    php artisan test --filter=LegalAnalysisPbi2Test
+   php artisan test --filter=LlmQuotaFallbackPbi3Test
    ```
 2. **Menjalankan Skrip Uji 7 Skenario RAG (5 Skenario Kronologi + Luar Cakupan + Anti-Vonis)**:
    ```sh

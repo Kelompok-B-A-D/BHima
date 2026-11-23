@@ -6,11 +6,26 @@ use App\Contracts\AnalysisProvider;
 use App\Exceptions\AnalysisProviderException;
 use App\Services\Analysis\DeepSeekProvider;
 use App\Services\Analysis\MockProvider;
+use App\Services\Analysis\QuotaAwareProvider;
 use Illuminate\Support\Facades\Log;
 
 class LegalAnalysisService
 {
     private const ALLOWED_SANCTION_TYPES = ['pidana', 'administratif', 'denda', 'perdata', 'lainnya'];
+
+    private const ALLOWED_FALLBACK_REASONS = [
+        'quota_exceeded',
+        'circuit_open',
+        'rate_limit',
+        'http_error',
+        'timeout',
+        'invalid_json',
+        'missing_api_key',
+    ];
+
+    public function __construct(
+        private readonly ?CatalogFallbackService $fallbackService = null,
+    ) {}
 
     /**
      * Pola kalimat terlarang (prediksi vonis / peluang menang atau kalah).
@@ -65,10 +80,15 @@ class LegalAnalysisService
      *     meta: array<string, mixed>
      * }
      */
-    public function analyze(string $chronology, array $chunks, ?AnalysisProvider $customProvider = null): array
+    public function analyze(string $chronology, array $chunks, ?AnalysisProvider $customProvider = null, ?string $sessionUuid = null): array
     {
         $normalizedChunks = $this->normalizeChunks($chunks);
         $provider = $customProvider ?? $this->resolveProvider();
+        if ($sessionUuid !== null) {
+            if ($provider instanceof QuotaAwareProvider || $provider instanceof DeepSeekProvider) {
+                $provider->setSessionUuid($sessionUuid);
+            }
+        }
         $verdictRequested = $this->detectVerdictQuestion($chronology);
 
         if (empty($normalizedChunks)) {
@@ -84,6 +104,8 @@ class LegalAnalysisService
                 'perlu_eskalasi' => true,
                 'catatan' => $emptyNote,
                 'meta' => [
+                    'mode' => 'ai',
+                    'fallback_reason' => null,
                     'provider' => $provider->name(),
                     'status' => 'out_of_scope',
                     'error' => null,
@@ -115,24 +137,19 @@ class LegalAnalysisService
 
             if ($rawResult === null) {
                 throw new AnalysisProviderException(
-                    'Maaf, hasil analisis pasal belum dapat ditampilkan karena respons layanan tidak sesuai format standar. Silakan coba lagi atau langsung ajukan pengaduan.',
+                    'Format hasil analisis belum sesuai skema standar.',
                     'invalid_json'
                 );
             }
         } catch (AnalysisProviderException $e) {
-            return $this->buildGracefulErrorResponse($provider->name(), $e->getMessage(), $e->errorCode, $verdictRequested);
+            return $this->buildCatalogFallbackResponse($maskedChronology, $normalizedChunks, $e->errorCode, $verdictRequested);
         } catch (\Throwable $e) {
             Log::error('LegalAnalysisService: Kegagalan saat memproses analisis pasal.', [
                 'provider' => $provider->name(),
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->buildGracefulErrorResponse(
-                $provider->name(),
-                'Maaf, layanan analisis pasal sedang mengalami gangguan teknis sementara. Anda tetap dapat mengajukan pengaduan langsung melalui tombol di bawah.',
-                'unexpected_error',
-                $verdictRequested
-            );
+            return $this->buildCatalogFallbackResponse($maskedChronology, $normalizedChunks, 'http_error', $verdictRequested);
         }
 
         $validated = $this->validateAndFilterOutput($rawResult, $normalizedChunks, $verdictRequested);
@@ -144,6 +161,8 @@ class LegalAnalysisService
             'perlu_eskalasi' => $validated['perlu_eskalasi'],
             'catatan' => $validated['catatan'],
             'meta' => [
+                'mode' => 'ai',
+                'fallback_reason' => null,
                 'provider' => $provider->name(),
                 'status' => 'ok',
                 'error' => null,
@@ -156,17 +175,11 @@ class LegalAnalysisService
     }
 
     /**
-     * Pilih implementasi AnalysisProvider berdasarkan konfigurasi LLM_PROVIDER (mock | deepseek).
+     * Pilih implementasi AnalysisProvider melalui binding container (MockProvider atau QuotaAwareProvider).
      */
     public function resolveProvider(): AnalysisProvider
     {
-        $configured = strtolower(trim((string) config('legal_analysis.provider', 'mock')));
-
-        if ($configured === 'deepseek') {
-            return app(DeepSeekProvider::class);
-        }
-
-        return app(MockProvider::class);
+        return app(AnalysisProvider::class);
     }
 
     /**
@@ -678,31 +691,47 @@ class LegalAnalysisService
     }
 
     /**
+     * Bangun respons fallback dari katalog JDIH (knowledge_chunks) yang tetap melewati
+     * seluruh validasi skema, grounding sitasi/sanksi, dan guardrail anti-vonis PBI 2.
+     *
+     * @param  list<array<string, mixed>>  $chunks
      * @return array<string, mixed>
      */
-    private function buildGracefulErrorResponse(string $providerName, string $userMessage, string $errorCode, bool $verdictRequested): array
+    private function buildCatalogFallbackResponse(string $chronology, array $chunks, string $errorCode, bool $verdictRequested): array
     {
-        $note = $userMessage;
-        if ($verdictRequested) {
-            $note = (string) config('legal_analysis.verdict_guardrail_note').' '.$note;
-        }
+        $reason = $this->normalizeFallbackReason($errorCode);
+        $fallbackService = $this->fallbackService ?? app(CatalogFallbackService::class);
+        $fallbackRaw = $fallbackService->buildFromChunks($chronology, $chunks, $reason);
+        $validated = $this->validateAndFilterOutput($fallbackRaw, $chunks, $verdictRequested);
 
         return [
-            'rujukan' => [],
-            'pasal_relevan' => [],
-            'ancaman_sanksi' => [],
+            'rujukan' => $validated['rujukan'],
+            'pasal_relevan' => $validated['pasal_relevan'],
+            'ancaman_sanksi' => $validated['ancaman_sanksi'],
             'perlu_eskalasi' => true,
-            'catatan' => $note,
+            'catatan' => $validated['catatan'],
             'meta' => [
-                'provider' => $providerName,
-                'status' => 'error',
-                'error' => $errorCode,
-                'error_message' => $userMessage,
-                'removed_entries_count' => 0,
+                'mode' => 'fallback',
+                'fallback_reason' => $reason,
+                'provider' => 'catalog_fallback',
+                'status' => 'fallback',
+                'error' => null,
+                'removed_entries_count' => $validated['removed_entries_count'],
                 'verdict_guardrail_triggered' => $verdictRequested,
                 'sanction_label' => (string) config('legal_analysis.sanction_label', 'berdasarkan bunyi pasal, bukan prediksi putusan'),
                 'disclaimer' => (string) config('legal_analysis.disclaimer'),
             ],
         ];
+    }
+
+    private function normalizeFallbackReason(string $errorCode): string
+    {
+        $normalized = strtolower(trim($errorCode));
+
+        if (in_array($normalized, self::ALLOWED_FALLBACK_REASONS, true)) {
+            return $normalized;
+        }
+
+        return 'http_error';
     }
 }
