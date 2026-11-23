@@ -1,4 +1,5 @@
 import { escape as e } from '../dashboard/ui';
+import { hideDiscreteElement, showDiscreteElement } from '../components/motion';
 
 initLiquidHeaderDrawer();
 
@@ -18,8 +19,16 @@ function initLiquidHeaderDrawer() {
     const mobileDrawer = document.getElementById('beranda-mobile-drawer');
     if (!mobileMenuBtn || !mobileDrawer) return;
 
+    function isDrawerOpen() {
+        return !mobileDrawer.hidden && !mobileDrawer.hasAttribute('data-closing');
+    }
+
     function setDrawerOpen(isOpen) {
-        mobileDrawer.hidden = !isOpen;
+        if (isOpen) {
+            showDiscreteElement(mobileDrawer);
+        } else {
+            hideDiscreteElement(mobileDrawer);
+        }
         mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         if (mobileMenuIcon) {
             mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
@@ -27,7 +36,7 @@ function initLiquidHeaderDrawer() {
     }
 
     mobileMenuBtn.addEventListener('click', () => {
-        setDrawerOpen(mobileDrawer.hidden);
+        setDrawerOpen(!isDrawerOpen());
     });
 
     mobileDrawer.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
@@ -35,7 +44,7 @@ function initLiquidHeaderDrawer() {
     });
 
     document.addEventListener('click', (event) => {
-        if (mobileDrawer.hidden) return;
+        if (!isDrawerOpen()) return;
         const target = event.target;
         if (!mobileDrawer.contains(target) && !mobileMenuBtn.contains(target)) {
             setDrawerOpen(false);
@@ -43,7 +52,7 @@ function initLiquidHeaderDrawer() {
     });
 
     window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !mobileDrawer.hidden) {
+        if (event.key === 'Escape' && isDrawerOpen()) {
             setDrawerOpen(false);
             mobileMenuBtn.focus();
         }
@@ -799,7 +808,7 @@ function initConsultationApp(container) {
         });
     });
 
-    resetBtn?.addEventListener('click', async () => {
+    async function executeSessionReset() {
         if (busy) return;
         try {
             const res = await fetch('/api/konsultasi/reset', {
@@ -827,7 +836,18 @@ function initConsultationApp(container) {
         } catch {
             showError('Gagal mengatur ulang sesi percakapan.');
         }
-    });
+    }
+
+    const resetDialog = document.getElementById('confirm-reset-session-dialog');
+    if (resetDialog) {
+        resetDialog.addEventListener('bhima:dialog-result', (event) => {
+            if (event.detail?.confirmed) {
+                executeSessionReset();
+            }
+        });
+    } else {
+        resetBtn?.addEventListener('click', executeSessionReset);
+    }
 
     const initialQuery = new URLSearchParams(window.location.search).get('q');
     if (initialQuery && inputEl) {
@@ -907,7 +927,7 @@ function initBerandaApp(container) {
                         )}`;
 
                         return `
-                            <article class="p-4 rounded-[20px] bg-white border border-[#DCE4F0] flex flex-col justify-between gap-3">
+                            <article class="search-result-card card-interactive p-4 rounded-[20px] bg-white border border-[#DCE4F0] flex flex-col justify-between gap-3">
                                 <div class="space-y-1.5">
                                     <div class="flex items-center justify-between gap-2 flex-wrap">
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">

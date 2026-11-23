@@ -8,8 +8,8 @@
 @endphp
 
 <!-- Floating Clear Liquid Glass Navigation Bar (16px from top, pill shape, zero gradients) -->
-<header class="stitch-no-print fixed top-3 min-[641px]:top-4 left-0 right-0 z-50 flex flex-col items-center px-3 min-[481px]:px-4 min-[641px]:px-6 pointer-events-none">
-    <div class="liquid-glass h-16 w-full max-w-[1200px] pointer-events-auto rounded-full px-2.5 min-[380px]:px-3.5 min-[641px]:px-5 min-[1008px]:px-6 flex items-center justify-between gap-2 min-[1008px]:gap-3">
+<header class="bhima-header-root stitch-no-print fixed top-3 min-[641px]:top-4 left-0 right-0 z-50 flex flex-col items-center px-3 min-[481px]:px-4 min-[641px]:px-6 pointer-events-none">
+    <div class="bhima-header-pill liquid-glass h-16 w-full max-w-[1200px] pointer-events-auto rounded-full px-2.5 min-[380px]:px-3.5 min-[641px]:px-5 min-[1008px]:px-6 flex items-center justify-between gap-2 min-[1008px]:gap-3">
         <div class="flex items-center gap-2 min-[641px]:gap-3 min-w-0">
             <button
                 type="button"
@@ -17,7 +17,7 @@
                 aria-label="Buka Menu Navigasi"
                 aria-expanded="false"
                 aria-controls="beranda-mobile-drawer"
-                class="min-[1008px]:hidden press-scale min-w-[44px] min-h-[44px] px-2.5 min-[420px]:px-3.5 rounded-full bg-white/60 hover:bg-white/85 border border-white/80 flex items-center justify-center gap-1.5 text-[#0B1020] text-xs font-bold transition-colors shrink-0"
+                class="min-[1008px]:hidden press-scale min-w-[44px] min-h-[44px] px-2.5 min-[420px]:px-3.5 rounded-full bg-white/80 hover:bg-white border border-[#75849B] flex items-center justify-center gap-1.5 text-[#0B1020] text-xs font-bold transition-colors shrink-0"
             >
                 <span class="material-symbols-outlined text-[20px] text-[#0066CC]" id="beranda-mobile-menu-icon" aria-hidden="true">menu</span>
                 <span class="hidden min-[420px]:inline">Menu</span>
@@ -29,14 +29,14 @@
                 </div>
                 <div class="hidden min-[350px]:flex flex-col text-left min-w-0">
                     <span class="text-sm min-[481px]:text-base min-[641px]:text-lg tracking-tight leading-none text-[#0B1020] font-extrabold truncate">BHIMA</span>
-                    <span class="hidden min-[740px]:block min-[1008px]:hidden min-[1220px]:block text-[10px] text-[#4A5366] font-semibold uppercase tracking-wider truncate mt-0.5">Bantuan Hukum &amp; Informasi</span>
-                    <span class="hidden min-[641px]:block min-[740px]:hidden min-[1008px]:block min-[1220px]:hidden text-[10px] text-[#4A5366] font-semibold uppercase tracking-wider truncate mt-0.5">Portal Hukum Publik</span>
+                    <span class="hidden min-[740px]:block min-[1008px]:hidden min-[1220px]:block text-xs text-[#4A5366] font-semibold tracking-tight truncate mt-0.5">Bantuan Hukum &amp; Informasi</span>
+                    <span class="hidden min-[641px]:block min-[740px]:hidden min-[1008px]:block min-[1220px]:hidden text-xs text-[#4A5366] font-semibold tracking-tight truncate mt-0.5">Portal Hukum Publik</span>
                 </div>
             </a>
         </div>
 
         <!-- Primary 4-Link Inline Navigation (Laptop/Desktop >= 1008px) -->
-        <nav class="hidden min-[1008px]:flex items-center gap-1 bg-white/35 px-1.5 py-1 rounded-full border border-white/65 shrink-0" aria-label="Navigasi Utama Portal">
+        <nav class="hidden min-[1008px]:flex items-center gap-2 bg-white/40 px-2 py-1 rounded-full border border-white/70 shrink-0" aria-label="Navigasi Utama Portal">
             <a
                 @if($activeNav === 'beranda') aria-current="page" @endif
                 class="{{ $activeNav === 'beranda' ? $navActiveClass : $navInactiveClass }}"
@@ -58,12 +58,12 @@
             >Lacak Tiket</a>
         </nav>
 
-        <div class="flex items-center gap-1.5 min-[641px]:gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0">
             <a
                 href="{{ route('consultation.home') }}#pencarian-regulasi"
                 aria-label="Cari Layanan atau Regulasi JDIH"
                 title="Cari Layanan atau Regulasi"
-                class="hidden min-[481px]:flex press-scale w-11 h-11 rounded-full bg-white/55 hover:bg-white/85 items-center justify-center text-[#0B1020] border border-white/75 transition-colors"
+                class="hidden min-[481px]:flex press-scale w-11 h-11 rounded-full bg-white/80 hover:bg-white items-center justify-center text-[#0B1020] border border-[#75849B] transition-colors"
             >
                 <span class="material-symbols-outlined text-[20px]" aria-hidden="true">search</span>
             </a>
@@ -71,7 +71,7 @@
                 href="{{ route('login') }}"
                 aria-label="Masuk Portal Petugas BHIMA"
                 title="Portal Petugas BHIMA"
-                class="press-scale w-11 h-11 rounded-full bg-white/55 hover:bg-white/85 flex items-center justify-center text-[#0B1020] border border-white/75 transition-colors"
+                class="press-scale w-11 h-11 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-[#0B1020] border border-[#75849B] transition-colors"
             >
                 <span class="material-symbols-outlined text-[19px]" aria-hidden="true">person</span>
             </a>
@@ -91,7 +91,7 @@
         id="beranda-mobile-drawer"
         hidden
         aria-label="Navigasi Perangkat Seluler dan Tablet"
-        class="liquid-glass liquid-glass--strong min-[1008px]:hidden w-full max-w-[1200px] mt-2 pointer-events-auto rounded-[28px] px-3.5 min-[641px]:px-5 py-4"
+        class="bhima-drawer liquid-glass liquid-glass--strong min-[1008px]:hidden w-full max-w-[1200px] mt-2 pointer-events-auto rounded-[28px] px-3.5 min-[641px]:px-5 py-4"
     >
         <div class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-2">
             <a data-beranda-drawer-link class="{{ $activeNav === 'beranda' ? $drawerActiveClass : $drawerInactiveClass }}" href="{{ route('consultation.home') }}">
