@@ -70,7 +70,7 @@ class DashboardTest extends TestCase
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'verify', 'note' => 'Dokumen lengkap'])->assertOk();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'dispatch', 'note' => 'Disposisi laporan'])->assertUnprocessable();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'dispatch', 'note' => 'Disposisi laporan', 'agency' => 'Instansi tujuan'])->assertOk();
-        $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'status', 'note' => 'Hasil tindak lanjut diterima', 'status' => 'Selesai'])->assertOk();
+        $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'status', 'note' => 'Hasil tindak lanjut diterima', 'status' => 'Selesai', 'follow_up_summary' => 'Instansi telah menindaklanjuti laporan dan menyampaikan hasil resmi.'])->assertOk();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'verify', 'note' => 'Verifikasi ulang'])->assertUnprocessable();
     }
 

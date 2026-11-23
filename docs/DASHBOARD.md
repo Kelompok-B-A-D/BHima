@@ -44,6 +44,8 @@ Sidebar menyesuaikan peran; navigasi mobile berupa drawer. Daftar mendukung penc
 - `InternalAuthController`: login/logout, rotasi sesi, pembatasan percobaan.
 - `DashboardAccess`: user aktif dan role yang benar; URL admin ditolak untuk verifikator.
 - `DashboardDataController`: endpoint data same-origin ber-CSRF, validasi, transaksi dan audit log. Verifikator hanya dapat membaca/mengubah pengaduan yang ditugaskan kepadanya; payload perubahan tidak dapat mengganti kronologi/identitas.
+- Berkas pengaduan dan tindak lanjut disimpan privat pada disk `local` (`complaints/{tiket}/`), tidak pernah di `public/` dan tidak ada unduhan publik. Endpoint internal `GET /internal/complaints/{key}/lampiran/{index}` dan `GET /internal/complaints/{key}/tindak-lanjut` hanya dapat diakses oleh admin atau verifikator yang ditugaskan (`assigned_to`).
+- Endpoint publik `POST /lacak/{tiket}/lengkapi` (dibatasi `throttle:10,1`) menerima unggahan kelengkapan berkas dari pelapor hanya ketika status `Menunggu Kelengkapan` (maksimal 5 berkas per kiriman, 10 berkas total per tiket, format PDF/JPG/PNG maksimal 10 MB per berkas), lalu otomatis mengubah status menjadi `Menunggu Verifikasi`. Halaman lacak publik hanya menampilkan ringkasan teks tanpa membocorkan catatan internal, nama petugas, atau path berkas.
 - Migration menambahkan role/is_active dan tabel dashboard_records (collection + JSON payload, assignment, lokasi berkas privat) serta dashboard_activities. Struktur ini fondasi modul dashboard, belum model domain penuh untuk portal publik.
 - Akun menggunakan tabel users Laravel, password hash, dan penolakan pencabutan akses admin sendiri.
 - Upload JDIH memvalidasi PDF/10 MB, membatasi kapasitas 100, menyimpan berkas privat, dan mengunduh melalui endpoint admin. Tidak menandai ekstraksi/indeksasi berhasil secara otomatis.
@@ -54,13 +56,12 @@ Sidebar menyesuaikan peran; navigasi mobile berupa drawer. Daftar mendukung penc
 Pekerjaan belum memenuhi seluruh acceptance criteria produksi:
 
 1. Modul pengaduan warga belum ada di repository. Belum ada alur intake publik yang memasukkan laporan/bukti ke dashboard_records; produksi tidak diisi fixtures. Struktur payload contoh ada di resources/js/dashboard/data.js dan perlu adapter intake domain tervalidasi ketika modul publik dibangun.
-2. Lampiran bukti pengaduan belum terintegrasi; panel menampilkan keadaan belum tersedia.
-3. Ekstraksi PDF, chunking, indeks RAG, DeepSeek, dan proses ulang dokumen gagal belum tersedia. Upload hanya menyimpan dokumen dan metadata dengan status Menunggu.
-4. Pencatatan kueri pencarian publik belum tersedia. Tren pencarian produksi kosong, demo menggunakan contoh agregat.
-5. Grafik anggaran menampilkan realisasi; perbandingan pagu/realisasi tersedia pada tabel. Filter periode pengaduan tersedia pada halaman statistik; filter tahun anggaran melalui pencarian tabel.
-6. Kelola hak akses menggunakan dua peran tetap admin/verifikator. Belum ada editor permission granular atau peran perangkat daerah.
-7. Detail pengaduan dibuka sebagai dialog, belum URL detail mandiri. Ekspor data belum tersedia pada sistem awal dan belum ditambahkan.
-8. Referensi Stitch dan validasi visual browser belum berhasil diperiksa. Responsivitas diimplementasikan melalui breakpoint CSS, belum diuji lintas perangkat secara visual.
+2. Ekstraksi PDF, chunking, indeks RAG, DeepSeek, dan proses ulang dokumen gagal belum tersedia. Upload hanya menyimpan dokumen dan metadata dengan status Menunggu.
+3. Pencatatan kueri pencarian publik belum tersedia. Tren pencarian produksi kosong, demo menggunakan contoh agregat.
+4. Grafik anggaran menampilkan realisasi; perbandingan pagu/realisasi tersedia pada tabel. Filter periode pengaduan tersedia pada halaman statistik; filter tahun anggaran melalui pencarian tabel.
+5. Kelola hak akses menggunakan dua peran tetap admin/verifikator. Belum ada editor permission granular atau peran perangkat daerah.
+6. Detail pengaduan dibuka sebagai dialog, belum URL detail mandiri. Ekspor data belum tersedia pada sistem awal dan belum ditambahkan.
+7. Referensi Stitch dan validasi visual browser belum berhasil diperiksa. Responsivitas diimplementasikan melalui breakpoint CSS, belum diuji lintas perangkat secara visual.
 
 ## Validasi
 

@@ -1,4 +1,5 @@
 import { escape as e } from '../dashboard/ui';
+import { hideDiscreteElement, showDiscreteElement } from '../components/motion';
 
 initLiquidHeaderDrawer();
 
@@ -18,8 +19,16 @@ function initLiquidHeaderDrawer() {
     const mobileDrawer = document.getElementById('beranda-mobile-drawer');
     if (!mobileMenuBtn || !mobileDrawer) return;
 
+    function isDrawerOpen() {
+        return !mobileDrawer.hidden && !mobileDrawer.hasAttribute('data-closing');
+    }
+
     function setDrawerOpen(isOpen) {
-        mobileDrawer.hidden = !isOpen;
+        if (isOpen) {
+            showDiscreteElement(mobileDrawer);
+        } else {
+            hideDiscreteElement(mobileDrawer);
+        }
         mobileMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         if (mobileMenuIcon) {
             mobileMenuIcon.textContent = isOpen ? 'close' : 'menu';
@@ -27,7 +36,7 @@ function initLiquidHeaderDrawer() {
     }
 
     mobileMenuBtn.addEventListener('click', () => {
-        setDrawerOpen(mobileDrawer.hidden);
+        setDrawerOpen(!isDrawerOpen());
     });
 
     mobileDrawer.querySelectorAll('[data-beranda-drawer-link]').forEach((link) => {
@@ -35,7 +44,7 @@ function initLiquidHeaderDrawer() {
     });
 
     document.addEventListener('click', (event) => {
-        if (mobileDrawer.hidden) return;
+        if (!isDrawerOpen()) return;
         const target = event.target;
         if (!mobileDrawer.contains(target) && !mobileMenuBtn.contains(target)) {
             setDrawerOpen(false);
@@ -43,7 +52,7 @@ function initLiquidHeaderDrawer() {
     });
 
     window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !mobileDrawer.hidden) {
+        if (event.key === 'Escape' && isDrawerOpen()) {
             setDrawerOpen(false);
             mobileMenuBtn.focus();
         }
@@ -148,60 +157,63 @@ function initConsultationApp(container) {
         jdihSidebarList.innerHTML = uniqueDocs
             .map((c) => {
                 const isSop = c.category === 'SOP';
-                const iconBoxClass = isSop
-                    ? 'bg-[#9CF2E8] text-[#00504A]'
-                    : 'bg-[#D6E3FF] text-[#00468D]';
-                const iconName = isSop ? 'description' : 'picture_as_pdf';
+                const accentBarClass = isSop ? 'bg-[#0F766E]' : 'bg-[#1E3A8A]';
+                const iconBoxClass = isSop ? 'bg-[#E6F5F3] text-[#0F766E]' : 'bg-[#E6F0FC] text-[#1E3A8A]';
+                const eyebrowClass = isSop ? 'text-[#0F766E]' : 'text-[#1E3A8A]';
+                const iconName = isSop ? 'account_tree' : 'menu_book';
                 const scorePct = (Number(c.score || 0) * 100).toFixed(1);
+                const detailUrl = c.source_url || '#jdih-reference-panel';
                 const officialUrl = c.source_page_url || c.source_url;
                 const openLabel = c.source_page_url ? 'Sumber Resmi' : 'Buka';
                 const statusBadge =
                     c.status_berlaku === 'diubah' && c.diubah_oleh
-                        ? `<span class="mt-1 inline-block px-2 py-0.5 bg-[#FEF3C7] text-[#78350F] rounded-md text-[10px] font-bold">Diubah: ${e(c.diubah_oleh)}</span>`
+                        ? `<span class="mt-1 inline-block rounded-full border border-[#F5D07A] bg-[#FEF3C7] px-2 py-0.5 text-[10px] font-bold text-[#92400E]">Diubah: ${e(c.diubah_oleh)}</span>`
                         : '';
 
                 return `
-                    <div class="p-4 bg-[#EFF4FB]/90 rounded-2xl border border-[#DEE3EA] hover:border-[#005AB3] transition-all flex flex-col justify-between gap-3">
-                        <div class="flex items-start gap-3">
-                            <div class="w-9 h-9 rounded-xl ${iconBoxClass} flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-[19px]" aria-hidden="true">${iconName}</span>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <span class="text-[11px] text-[#005AB3] font-bold block uppercase tracking-wider">
-                                    ${e(c.document_number || c.category || 'JDIH')} (${e(c.document_year || '-')})
+                    <div class="group relative flex flex-col overflow-hidden rounded-[20px] border border-[#DCE4F0] bg-white shadow-[0_6px_18px_rgba(20,30,80,0.05)]">
+                        <span class="h-1 w-full ${accentBarClass}" aria-hidden="true"></span>
+                        <div class="flex flex-1 flex-col gap-3 p-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] ${iconBoxClass}">
+                                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">${iconName}</span>
                                 </span>
-                                <h3 class="text-sm text-[#171C21] font-bold truncate" title="${e(c.document_name)}">
-                                    ${e(c.document_name)}
-                                </h3>
-                                <div class="flex items-center gap-1.5 mt-1 text-[#414754] text-[11px] flex-wrap">
-                                    <span class="px-2 py-0.5 bg-[#9CF2E8] text-[#00504A] rounded-md font-bold">
-                                        ${e(c.article_label || 'Pasal Terkait')}
+                                <div class="min-w-0 flex-1">
+                                    <span class="block text-[11px] font-bold uppercase tracking-wider ${eyebrowClass}">
+                                        ${e(c.document_number || c.category || 'JDIH')} (${e(c.document_year || '-')})
                                     </span>
-                                    <span>•</span>
-                                    <span>Relevansi ${scorePct}%</span>
+                                    <h3 class="mt-0.5 text-sm font-bold leading-snug text-[#0B1020]" title="${e(c.document_name)}">
+                                        ${e(c.document_name)}
+                                    </h3>
+                                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-[#4A5366]">
+                                        <span class="rounded-full bg-[#F4F7FC] border border-[#DCE4F0] px-2 py-0.5 text-[10px] font-bold text-[#0B1020]">
+                                            ${e(c.article_label || 'Pasal Terkait')}
+                                        </span>
+                                        <span>Relevansi ${scorePct}%</span>
+                                    </div>
+                                    ${statusBadge}
                                 </div>
-                                ${statusBadge}
                             </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <a
-                                href="${e(c.source_url)}"
-                                target="_blank"
-                                rel="noopener"
-                                class="flex-1 min-h-[44px] px-3 rounded-full bg-white border border-[#C0C6D6] hover:bg-[#D6E3FF] text-[#005AB3] font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-                            >
-                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
-                                <span>Baca Pasal</span>
-                            </a>
-                            <a
-                                href="${e(officialUrl)}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="min-h-[44px] px-3.5 rounded-full bg-[#005AB3] hover:bg-[#00468D] text-white font-bold text-xs flex items-center justify-center gap-1 transition-colors"
-                            >
-                                <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
-                                <span>${e(openLabel)}</span>
-                            </a>
+                            <div class="mt-auto flex items-center gap-2 pt-1">
+                                <a
+                                    href="${e(detailUrl)}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="btn-primary !min-h-[44px] flex-1 px-3 text-xs flex items-center justify-center gap-1.5"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>
+                                    <span>Baca Pasal</span>
+                                </a>
+                                <a
+                                    href="${e(officialUrl || detailUrl)}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="btn-glass !min-h-[44px] px-3.5 text-xs flex items-center justify-center gap-1"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
+                                    <span>${e(openLabel)}</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -287,15 +299,15 @@ function initConsultationApp(container) {
             .join('');
 
         return `
-            <details class="w-full max-w-2xl bg-white rounded-[24px] border border-[#DEE3EA] shadow-[0_8px_24px_rgba(20,30,80,0.05)] overflow-hidden mt-1.5">
-                <summary class="min-h-[48px] bg-[#005AB3] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
+            <details class="w-full max-w-2xl bg-white rounded-[24px] border border-[#DCE4F0] shadow-[0_8px_24px_rgba(20,30,80,0.05)] overflow-hidden mt-1.5">
+                <summary class="min-h-[48px] bg-[#1E3A8A] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none">
                     <div class="flex items-center gap-2.5 min-w-0">
-                        <span class="material-symbols-outlined text-[21px] text-[#D6E3FF] shrink-0" aria-hidden="true">balance</span>
+                        <span class="material-symbols-outlined text-[21px] text-[#F2D8B3] shrink-0" aria-hidden="true">balance</span>
                         <div class="min-w-0">
                             <h3 class="text-xs min-[641px]:text-sm font-bold tracking-tight text-white">
                                 Sumber Rujukan &amp; Analisis Pasal (${count} Dokumen)
                             </h3>
-                            <p class="text-[11px] text-[#D6E3FF]">
+                            <p class="text-[11px] text-[#E2ECFF]">
                                 Klik untuk membuka kutipan pasal JDIH &amp; SOP Layanan
                             </p>
                         </div>
@@ -310,17 +322,17 @@ function initConsultationApp(container) {
                 <div class="p-4 min-[641px]:p-5 space-y-3.5 bg-white">
                     ${itemsHtml}
 
-                    <div class="p-3 bg-[#EFF4FB] border border-[#DEE3EA] rounded-2xl flex items-start gap-2.5">
-                        <span class="material-symbols-outlined text-[#414754] text-[18px] shrink-0 mt-0.5" aria-hidden="true">info</span>
-                        <p class="text-xs text-[#414754] leading-relaxed">
-                            <strong class="text-[#171C21] font-bold">Pemberitahuan Resmi:</strong>
+                    <div class="p-3 bg-[#F4F7FC] border border-[#DCE4F0] rounded-[16px] flex items-start gap-2.5">
+                        <span class="material-symbols-outlined text-[#4A5366] text-[18px] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                        <p class="text-xs text-[#4A5366] leading-relaxed">
+                            <strong class="text-[#0B1020] font-bold">Pemberitahuan Resmi:</strong>
                             Hasil analisis diproses langsung dari basis data regulasi JDIH dan SOP layanan publik. Informasi ini bersifat edukasi hukum awal dan bukan nasihat hukum resmi.
                         </p>
                     </div>
 
                     <div class="pt-1 flex flex-col min-[641px]:flex-row min-[641px]:flex-wrap gap-2 items-stretch min-[641px]:items-center">
                         <a
-                            class="flex-1 min-h-[44px] flex items-center justify-center gap-2 bg-[#005AB3] hover:bg-[#00468D] text-white py-2.5 px-4 rounded-full font-bold text-xs min-[641px]:text-sm shadow-sm transition-colors text-center"
+                            class="btn-primary !min-h-[44px] flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-xs min-[641px]:text-sm text-center"
                             href="${e(primaryUrl)}"
                             target="_blank"
                             rel="noopener"
@@ -330,17 +342,17 @@ function initConsultationApp(container) {
                         </a>
                         <div class="flex items-center gap-2">
                             <a
-                                class="flex-1 min-[641px]:flex-initial min-h-[44px] flex items-center justify-center gap-1.5 bg-[#EFF4FB] hover:bg-[#D6E3FF] text-[#005AB3] border border-[#C0C6D6] py-2.5 px-4 rounded-full font-bold text-xs min-[641px]:text-sm transition-colors"
+                                class="btn-glass !min-h-[44px] flex-1 min-[641px]:flex-initial flex items-center justify-center gap-1.5 py-2.5 px-4 text-xs min-[641px]:text-sm"
                                 href="#posbakum-panel"
                             >
-                                <span class="material-symbols-outlined text-[18px]" aria-hidden="true">support_agent</span>
+                                <span class="material-symbols-outlined text-[18px] text-[#0066CC]" aria-hidden="true">support_agent</span>
                                 <span>Posbakum</span>
                             </a>
                             <button
                                 type="button"
                                 data-copy-answer="1"
                                 aria-label="Salin Ringkasan Jawaban"
-                                class="w-11 h-11 rounded-full bg-white border border-[#C0C6D6] text-[#414754] hover:text-[#005AB3] hover:bg-[#EFF4FB] transition-colors flex items-center justify-center shrink-0"
+                                class="press-scale w-11 h-11 rounded-full bg-white border border-[#CBD5E4] text-[#4A5366] hover:text-[#0066CC] hover:bg-[#E6F0FC] transition-colors flex items-center justify-center shrink-0"
                                 title="Salin Ringkasan Jawaban"
                             >
                                 <span class="material-symbols-outlined text-[18px]" aria-hidden="true">content_copy</span>
@@ -498,22 +510,20 @@ function initConsultationApp(container) {
         }
         const escalationUrl = `/pengaduan/buat?${params.toString()}`;
 
-        const escalationButtonClass = perluEskalasi
-            ? 'w-full min-[641px]:w-auto min-h-[48px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#F59E0B] hover:bg-[#D97706] text-[#111827] font-extrabold text-xs min-[641px]:text-sm shadow-[0_6px_18px_rgba(245,158,11,0.30)] transition-all no-underline'
-            : 'w-full min-[641px]:w-auto min-h-[48px] flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#005AB3] hover:bg-[#00468D] text-white font-bold text-xs min-[641px]:text-sm shadow-sm transition-all no-underline';
+        const escalationButtonClass = 'btn-primary w-full min-[641px]:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-xs min-[641px]:text-sm no-underline';
 
         const escalationBadge = perluEskalasi
-            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] text-[11px] font-bold">Disarankan Eskalasi</span>`
-            : `<span class="px-3 py-1 rounded-full bg-[#9CF2E8] text-[#00504A] text-[11px] font-bold">Terkendali</span>`;
+            ? `<span class="px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] text-[11px] font-bold">Disarankan Eskalasi</span>`
+            : `<span class="px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-[11px] font-bold">Terkendali</span>`;
 
         return `
             <section
-                class="legal-analysis-card w-full max-w-2xl bg-white rounded-[24px] border-2 ${perluEskalasi ? 'border-[#F59E0B]/70' : 'border-[#DEE3EA]'} shadow-[0_12px_28px_rgba(20,30,80,0.06)] overflow-hidden mt-1.5"
+                class="legal-analysis-card w-full max-w-2xl bg-white rounded-[24px] border ${perluEskalasi ? 'border-[#0066CC]/45' : 'border-[#DCE4F0]'} shadow-[0_12px_28px_rgba(20,30,80,0.06)] overflow-hidden mt-1.5"
                 aria-label="Hasil Analisis Pasal dan Estimasi Ancaman Sanksi"
             >
-                <div class="bg-[#005AB3] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="bg-[#1E3A8A] text-white px-4 py-3 flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="material-symbols-outlined text-[20px] text-[#D6E3FF] shrink-0" aria-hidden="true">assignment_turned_in</span>
+                        <span class="material-symbols-outlined text-[20px] text-[#F2D8B3] shrink-0" aria-hidden="true">assignment_turned_in</span>
                         <h3 class="text-xs min-[641px]:text-sm font-bold text-white truncate">
                             Ringkasan Validasi Regulasi &amp; Estimasi Sanksi
                         </h3>
@@ -608,13 +618,13 @@ function initConsultationApp(container) {
             article.className = 'chat-bubble user-bubble flex flex-col items-end gap-1.5 pl-3 min-[641px]:pl-12';
             article.innerHTML = `
                 <div class="flex items-center gap-2 pr-1">
-                    <span class="text-xs font-semibold text-[#414754]">Kronologi Warga</span>
-                    <div class="w-6 h-6 rounded-full bg-[#D6E3FF] flex items-center justify-center text-[#00468D]">
+                    <span class="text-xs font-semibold text-[#4A5366]">Kronologi Warga</span>
+                    <div class="w-6 h-6 rounded-full bg-[#E6F0FC] flex items-center justify-center text-[#005EB8]">
                         <span class="material-symbols-outlined text-[14px]" aria-hidden="true">person</span>
                     </div>
                 </div>
-                <div class="${bubbleSizing} bg-[#005AB3] text-white rounded-2xl rounded-tr-sm shadow-[0_8px_20px_rgba(0,90,179,0.20)] text-xs min-[380px]:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
-                <span class="text-[11px] text-[#414754] pr-1">
+                <div class="${bubbleSizing} bg-[#0066CC] text-white rounded-[20px] rounded-tr-sm shadow-[0_8px_20px_rgba(0,102,204,0.20)] text-xs min-[380px]:text-sm leading-relaxed whitespace-pre-wrap break-words">${e(trimmedContent)}</div>
+                <span class="text-[11px] text-[#4A5366] pr-1">
                     Terkirim ${e(formatTime(msg.created_at))} WIB
                 </span>
             `;
@@ -622,19 +632,19 @@ function initConsultationApp(container) {
             article.className = 'chat-bubble assistant-bubble flex flex-col items-start gap-2 pr-1 min-[641px]:pr-6';
             const isOutOfScope = msg.retrieval_meta?.status === 'out_of_scope';
             const statusBadge = isOutOfScope
-                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#78350F] border border-[#FDE68A] rounded-full text-[11px] font-bold">Diarahkan ke Petugas</span>'
-                : '<span class="px-2.5 py-0.5 bg-[#9CF2E8] text-[#00504A] rounded-full text-[11px] font-bold">Penalaran Peraturan Terverifikasi</span>';
+                ? '<span class="px-2.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F5D07A] rounded-full text-[11px] font-bold">Diarahkan ke Petugas</span>'
+                : '<span class="px-2.5 py-0.5 bg-[#DCFCE7] text-[#166534] rounded-full text-[11px] font-bold">Penalaran Peraturan Terverifikasi</span>';
 
             article.innerHTML = `
                 <div class="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <div class="w-7 h-7 rounded-xl bg-[#005AB3] text-white flex items-center justify-center shadow-sm shrink-0">
+                    <div class="w-7 h-7 rounded-[10px] bg-[#0066CC] text-white flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
                     </div>
-                    <span class="text-xs min-[641px]:text-sm font-bold text-[#171C21]">Asisten Hukum Virtual BHIMA</span>
+                    <span class="text-xs min-[641px]:text-sm font-bold text-[#0B1020]">Asisten Hukum Virtual BHIMA</span>
                     ${statusBadge}
-                    <span class="text-[11px] text-[#414754]">${e(formatTime(msg.created_at))} WIB</span>
+                    <span class="text-[11px] text-[#4A5366]">${e(formatTime(msg.created_at))} WIB</span>
                 </div>
-                <div class="${bubbleSizing} bg-white text-[#171C21] rounded-2xl rounded-tl-sm border border-[#DEE3EA] shadow-[0_6px_18px_rgba(20,30,80,0.04)] space-y-2 text-xs min-[380px]:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
+                <div class="${bubbleSizing} bg-white text-[#0B1020] rounded-[20px] rounded-tl-sm border border-[#DCE4F0] shadow-[0_6px_18px_rgba(20,30,80,0.04)] space-y-2 text-xs min-[380px]:text-sm leading-relaxed stitch-answer-body">${formatAssistantBody(trimmedContent)}</div>
                 ${renderLegalAnalysisCard(msg.legal_analysis, msg)}
                 ${renderSourcesSection(msg.citations, msg.retrieval_meta)}
             `;
@@ -798,7 +808,7 @@ function initConsultationApp(container) {
         });
     });
 
-    resetBtn?.addEventListener('click', async () => {
+    async function executeSessionReset() {
         if (busy) return;
         try {
             const res = await fetch('/api/konsultasi/reset', {
@@ -826,7 +836,18 @@ function initConsultationApp(container) {
         } catch {
             showError('Gagal mengatur ulang sesi percakapan.');
         }
-    });
+    }
+
+    const resetDialog = document.getElementById('confirm-reset-session-dialog');
+    if (resetDialog) {
+        resetDialog.addEventListener('bhima:dialog-result', (event) => {
+            if (event.detail?.confirmed) {
+                executeSessionReset();
+            }
+        });
+    } else {
+        resetBtn?.addEventListener('click', executeSessionReset);
+    }
 
     const initialQuery = new URLSearchParams(window.location.search).get('q');
     if (initialQuery && inputEl) {
@@ -906,32 +927,32 @@ function initBerandaApp(container) {
                         )}`;
 
                         return `
-                            <article class="p-4 rounded-xl bg-[#EFF4FC]/90 border border-[#C1C6D6]/50 flex flex-col justify-between gap-3">
+                            <article class="search-result-card card-interactive p-4 rounded-[20px] bg-white border border-[#DCE4F0] flex flex-col justify-between gap-3">
                                 <div class="space-y-1.5">
                                     <div class="flex items-center justify-between gap-2 flex-wrap">
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeClass}">
-                                            ${e(item.category || 'JDIH')} • ${e(item.document_number || '')}
+                                            ${e(item.category || 'JDIH')} · ${e(item.document_number || '')}
                                         </span>
-                                        <span class="text-xs font-semibold text-[#414754]">${e(item.topic || '')}</span>
+                                        <span class="text-xs font-semibold text-[#4A5366]">${e(item.topic || '')}</span>
                                     </div>
-                                    <h3 class="font-headline text-base sm:text-lg font-bold text-[#171C21] leading-snug">
+                                    <h3 class="text-base font-bold text-[#0B1020] leading-snug">
                                         ${e(item.document_name || '')}
                                     </h3>
-                                    <p class="text-xs sm:text-sm text-[#414754] leading-relaxed">
+                                    <p class="text-xs sm:text-sm text-[#4A5366] leading-relaxed">
                                         ${e(item.excerpt || '')}
                                     </p>
                                 </div>
-                                <div class="pt-2 border-t border-[#C1C6D6]/40 flex flex-wrap items-center justify-between gap-2">
+                                <div class="pt-2.5 border-t border-[#DCE4F0] flex flex-wrap items-center justify-between gap-2">
                                     <a
                                         href="${e(item.url || '#')}"
-                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-white hover:bg-[#DFEAFA] text-[#005AB3] border border-[#C1C6D6]/60 text-xs font-bold inline-flex items-center gap-1.5"
+                                        class="btn-glass !min-h-[44px] px-3.5 py-2 text-xs inline-flex items-center gap-1.5"
                                     >
-                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">menu_book</span>
+                                        <span class="material-symbols-outlined text-[16px] text-[#0066CC]" aria-hidden="true">menu_book</span>
                                         <span>Baca Pasal (${e(item.article_label || 'Lengkap')})</span>
                                     </a>
                                     <a
                                         href="${e(consultHref)}"
-                                        class="min-h-[44px] px-3 py-2 rounded-lg bg-[#005AB3] hover:bg-[#00468D] text-white text-xs font-bold inline-flex items-center gap-1.5"
+                                        class="btn-primary !min-h-[44px] px-4 py-2 text-xs inline-flex items-center gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px]" aria-hidden="true">smart_toy</span>
                                         <span>Tanya Asisten</span>

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ComplaintService
 {
@@ -153,6 +155,76 @@ class ComplaintService
         });
     }
 
+    public function submitCompleteness(string $ticket, string $note, array $files = []): void
+    {
+        DB::transaction(function () use ($ticket, $note, $files) {
+            DB::table('users')->orderBy('id')->lockForUpdate()->get(['id']);
+
+            $record = DB::table('dashboard_records')
+                ->where('collection', 'complaints')
+                ->where('record_key', $ticket)
+                ->lockForUpdate()
+                ->first();
+
+            abort_unless($record, 404);
+
+            $payload = json_decode($record->payload, true) ?: [];
+
+            if (($payload['status'] ?? null) !== 'Menunggu Kelengkapan') {
+                throw ValidationException::withMessages([
+                    'lampiran' => 'Pengaduan ini tidak sedang menunggu kelengkapan dokumen.',
+                ]);
+            }
+
+            $existingAttachments = is_array($payload['attachments'] ?? null) ? $payload['attachments'] : [];
+            if (count($existingAttachments) + count($files) > 10) {
+                throw ValidationException::withMessages([
+                    'lampiran' => 'Jumlah total lampiran per tiket maksimal 10 berkas.',
+                ]);
+            }
+
+            $now = now();
+            $uploaded = [];
+            foreach ($files as $file) {
+                $uploaded[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->store('complaints/'.$ticket, 'local'),
+                    'mime' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                ];
+            }
+
+            $payload['attachments'] = array_values([...$existingAttachments, ...$uploaded]);
+
+            $submissions = is_array($payload['completeness_submissions'] ?? null) ? $payload['completeness_submissions'] : [];
+            $submissions[] = [
+                'date' => $now->toIso8601String(),
+                'note' => $note,
+                'attachments' => $uploaded,
+            ];
+            $payload['completeness_submissions'] = $submissions;
+
+            $completenessRequest = is_array($payload['completeness_request'] ?? null) ? $payload['completeness_request'] : [];
+            $completenessRequest['fulfilled_at'] = $now->toIso8601String();
+            $payload['completeness_request'] = $completenessRequest;
+
+            $payload['status'] = 'Menunggu Verifikasi';
+            $payload['history'] = is_array($payload['history'] ?? null) ? $payload['history'] : [];
+            $payload['history'][] = [
+                'date' => $now->toIso8601String(),
+                'text' => 'kelengkapan diterima · Menunggu Verifikasi',
+            ];
+
+            DB::table('dashboard_records')
+                ->where('collection', 'complaints')
+                ->where('record_key', $ticket)
+                ->update([
+                    'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                    'updated_at' => $now,
+                ]);
+        });
+    }
+
     // Cari pengaduan berdasarkan nomor tiket
 
     public function trackByTicket(string $ticket): ?array
@@ -183,7 +255,7 @@ class ComplaintService
                 return null;
             }
 
-            return \Carbon\Carbon::parse($iso)->setTimezone('Asia/Jakarta')->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+            return Carbon::parse($iso)->setTimezone('Asia/Jakarta')->locale('id')->translatedFormat('d M Y, H:i').' WIB';
         };
 
         $history = collect($p['history'] ?? [])->map(fn ($h) => [
@@ -195,9 +267,23 @@ class ComplaintService
             'ticket' => $ticket,
             'status' => $label($p['status'] ?? 'Baru'),
             'category' => $p['category'] ?? null,
-            'date' => isset($p['date']) ? \Carbon\Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
+            'date' => isset($p['date']) ? Carbon::parse($p['date'])->locale('id')->translatedFormat('d M Y') : null,
             'agency' => $p['agency'] ?? null,
             'history' => $history,
+            'rejection_reason' => $p['rejection_reason'] ?? null,
+            'requested_documents' => array_values(array_filter(
+                is_array($p['completeness_request']['documents'] ?? null) ? $p['completeness_request']['documents'] : [],
+                fn ($item) => is_string($item) && trim($item) !== ''
+            )),
+            'request_note' => $p['completeness_request']['note'] ?? null,
+            'dispositions' => collect($p['dispositions'] ?? [])->map(fn ($d) => [
+                'agency' => $d['agency'] ?? null,
+                'date' => $fmt($d['date'] ?? null),
+            ])->filter(fn ($d) => ! empty($d['agency']))->values()->all(),
+            'follow_up' => isset($p['follow_up']) && is_array($p['follow_up']) && ! empty($p['follow_up']['summary']) ? [
+                'summary' => $p['follow_up']['summary'],
+                'updated_at' => $fmt($p['follow_up']['updated_at'] ?? null),
+            ] : null,
         ];
     }
 }
