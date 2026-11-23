@@ -70,7 +70,7 @@ class DashboardTest extends TestCase
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'verify', 'note' => 'Dokumen lengkap'])->assertOk();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'dispatch', 'note' => 'Disposisi laporan'])->assertUnprocessable();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'dispatch', 'note' => 'Disposisi laporan', 'agency' => 'Instansi tujuan'])->assertOk();
-        $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'status', 'note' => 'Hasil tindak lanjut diterima', 'status' => 'Selesai'])->assertOk();
+        $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'status', 'note' => 'Hasil tindak lanjut diterima', 'status' => 'Selesai', 'follow_up_summary' => 'Instansi telah menindaklanjuti laporan dan menyampaikan hasil resmi.'])->assertOk();
         $this->postJson('/internal/data/complaints', ['id' => 'TEST', 'action' => 'verify', 'note' => 'Verifikasi ulang'])->assertUnprocessable();
     }
 
@@ -91,6 +91,20 @@ class DashboardTest extends TestCase
         $admin = $this->user();
         $this->actingAs($admin)->postJson('/internal/data/budgets', ['id' => 'B1', 'title' => 'Layanan', 'year' => 2026, 'allocation' => 10, 'realized' => 11])->assertUnprocessable();
         $this->postJson('/internal/data/accounts', ['id' => (string) $admin->id, 'name' => $admin->name, 'email' => $admin->email, 'role' => 'verifikator', 'status' => 'Aktif'])->assertUnprocessable();
+    }
+
+    public function test_budget_activity_cannot_be_duplicated_in_the_same_year(): void
+    {
+        $this->actingAs($this->user());
+        $budget = ['title' => 'Infrastruktur Desa', 'year' => 2026, 'allocation' => 100, 'realized' => 50];
+
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B1'])->assertOk();
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B2', 'title' => '  infrastruktur   desa  '])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('title');
+        $this->postJson('/internal/data/budgets', [...$budget, 'id' => 'B3', 'year' => 2027])->assertOk();
+
+        $this->assertDatabaseCount('dashboard_records', 2);
     }
 
     public function test_pdf_upload_is_private_and_capacity_is_enforced(): void

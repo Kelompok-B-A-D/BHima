@@ -5,26 +5,57 @@ namespace App\Http\Controllers;
 use App\Services\ComplaintService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ComplaintController extends Controller
 {
-    // TODO: samakan dengan daftar `categories` di resources/js/data.js
-    private const CATEGORIES = ['Pungutan Liar', 'Pelayanan Lambat', 'Prosedur Tidak Jelas', 'Maladministrasi Lainnya'];
+    private const CATEGORIES = [
+        'Pungutan Liar',
+        'Dugaan Pungutan Liar',
+        'Pelayanan Lambat',
+        'Prosedur Tidak Jelas',
+        'Administrasi Kependudukan',
+        'Pelayanan Kesehatan',
+        'Infrastruktur',
+        'Ketenagakerjaan',
+        'Pertanahan',
+        'Maladministrasi Lainnya',
+    ];
 
     public function __construct(private readonly ComplaintService $complaints) {}
 
     public function create(Request $request)
     {
-        $uuid = $request->query('session')
-            ?: $request->session()->get('bhima_consultation_session_uuid');
+        $uuid = (string) ($request->query('session')
+            ?: $request->query('session_id')
+            ?: ($request->hasSession() ? $request->session()->get('bhima_consultation_session_uuid') : ''));
+        $messageId = $request->filled('message_id') ? (int) $request->query('message_id') : null;
+
+        $prefill = $this->complaints->prescreeningFor($uuid ?: null, $messageId);
+        if (! $prefill && $request->filled('chronology')) {
+            $prefill = [
+                'session_uuid' => $uuid,
+                'message_id' => $messageId,
+                'chronology' => trim((string) $request->query('chronology')),
+                'answer' => trim((string) $request->query('pasal_ringkas', '')),
+                'citations' => [],
+                'legal_analysis' => null,
+            ];
+        }
 
         return view('complaint.create', [
-            'prefill' => $this->complaints->prescreeningFor($uuid),
+            'prefill' => $prefill,
+            'categories' => self::CATEGORIES,
         ]);
     }
 
     public function store(Request $request)
     {
+        // Dukung pengiriman JSON / skema eskalasi PBI 2 maupun pengiriman form langsung dari halaman pengaduan
+        if ($request->expectsJson() || ($request->filled('chronology') && ! $request->filled('uraian'))) {
+            return app(PublicComplaintController::class)->store($request);
+        }
+
         $data = $request->validate([
             'kategori' => ['required', Rule::in(self::CATEGORIES)],
             'instansi_terlapor' => 'required|string|max:200',
@@ -55,8 +86,17 @@ class ComplaintController extends Controller
         ]);
     }
 
-    public function trackForm()
+    public function trackForm(Request $request)
     {
+        $ticketParam = strtoupper(trim((string) $request->query('tiket', '')));
+        if ($ticketParam !== '' && preg_match('/^BHM-(\d{4}-\d{4,}|[A-Z0-9]{10})$/', $ticketParam)) {
+            return view('complaint.track', [
+                'autoSearched' => true,
+                'autoTicket' => $ticketParam,
+                'autoResult' => $this->complaints->trackByTicket($ticketParam),
+            ]);
+        }
+
         return view('complaint.track');
     }
 
@@ -72,5 +112,34 @@ class ComplaintController extends Controller
             'searched' => true,
             'result' => $this->complaints->trackByTicket($data['tiket']),
         ]);
+    }
+
+    public function submitCompleteness(Request $request, string $tiket)
+    {
+        $data = $request->validate([
+            'catatan' => 'required|string|min:5|max:2000',
+            'lampiran' => 'required|array|min:1|max:5',
+            'lampiran.*' => 'file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ], [
+            'catatan.required' => 'Catatan kelengkapan wajib diisi.',
+            'catatan.min' => 'Catatan kelengkapan minimal 5 karakter.',
+            'lampiran.required' => 'Unggah minimal satu berkas kelengkapan.',
+            'lampiran.max' => 'Maksimal 5 berkas untuk sekali pengiriman.',
+            'lampiran.*.mimes' => 'Berkas harus berformat PDF, JPG, atau PNG.',
+            'lampiran.*.max' => 'Setiap berkas maksimal 10 MB.',
+        ]);
+
+        $note = trim(strip_tags($data['catatan']));
+        if (mb_strlen($note) < 5) {
+            throw ValidationException::withMessages([
+                'catatan' => 'Catatan kelengkapan minimal 5 karakter.',
+            ]);
+        }
+
+        $this->complaints->submitCompleteness($tiket, $note, $request->file('lampiran', []));
+
+        return redirect()
+            ->route('complaint.track', ['tiket' => $tiket])
+            ->with('completeness_submitted', 'Kelengkapan berkas berhasil dikirim. Laporan Anda kembali masuk tahap pemeriksaan verifikator.');
     }
 }

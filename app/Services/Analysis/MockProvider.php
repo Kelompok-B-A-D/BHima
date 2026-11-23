@@ -45,13 +45,21 @@ class MockProvider implements AnalysisProvider
         $pasalRelevan = [];
         $ancamanSanksi = [];
         $hasSanctionInContext = false;
+        $amendedNotes = [];
 
         foreach ($chunks as $chunk) {
+            if (strtolower((string) ($chunk['status_berlaku'] ?? 'berlaku')) === 'dicabut') {
+                continue;
+            }
+
             $docName = trim((string) ($chunk['document_name'] ?? ''));
             $docNumber = trim((string) ($chunk['document_number'] ?? ''));
             $docYear = trim((string) ($chunk['document_year'] ?? ''));
             $articleLabel = trim((string) ($chunk['article_label'] ?? ''));
             $sourceUrl = trim((string) ($chunk['source_url'] ?? ''));
+            $officialUrl = trim((string) ($chunk['source_page_url'] ?? ''));
+            $statusBerlaku = strtolower(trim((string) ($chunk['status_berlaku'] ?? 'berlaku')));
+            $diubahOleh = trim((string) ($chunk['diubah_oleh'] ?? ''));
             $content = trim((string) ($chunk['content'] ?? ''));
             $topic = trim((string) ($chunk['topic'] ?? 'Layanan Publik'));
 
@@ -64,11 +72,22 @@ class MockProvider implements AnalysisProvider
 
             if (! isset($seenDocs[$docDedupKey])) {
                 $seenDocs[$docDedupKey] = true;
-                $rujukan[] = [
+                $rujukanEntry = [
                     'dokumen' => $docName,
                     'nomor_tahun' => $nomorTahun,
                     'tautan' => $sourceUrl,
+                    'status_berlaku' => $statusBerlaku,
                 ];
+                if ($officialUrl !== '') {
+                    $rujukanEntry['tautan_resmi'] = $officialUrl;
+                }
+                if ($diubahOleh !== '') {
+                    $rujukanEntry['diubah_oleh'] = $diubahOleh;
+                    if ($statusBerlaku === 'diubah') {
+                        $amendedNotes[$docDedupKey] = "{$docName} ({$nomorTahun}) diubah oleh {$diubahOleh}";
+                    }
+                }
+                $rujukan[] = $rujukanEntry;
             }
 
             $pasalRelevan[] = [
@@ -78,7 +97,16 @@ class MockProvider implements AnalysisProvider
                 'alasan_terkait_kronologi' => $this->buildRelevanceReason($chronology, $articleLabel, $docName, $topic, $content),
             ];
 
-            $extractedSanction = self::extractSanctionFromChunkContent($content, $noSanctionText);
+            $storedSanctionText = trim((string) ($chunk['sanksi_teks'] ?? ''));
+            if ($storedSanctionText !== '') {
+                $extractedSanction = [
+                    'jenis' => strtolower(trim((string) ($chunk['sanksi_jenis'] ?? 'lainnya'))) ?: 'lainnya',
+                    'bunyi_sanksi_ringkas' => $storedSanctionText,
+                ];
+            } else {
+                $extractedSanction = self::extractSanctionFromChunkContent($content, $noSanctionText);
+            }
+
             if ($extractedSanction['bunyi_sanksi_ringkas'] !== $noSanctionText) {
                 $hasSanctionInContext = true;
             }
@@ -93,8 +121,11 @@ class MockProvider implements AnalysisProvider
 
         $perluEskalasi = $this->shouldEscalate($chronology, $chunks, $hasSanctionInContext);
 
-        $catatan = 'Daftar pasal di atas merupakan pasal yang berpotensi terkait berdasarkan pencocokan kronologi terhadap dokumen JDIH dan SOP layanan, bukan putusan bahwa pelanggaran pasti terjadi. '
-            .(string) config('legal_analysis.disclaimer');
+        $catatan = 'Daftar pasal di atas merupakan pasal yang berpotensi terkait berdasarkan pencocokan kronologi terhadap dokumen JDIH dan SOP layanan, bukan putusan bahwa pelanggaran pasti terjadi. ';
+        if (! empty($amendedNotes)) {
+            $catatan .= 'Catatan status peraturan: '.implode('; ', array_values($amendedNotes)).'. ';
+        }
+        $catatan .= (string) config('legal_analysis.disclaimer');
 
         return [
             'rujukan' => $rujukan,
@@ -121,15 +152,15 @@ class MockProvider implements AnalysisProvider
             ];
         }
 
-        // 1. Sanksi Pidana eksplisit (dipidana dengan ..., pidana penjara ..., pidana denda ...)
-        if (preg_match('/(dipidana\s+dengan\s+[^.]+(?:\.[^.]+)?)/iu', $normalized, $m)) {
+        // 1. Sanksi Pidana eksplisit (tetap utuh melewati titik pemisah ribuan seperti Rp75.000.000,00)
+        if (preg_match('/(dipidana\s+dengan\s+(?:[^.]|\.(?=\d))+)/iu', $normalized, $m)) {
             return [
                 'jenis' => 'pidana',
                 'bunyi_sanksi_ringkas' => trim($m[1], " .;,"),
             ];
         }
 
-        if (preg_match('/((?:pidana\s+penjara|penjara\s+paling\s+lama|pidana\s+denda)[^.]+)/iu', $normalized, $m)) {
+        if (preg_match('/((?:pidana\s+penjara|penjara\s+paling\s+lama|pidana\s+denda)(?:[^.]|\.(?=\d))+)/iu', $normalized, $m)) {
             return [
                 'jenis' => 'pidana',
                 'bunyi_sanksi_ringkas' => trim($m[1], " .;,"),
@@ -137,7 +168,7 @@ class MockProvider implements AnalysisProvider
         }
 
         // 2. Sanksi Administratif eksplisit (dijatuhi Hukuman Disiplin ..., dikenakan denda ..., sanksi administratif ...)
-        if (preg_match('/((?:dijatuhi\s+hukuman\s+disiplin|dikenakan\s+sanksi\s+administratif|sanksi\s+administratif\s+berupa|dikenakan\s+denda\s+sesuai)[^.]+)/iu', $normalized, $m)) {
+        if (preg_match('/((?:dijatuhi\s+hukuman\s+disiplin|dikenakan\s+sanksi\s+administratif|sanksi\s+administratif\s+berupa|dikenakan\s+denda\s+sesuai)(?:[^.]|\.(?=\d))+)/iu', $normalized, $m)) {
             return [
                 'jenis' => 'administratif',
                 'bunyi_sanksi_ringkas' => trim($m[1], " .;,"),
@@ -145,7 +176,7 @@ class MockProvider implements AnalysisProvider
         }
 
         // 3. Tuntutan / Ganti Rugi Perdata eksplisit (menerima ganti rugi ..., memberikan ganti rugi ...)
-        if (preg_match('/((?:berhak\s+menggugat\s+dan\s+menerima\s+ganti\s+rugi|bertanggung\s+jawab\s+memberikan\s+ganti\s+rugi|pemberian\s+ganti\s+rugi\s+berupa)[^.]+)/iu', $normalized, $m)) {
+        if (preg_match('/((?:berhak\s+menggugat\s+dan\s+menerima\s+ganti\s+rugi|bertanggung\s+jawab\s+memberikan\s+ganti\s+rugi|pemberian\s+ganti\s+rugi\s+berupa)(?:[^.]|\.(?=\d))+)/iu', $normalized, $m)) {
             return [
                 'jenis' => 'perdata',
                 'bunyi_sanksi_ringkas' => trim($m[1], " .;,"),

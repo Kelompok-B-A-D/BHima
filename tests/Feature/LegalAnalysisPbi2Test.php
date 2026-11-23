@@ -284,7 +284,7 @@ class LegalAnalysisPbi2Test extends TestCase
         $formPage->assertOk()
             ->assertSee('Formulir Pengaduan Masyarakat')
             ->assertSee('mengurus KTP elektronik yang hilang')
-            ->assertSee('Perpres No. 87 Tahun 2016');
+            ->assertSee('UU No. 24 Tahun 2013');
 
         // 3. Warga mengedit data pada formulir dan mengirimkan pengaduan resmi
         $submitResponse = $this->postJson('/pengaduan', [
@@ -461,5 +461,76 @@ class LegalAnalysisPbi2Test extends TestCase
         $this->assertSame('error', $invalidJsonResult['meta']['status']);
         $this->assertSame('invalid_json', $invalidJsonResult['meta']['error']);
         $this->assertTrue($invalidJsonResult['perlu_eskalasi']);
+    }
+
+    /**
+     * Pengujian keselarasan konfigurasi endpoint paas.id, fallback response_format, dan zona waktu Asia/Jakarta.
+     */
+    public function test_paas_endpoint_normalization_response_format_fallback_and_timezone(): void
+    {
+        $this->assertSame('Asia/Jakarta', config('app.timezone'));
+
+        $this->seedKnowledgeBase();
+        $retrievalService = app(LegalRetrievalService::class);
+        $analysisService = app(LegalAnalysisService::class);
+        $chunks = $retrievalService->retrieve('Pengurusan KTP elektronik dimintai uang rokok oleh petugas.', 3)['chunks'];
+
+        $validFencedJson = "```json\n".json_encode([
+            'rujukan' => [
+                [
+                    'dokumen' => $chunks[0]['document_name'],
+                    'nomor_tahun' => $chunks[0]['document_number'].' Tahun '.$chunks[0]['document_year'],
+                    'tautan' => $chunks[0]['source_url'],
+                ],
+            ],
+            'pasal_relevan' => [
+                [
+                    'pasal' => $chunks[0]['article_label'],
+                    'dokumen' => $chunks[0]['document_name'],
+                    'penjelasan_awam' => 'Pasal yang berpotensi terkait dengan layanan kependudukan gratis.',
+                    'alasan_terkait_kronologi' => 'Kronologi warga berkaitan dengan pungutan pengurusan KTP-el.',
+                ],
+            ],
+            'ancaman_sanksi' => [
+                [
+                    'pasal' => $chunks[0]['article_label'],
+                    'jenis' => 'lainnya',
+                    'bunyi_sanksi_ringkas' => 'Tidak tercantum dalam potongan pasal yang ditemukan',
+                    'dokumen' => $chunks[0]['document_name'],
+                ],
+            ],
+            'perlu_eskalasi' => true,
+            'catatan' => 'Analisis valid tanpa field response_format.',
+        ], JSON_UNESCAPED_UNICODE)."\n```";
+
+        config([
+            'legal_analysis.provider' => 'deepseek',
+            'legal_analysis.deepseek.api_key' => 'test-paas-key',
+            'legal_analysis.deepseek.base_url' => 'https://ai.paas.id',
+            'legal_analysis.deepseek.model' => 'deepseek-v4.1-flash',
+            'legal_analysis.deepseek.send_response_format' => true,
+            'legal_analysis.deepseek.max_retries' => 0,
+        ]);
+
+        Http::fakeSequence('https://ai.paas.id/chat/completions')
+            ->push(['error' => ['message' => 'Unsupported parameter: response_format json_object is not allowed']], 400)
+            ->push(['choices' => [['message' => ['content' => $validFencedJson]]]], 200);
+
+        $result = $analysisService->analyze('Pengurusan KTP-el dimintai biaya tambahan.', $chunks);
+
+        $this->assertSame('ok', $result['meta']['status']);
+        $this->assertCount(1, $result['pasal_relevan']);
+
+        $recorded = Http::recorded();
+        $this->assertCount(2, $recorded);
+        $this->assertSame('https://ai.paas.id/chat/completions', $recorded[0][0]->url());
+        $this->assertSame(['type' => 'json_object'], $recorded[0][0]['response_format']);
+        $this->assertSame('https://ai.paas.id/chat/completions', $recorded[1][0]->url());
+        $this->assertArrayNotHasKey('response_format', $recorded[1][0]->data());
+
+        // Pastikan konfigurasi send_response_format = false menghilangkan field response_format sejak awal
+        config(['legal_analysis.deepseek.send_response_format' => false]);
+        $payloadWithoutFormat = app(DeepSeekProvider::class)->buildRequestPayload('Kronologi warga.', $chunks);
+        $this->assertArrayNotHasKey('response_format', $payloadWithoutFormat);
     }
 }

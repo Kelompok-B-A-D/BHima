@@ -19,6 +19,7 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_TIMEZONE" value="Asia/Jakarta"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
@@ -32,5 +33,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="LLM_PROVIDER" value="mock"/>
+        <env name="RAG_LLM_PROVIDER" value="local_grounded"/>
+        <env name="DEEPSEEK_API_KEY" value=""/>
+        <env name="RAG_LLM_API_KEY" value=""/>
     </php>
 </phpunit>

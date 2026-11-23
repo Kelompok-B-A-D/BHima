@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\DB;
 
 class IngestLegalKnowledge extends Command
 {
-    protected $signature = 'bhima:ingest-knowledge {--seed : Muat data 100 dokumen JDIH dan SOP Layanan ke database terlebih dahulu}';
+    protected $signature = 'bhima:ingest-knowledge {--seed : Muat data dokumen JDIH terverifikasi dan SOP Layanan ke database terlebih dahulu}';
 
-    protected $description = 'Ekstrak teks, pecah per pasal/ayat, buat embedding, dan indeks 100 dokumen JDIH & SOP secara idempotent';
+    protected $description = 'Ekstrak teks (PDF/manifest resmi), pecah per pasal/ayat, tandai sanksi, buat embedding, dan indeks secara idempotent';
 
     public function handle(LegalIngestionService $ingestionService): int
     {
@@ -19,12 +19,12 @@ class IngestLegalKnowledge extends Command
             ->whereIn('collection', ['documents', 'contents'])
             ->count();
 
-        if ($this->option('seed') || $existingDocs < 100) {
-            $this->info('Memuat korpus 100 dokumen JDIH dan SOP layanan ke basis data...');
+        if ($this->option('seed') || $existingDocs === 0) {
+            $this->info('Memuat korpus dokumen JDIH inti (tanpa templat karangan) dan SOP layanan ke basis data...');
             app(LegalKnowledgeSeeder::class)->run();
         }
 
-        $this->info('Menjalankan ekstraksi teks, pemecahan pasal/ayat, dan pembuatan embedding...');
+        $this->info('Menjalankan ekstraksi teks, pemecahan pasal/ayat, penandaan pasal sanksi, dan pembuatan embedding...');
         $stats = $ingestionService->ingestAll();
 
         $this->info(sprintf(

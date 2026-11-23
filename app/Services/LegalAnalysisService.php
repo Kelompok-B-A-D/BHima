@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class LegalAnalysisService
 {
-    private const ALLOWED_SANCTION_TYPES = ['pidana', 'administratif', 'perdata', 'lainnya'];
+    private const ALLOWED_SANCTION_TYPES = ['pidana', 'administratif', 'denda', 'perdata', 'lainnya'];
 
     /**
      * Pola kalimat terlarang (prediksi vonis / peluang menang atau kalah).
@@ -286,11 +286,19 @@ class LegalAnalysisService
 
             if (! isset($seenRujukanKeys[$dedupKey])) {
                 $seenRujukanKeys[$dedupKey] = true;
-                $validRujukan[] = [
+                $rujukanRow = [
                     'dokumen' => $docName,
                     'nomor_tahun' => $nomorTahun,
                     'tautan' => (string) $matchedChunk['source_url'],
+                    'status_berlaku' => (string) ($matchedChunk['status_berlaku'] ?? 'berlaku'),
                 ];
+                if (! empty($matchedChunk['source_page_url'])) {
+                    $rujukanRow['tautan_resmi'] = (string) $matchedChunk['source_page_url'];
+                }
+                if (! empty($matchedChunk['diubah_oleh'])) {
+                    $rujukanRow['diubah_oleh'] = (string) $matchedChunk['diubah_oleh'];
+                }
+                $validRujukan[] = $rujukanRow;
             }
         }
 
@@ -368,7 +376,13 @@ class LegalAnalysisService
             $seenSanksiKeys[$dedupKey] = true;
 
             $chunkContent = (string) ($matchedChunk['content'] ?? '');
-            $groundTruthSanction = MockProvider::extractSanctionFromChunkContent($chunkContent, $noSanctionText);
+            $storedSanctionText = trim((string) ($matchedChunk['sanksi_teks'] ?? ''));
+            $groundTruthSanction = $storedSanctionText !== ''
+                ? [
+                    'jenis' => strtolower(trim((string) ($matchedChunk['sanksi_jenis'] ?? 'lainnya'))) ?: 'lainnya',
+                    'bunyi_sanksi_ringkas' => $storedSanctionText,
+                ]
+                : MockProvider::extractSanctionFromChunkContent($chunkContent, $noSanctionText);
             $candidateSanctionText = trim((string) ($sanksiItem['bunyi_sanksi_ringkas'] ?? ''));
             $candidateJenis = strtolower(trim((string) ($sanksiItem['jenis'] ?? 'lainnya')));
             if (! in_array($candidateJenis, self::ALLOWED_SANCTION_TYPES, true)) {
@@ -419,11 +433,19 @@ class LegalAnalysisService
 
                 if (! isset($seenRujukanKeys[$dedupKey])) {
                     $seenRujukanKeys[$dedupKey] = true;
-                    $validRujukan[] = [
+                    $rujukanRow = [
                         'dokumen' => $docName,
                         'nomor_tahun' => $nomorTahun,
                         'tautan' => (string) $matchedChunk['source_url'],
+                        'status_berlaku' => (string) ($matchedChunk['status_berlaku'] ?? 'berlaku'),
                     ];
+                    if (! empty($matchedChunk['source_page_url'])) {
+                        $rujukanRow['tautan_resmi'] = (string) $matchedChunk['source_page_url'];
+                    }
+                    if (! empty($matchedChunk['diubah_oleh'])) {
+                        $rujukanRow['diubah_oleh'] = (string) $matchedChunk['diubah_oleh'];
+                    }
+                    $validRujukan[] = $rujukanRow;
                 }
             }
         }
@@ -492,6 +514,10 @@ class LegalAnalysisService
                 continue;
             }
 
+            if (strtolower((string) ($chunk['status_berlaku'] ?? 'berlaku')) === 'dicabut') {
+                continue;
+            }
+
             $normalized[] = [
                 'chunk_id' => (int) ($chunk['chunk_id'] ?? 0),
                 'document_key' => (string) ($chunk['document_key'] ?? ''),
@@ -500,7 +526,17 @@ class LegalAnalysisService
                 'document_number' => (string) ($chunk['document_number'] ?? '-'),
                 'document_year' => (int) ($chunk['document_year'] ?? 0),
                 'article_label' => $articleLabel,
+                'pasal_nomor' => isset($chunk['pasal_nomor']) ? (string) $chunk['pasal_nomor'] : null,
+                'ayat' => isset($chunk['ayat']) ? (string) $chunk['ayat'] : null,
+                'is_ketentuan_pidana' => (bool) ($chunk['is_ketentuan_pidana'] ?? false),
+                'sanksi_jenis' => isset($chunk['sanksi_jenis']) ? (string) $chunk['sanksi_jenis'] : null,
+                'sanksi_teks' => isset($chunk['sanksi_teks']) ? (string) $chunk['sanksi_teks'] : null,
+                'rujuk_pasal' => isset($chunk['rujuk_pasal']) ? (string) $chunk['rujuk_pasal'] : null,
+                'status_berlaku' => (string) ($chunk['status_berlaku'] ?? 'berlaku'),
+                'diubah_oleh' => isset($chunk['diubah_oleh']) ? (string) $chunk['diubah_oleh'] : null,
                 'source_url' => (string) ($chunk['source_url'] ?? ''),
+                'source_page_url' => isset($chunk['source_page_url']) ? (string) $chunk['source_page_url'] : null,
+                'pdf_page' => isset($chunk['pdf_page']) ? (int) $chunk['pdf_page'] : null,
                 'category' => (string) ($chunk['category'] ?? 'JDIH'),
                 'topic' => (string) ($chunk['topic'] ?? 'Umum'),
                 'content' => $content,

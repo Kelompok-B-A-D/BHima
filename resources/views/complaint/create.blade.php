@@ -1,611 +1,905 @@
 <!DOCTYPE html>
-<html lang="id">
-    <head>
-        <meta charset="utf-8">
-        <meta content="width=device-width, initial-scale=1.0" name="viewport">
-        <meta content="web_standard" name="shell-type">
-        <title>BHIMA - Portal Bantuan Hukum dan Informasi Masyarakat</title>
-        <link href="https://fonts.googleapis.com" rel="preconnect">
-        <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&amp;display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-        <style>
-            @layer base {
-                html,body {
-                    margin: 0;
-                    padding: 0;
-                }
+<html class="scroll-smooth" lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="shell-type" content="web_standard">
+    <title>BHIMA - Formulir Pengaduan Masyarakat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
+</head>
+<body class="stitch-liquid-body has-mobile-tabbar min-h-screen overflow-x-hidden bg-[#E9EEF5] font-sans text-[#0B1020] antialiased selection:bg-[#E6F0FC] selection:text-[#0B1020]">
+    <a
+        href="#portal-main-content"
+        class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:px-4 focus:py-2.5 focus:rounded-full focus:bg-[#0066CC] focus:text-white focus:font-bold focus:shadow-lg"
+    >
+        Lewati ke konten utama
+    </a>
 
-                body {
-                    overscroll-behavior: none;
-                }
+    @php
+        $initialStep = 1;
+        if ($errors->hasAny(['nama_pelapor', 'kontak'])) {
+            $initialStep = 1;
+        } elseif ($errors->hasAny(['persetujuan', 'lampiran', 'lampiran.*'])) {
+            $initialStep = 3;
+        } elseif ($errors->hasAny(['kategori', 'instansi_terlapor', 'tanggal_kejadian', 'lokasi', 'uraian']) || !empty($prefill)) {
+            $initialStep = 2;
+        }
+    @endphp
 
-                main>:first-child {
-                    margin-top: 0!important;
-                }
+    <div class="w-full overflow-x-hidden">
+        @include('partials.liquid-header', ['activeNav' => 'formulir-pengaduan'])
 
-                main>:last-child {
-                    margin-bottom: 0!important;
-                }
-            }
-
-            ::-webkit-scrollbar {
-                display: none;
-            }
-        </style>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script id="tailwind-config">
-            tailwind.config = {
-                darkMode: "class",
-                theme: {
-                    extend: {
-                        "colors": {
-                            "on-secondary": "#ffffff",
-                            "on-tertiary-fixed-variant": "#653e00",
-                            "on-tertiary-fixed": "#2a1700",
-                            "inverse-primary": "#8fd3cc",
-                            "secondary-fixed": "#9cf2e8",
-                            "inverse-surface": "#27313f",
-                            "outline-variant": "#bec9c7",
-                            "on-error-container": "#93000a",
-                            "surface": "#f8f9ff",
-                            "error-container": "#ffdad6",
-                            "tertiary-fixed": "#ffddb8",
-                            "surface-tint": "#216963",
-                            "primary-fixed": "#abefe8",
-                            "primary": "#004541",
-                            "on-tertiary-container": "#ffbb66",
-                            "secondary-container": "#99efe5",
-                            "secondary-fixed-dim": "#80d5cb",
-                            "outline": "#6f7977",
-                            "surface-container-lowest": "#ffffff",
-                            "surface-variant": "#d9e3f6",
-                            "on-surface": "#121c2a",
-                            "on-primary-fixed-variant": "#00504b",
-                            "on-secondary-fixed-variant": "#00504a",
-                            "surface-bright": "#f8f9ff",
-                            "surface-container-high": "#dee9fc",
-                            "secondary": "#006a63",
-                            "on-secondary-fixed": "#00201d",
-                            "on-error": "#ffffff",
-                            "primary-fixed-dim": "#8fd3cc",
-                            "on-tertiary": "#ffffff",
-                            "on-surface-variant": "#3f4947",
-                            "tertiary-container": "#774a00",
-                            "tertiary-fixed-dim": "#ffb95f",
-                            "surface-container-low": "#eff4ff",
-                            "tertiary": "#583500",
-                            "surface-container-highest": "#d9e3f6",
-                            "on-secondary-container": "#006f67",
-                            "on-primary-container": "#91d5ce",
-                            "surface-dim": "#d0dbed",
-                            "surface-container": "#e6eeff",
-                            "error": "#ba1a1a",
-                            "background": "#f8f9ff",
-                            "on-primary-fixed": "#00201e",
-                            "on-primary": "#ffffff",
-                            "inverse-on-surface": "#eaf1ff",
-                            "primary-container": "#115e59",
-                            "on-background": "#121c2a"
-                        },
-                        "borderRadius": {
-                            "DEFAULT": "0.25rem",
-                            "lg": "0.5rem",
-                            "xl": "0.75rem",
-                            "full": "9999px"
-                        },
-                        "spacing": {
-                            "space-lg": "1.5rem",
-                            "space-xs": "0.25rem",
-                            "margin-mobile": "1rem",
-                            "gutter": "1.5rem",
-                            "space-xl": "2.5rem",
-                            "space-md": "1rem",
-                            "gutter-sm": "1rem",
-                            "space-sm": "0.5rem",
-                            "margin": "2rem"
-                        },
-                        "fontFamily": {
-                            "headline-lg": ["Newsreader"],
-                            "label-md": ["Manrope"],
-                            "title-md": ["Manrope"],
-                            "body-lg": ["Manrope"],
-                            "headline-lg-mobile": ["Newsreader"],
-                            "display": ["Newsreader"],
-                            "headline-sm": ["Newsreader"],
-                            "label-lg": ["Manrope"],
-                            "title-lg": ["Manrope"],
-                            "label-sm": ["Manrope"],
-                            "headline-md": ["Newsreader"],
-                            "body-sm": ["Manrope"],
-                            "body-md": ["Manrope"]
-                        },
-                        "fontSize": {
-                            "headline-lg": ["36px", {
-                                "lineHeight": "44px",
-                                "letterSpacing": "-0.015em",
-                                "fontWeight": "600"
-                            }],
-                            "label-md": ["12px", {
-                                "lineHeight": "16px",
-                                "letterSpacing": "0.02em",
-                                "fontWeight": "600"
-                            }],
-                            "title-md": ["16px", {
-                                "lineHeight": "24px",
-                                "fontWeight": "600"
-                            }],
-                            "body-lg": ["16px", {
-                                "lineHeight": "26px",
-                                "fontWeight": "400"
-                            }],
-                            "headline-lg-mobile": ["28px", {
-                                "lineHeight": "36px",
-                                "letterSpacing": "-0.01em",
-                                "fontWeight": "600"
-                            }],
-                            "display": ["48px", {
-                                "lineHeight": "56px",
-                                "letterSpacing": "-0.02em",
-                                "fontWeight": "600"
-                            }],
-                            "headline-sm": ["20px", {
-                                "lineHeight": "28px",
-                                "fontWeight": "500"
-                            }],
-                            "label-lg": ["14px", {
-                                "lineHeight": "20px",
-                                "letterSpacing": "0.01em",
-                                "fontWeight": "600"
-                            }],
-                            "title-lg": ["18px", {
-                                "lineHeight": "26px",
-                                "fontWeight": "700"
-                            }],
-                            "label-sm": ["11px", {
-                                "lineHeight": "14px",
-                                "letterSpacing": "0.04em",
-                                "fontWeight": "700"
-                            }],
-                            "headline-md": ["26px", {
-                                "lineHeight": "34px",
-                                "letterSpacing": "-0.01em",
-                                "fontWeight": "500"
-                            }],
-                            "body-sm": ["12px", {
-                                "lineHeight": "18px",
-                                "fontWeight": "400"
-                            }],
-                            "body-md": ["14px", {
-                                "lineHeight": "22px",
-                                "fontWeight": "400"
-                            }]
-                        }
-                    }
-                }
-            };
-        </script>
-    </head>
-    <body class="bg-background font-body-md text-on-surface antialiased">
-        <header class="fixed top-0 w-full z-50 bg-primary-container text-on-primary shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
-            <div class="h-20 max-w-7xl mx-auto px-margin flex items-center justify-between gap-space-md">
-                <div class="flex items-center gap-space-sm">
-                    <div class="w-10 h-10 rounded-lg bg-surface-container-lowest/10 flex items-center justify-center text-primary-fixed">
-                        <span class="material-symbols-outlined text-[26px]">balance</span>
+        <main id="portal-main-content" class="w-full pt-24 min-[641px]:pt-28 pb-10 min-[641px]:pb-14 bg-transparent relative min-h-[calc(100vh-280px)] stitch-print-full">
+            <div class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 space-y-6">
+                <!-- Top Breadcrumb & Privacy Context Bar -->
+                <div class="stitch-no-print flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 flex-wrap text-xs font-semibold text-[#4A5366]">
+                        <a
+                            href="{{ route('consultation.home') }}"
+                            aria-label="Kembali ke Beranda Portal BHIMA"
+                            class="press-scale w-11 h-11 rounded-full bg-white/85 border border-white shadow-sm flex items-center justify-center text-[#0B1020] hover:bg-white hover:text-[#0066CC] transition-colors shrink-0"
+                        >
+                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_back</span>
+                        </a>
+                        <a class="min-h-[44px] inline-flex items-center hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}">Beranda</a>
+                        <span class="material-symbols-outlined text-[16px] text-[#5A657A]" aria-hidden="true">chevron_right</span>
+                        <a class="min-h-[44px] inline-flex items-center hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}#layanan">Layanan Publik</a>
+                        <span class="material-symbols-outlined text-[16px] text-[#5A657A]" aria-hidden="true">chevron_right</span>
+                        <span class="text-[#005EB8] font-bold">Formulir Pengaduan</span>
                     </div>
-                    <div class="flex flex-col">
-                        <span class="font-title-lg text-title-lg tracking-tight text-on-primary font-bold leading-none">BHIMA</span>
-                        <span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-wider opacity-90">Bantuan Hukum &amp; Informasi</span>
+
+                    <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/90 border border-[#DCE4F0] text-xs font-bold text-[#0F766E] self-start min-[641px]:self-auto">
+                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">verified_user</span>
+                        <span>Opsi Anonim &amp; Pelindungan Pelapor Aktif</span>
                     </div>
                 </div>
-                <nav class="hidden xl:flex items-center gap-space-md" data-active-classes="text-primary-fixed font-title-md">
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="beranda" href="{{ route('consultation.home') }}">Beranda</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="layanan" href="#">Layanan</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="pengumuman" href="#">Pengumuman</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="anggaran" href="#">Anggaran</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="peraturan" href="#">Peraturan</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="asisten-hukum" href="{{ route('consultation.index') }}">Asisten Hukum</a>
-                    <a class="font-label-lg text-label-lg text-inverse-on-surface/80 hover:text-on-primary transition-colors py-space-xs" data-path="lacak-tiket" href="{{ route('complaint.track') }}">Lacak Tiket</a>
-                </nav>
-                <div class="flex items-center gap-space-md">
-                    <a class="inline-flex items-center justify-center font-bold px-4 py-2 rounded-lg shadow-sm transition-all hover:opacity-90 text-[14px]" data-path="formulir-pengaduan" href="{{ route('complaint.create') }}" style="background-color: #F59E0B; color: #111827;">Lapor</a>
-                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-                    </div>
-                </div>
-            </div>
-        </header>
-        <main class="w-full pt-20 bg-background min-h-screen">
-            <div class="flex flex-col w-full">
-                <!-- Top Ambient Glow & Pattern Layer -->
-                <div class="relative w-full overflow-hidden bg-surface-container-low py-space-xl">
-                    <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[840px] h-[340px] bg-gradient-to-b from-primary-fixed-dim/25 via-secondary-container/20 to-transparent blur-3xl pointer-events-none rounded-full"></div>
-                    <div class="max-w-7xl mx-auto px-margin relative z-10">
-                        <!-- Breadcrumbs & Badges -->
-                        <div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-md">
-                            <div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
-                                <a class="hover:text-primary transition-colors" data-path="beranda" href="{{ route('consultation.home') }}">Beranda</a>
-                                <span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-                                <a class="hover:text-primary transition-colors" data-path="layanan" href="#">Layanan Publik</a>
-                                <span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
-                                <span class="text-primary font-semibold">Formulir Pengaduan Warga</span>
-                            </div>
-                        </div>
-                        <!-- Section Title & Statutory Legal Assurance (UU PDP 27/2022) -->
-                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-end">
-                            <div class="space-y-space-xs w-full lg:col-span-12">
-                                <span class="font-label-lg text-label-lg text-secondary uppercase tracking-widest font-bold">Layanan Pengaduan Pelayanan Publik</span>
-                                <h1 class="font-display text-display text-on-surface font-semibold tracking-tight">Formulir Pengaduan Pelayanan Publik &amp; Maladministrasi</h1>
-                                <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl leading-relaxed">Sampaikan laporan dugaan pungutan liar, pelayanan lambat, atau ketidakjelasan prosedur loket di kantor desa dan kelurahan. Setiap pengaduan ditelaah langsung oleh petugas verifikasi daerah secara transparan.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Main Interaction Area (Split Flow: Active Form & Live Success State Frame) -->
-                <div class="max-w-7xl mx-auto px-margin py-space-xl w-full">
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
-                        <!-- LEFT/PRIMARY: Active Citizen Complaint Form (7 Cols) -->
-                        <div class="lg:col-span-7 space-y-space-lg">
-                            <!-- STEP INDICATOR BAR -->
-                            <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
-                                <div class="flex items-center gap-space-sm">
-                                    <div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md text-label-md font-bold">1</div>
-                                    <div>
-                                        <div class="font-title-md text-title-md text-on-surface leading-tight">Pengisian Data &amp; Kronologi</div>
-                                        <div class="font-label-sm text-label-sm text-on-surface-variant">Tahap 1 dari 2: Isi Laporan</div>
-                                    </div>
+
+                <!-- Two-Column Asymmetric Layout (7 + 5 Columns on >= 1008px) -->
+                <div class="grid grid-cols-1 min-[1008px]:grid-cols-12 gap-6 min-[1008px]:gap-8 items-start">
+                    <!-- LEFT PRIMARY COLUMN: Header, Prefill Summary & 3-Step Form -->
+                    <section class="min-[1008px]:col-span-7 flex flex-col gap-6" aria-label="Formulir Pengaduan Masyarakat">
+                        <!-- Intro Header Card -->
+                        <div class="surface-card hero-enter p-6 min-[641px]:p-7 space-y-3">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="space-y-1.5">
+                                    <p class="text-xs uppercase tracking-[0.12em] font-bold text-[#005EB8]">
+                                        Pengaduan Pelayanan Publik
+                                    </p>
+                                    <h1 class="type-h1 text-[#0B1020]">
+                                        Formulir Pengaduan Masyarakat &amp; Maladministrasi
+                                    </h1>
                                 </div>
-                                <div class="hidden sm:flex items-center gap-space-xs text-secondary font-label-md text-label-md">
-                                    <span class="material-symbols-outlined text-[18px]">verified</span>
-                                    <span class="">Formulir Pengaduan Warga 2026</span>
+                                <div class="w-12 h-12 rounded-[16px] bg-[#E6F0FC] flex items-center justify-center text-[#005EB8] shrink-0">
+                                    <span class="material-symbols-outlined text-[24px]" aria-hidden="true">gavel</span>
                                 </div>
                             </div>
-                            <!-- Section Box: Pre-filled Virtual Legal Assistant Kronologi & Detected Articles -->
-                            @if ($prefill)
-                            <!-- Hasil konsultasi Asisten Hukum (pre-fill) -->
-                            <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-md">
-                                <div class="flex items-start justify-between gap-space-sm">
-                                    <div class="flex items-center gap-space-sm">
-                                        <div class="w-9 h-9 rounded-lg bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                                            <span class="material-symbols-outlined text-[22px]">info</span>
+                            <p class="prose-measure text-sm text-[#4A5366] leading-relaxed">
+                                Sampaikan laporan dugaan pungutan liar, pelayanan lambat, atau ketidakjelasan prosedur loket desa dan kelurahan. Setiap laporan tercatat resmi dan ditelaah oleh verifikator BHIMA.
+                            </p>
+                        </div>
+
+                        <!-- Pre-filled Consultation Summary Card -->
+                        @if ($prefill)
+                            <div class="surface-card p-5 min-[641px]:p-6 space-y-3.5 relative overflow-hidden">
+                                <span class="absolute inset-x-0 top-0 h-1 bg-[#0066CC]" aria-hidden="true"></span>
+                                <div class="flex items-center justify-between gap-2 flex-wrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-[14px] bg-[#0066CC] text-white flex items-center justify-center shrink-0">
+                                            <span class="material-symbols-outlined text-[20px]" aria-hidden="true">smart_toy</span>
                                         </div>
                                         <div>
-                                            <h2 class="font-title-lg text-title-lg text-on-surface font-bold leading-tight">Hasil Konsultasi Asisten Hukum</h2>
-                                            <p class="font-body-sm text-body-sm text-on-surface-variant">Diambil dari sesi konsultasi terakhir Anda</p>
+                                            <h2 class="text-sm min-[641px]:text-base font-bold text-[#0B1020]">Hasil Konsultasi Asisten Hukum</h2>
+                                            <p class="text-xs text-[#4A5366]">Data awal otomatis terisi dari sesi konsultasi Anda (dapat diedit)</p>
                                         </div>
                                     </div>
-                                    <span class="px-space-sm py-1 rounded-full bg-secondary-container/40 text-on-secondary-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[14px]">check_circle</span> Siap Diteruskan
+                                    <span class="px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-xs font-bold inline-flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[14px]" aria-hidden="true">check_circle</span>
+                                        <span>Siap Diteruskan</span>
                                     </span>
                                 </div>
-                                <div class="bg-surface-container-low p-space-md rounded-lg space-y-space-xs">
-                                    <div class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">Ringkasan Kasus:</div>
-                                    <blockquote class="font-body-md text-body-md text-on-surface italic leading-relaxed">“{{ $prefill['chronology'] }}”</blockquote>
-                                </div>
-                                <div class="space-y-space-xs pt-1">
-                                    <label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Kajian Pasal &amp; Regulasi yang Terindikasi:</label>
+
+                                @if (!empty($prefill['chronology']))
+                                    <div class="surface-nested p-4 space-y-1">
+                                        <span class="text-xs uppercase tracking-wider font-bold text-[#0F766E] block">Ringkasan Kronologi Sesi:</span>
+                                        <blockquote class="text-xs min-[641px]:text-sm text-[#0B1020] italic leading-relaxed">
+                                            "{{ $prefill['chronology'] }}"
+                                        </blockquote>
+                                    </div>
+                                @endif
+
+                                <div class="space-y-2">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-[#4A5366] block">Kajian Pasal &amp; Regulasi Terindikasi:</span>
                                     <div class="flex flex-wrap gap-2">
                                         @forelse ($prefill['citations'] as $c)
-                                            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface text-label-sm font-label-sm shadow-sm">
-                                                <span class="material-symbols-outlined text-[16px] text-primary">gavel</span>
-                                                <span>{{ data_get($c, 'document_name', 'Rujukan') }} {{ data_get($c, 'article_label') }}</span>
-                                            </div>
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#DCE4F0] text-[#005EB8] text-xs font-semibold">
+                                                <span class="material-symbols-outlined text-[15px] text-[#0066CC]" aria-hidden="true">menu_book</span>
+                                                <span>{{ data_get($c, 'document_name', 'Rujukan') }} ({{ data_get($c, 'document_number', '-') }}) {{ data_get($c, 'article_label') }}</span>
+                                            </span>
                                         @empty
-                                            <span class="font-body-sm text-body-sm text-on-surface-variant">Belum ada rujukan pasal pada sesi ini.</span>
+                                            <span class="text-xs text-[#4A5366]">Belum ada rujukan pasal pada sesi ini.</span>
                                         @endforelse
                                     </div>
                                 </div>
                             </div>
-                            @else
-                            <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm text-on-surface-variant">
-                                Belum ada hasil konsultasi. Anda dapat <a class="text-primary font-bold underline" href="{{ route('consultation.index') }}">bertanya ke Asisten Hukum</a> dulu, atau langsung mengisi formulir.
+                        @else
+                            <div class="surface-card !rounded-[20px] p-4 min-[641px]:p-5 text-xs min-[641px]:text-sm text-[#4A5366] flex items-start gap-3">
+                                <span class="material-symbols-outlined text-[#0066CC] text-[20px] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                                <p class="leading-relaxed">
+                                    Belum terhubung dengan hasil konsultasi sebelumnya. Anda dapat <a class="text-[#005EB8] font-bold underline" href="{{ route('consultation.index') }}">bertanya ke Asisten Hukum</a> terlebih dahulu atau langsung mengisi formulir di bawah ini.
+                                </p>
                             </div>
-                            @endif
-                            <!-- FORM INTERACTIVE FIELDS -->
-                            @if ($errors->any())
-                                <div role="alert" class="bg-error-container text-on-error-container rounded-xl p-space-md">
-                                    <ul class="list-disc pl-5">
-                                        @foreach ($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
+                        @endif
+
+                        <!-- Server Validation Errors -->
+                        @if ($errors->any())
+                            <div role="alert" class="rounded-[20px] bg-[#FEE2E2] border border-[#FCA5A5] text-[#991B1B] p-4 min-[641px]:p-5 space-y-1.5 text-xs min-[641px]:text-sm">
+                                <div class="flex items-center gap-2 font-bold">
+                                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">error</span>
+                                    <span>Mohon periksa kembali isian formulir Anda:</span>
                                 </div>
-                            @endif
-                            <form class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm space-y-space-lg" id="complaintForm" method="POST" action="{{ route('complaint.store') }}" enctype="multipart/form-data">
+                                <ul class="list-disc pl-5 space-y-0.5 font-medium">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        <!-- Client-side Validation Error Banner -->
+                        <div id="clientFormError" hidden role="alert" class="rounded-[20px] bg-[#FEE2E2] border border-[#FCA5A5] text-[#991B1B] p-4 text-xs min-[641px]:text-sm font-bold flex items-start gap-2.5">
+                            <span class="material-symbols-outlined text-[20px] shrink-0" aria-hidden="true">error</span>
+                            <span id="clientFormErrorText"></span>
+                        </div>
+
+                        <!-- MAIN COMPLAINT FORM (Clean Frosted Content Surface + Clear Liquid Glass Segmented Step Bar) -->
+                        <form
+                            id="complaintForm"
+                            method="POST"
+                            action="{{ route('complaint.store') }}"
+                            enctype="multipart/form-data"
+                            novalidate
+                            data-initial-step="{{ $initialStep }}"
+                            class="surface-card hero-enter hero-enter-1 p-5 min-[641px]:p-7 flex flex-col gap-6"
+                        >
                             @csrf
-                                <input type="hidden" name="session_uuid" value="{{ $prefill['session_uuid'] ?? '' }}">
-                                <!-- Field 1: Category Dropdown -->
-                                <div class="space-y-space-xs">
-                                    <label class="block font-label-md text-label-md text-primary font-bold" for="categorySelect">
-                                        Kategori Pokok Pengaduan <span class="text-error">*</span>
+                            <input type="hidden" name="session_uuid" value="{{ $prefill['session_uuid'] ?? '' }}">
+
+                            <!-- Clear Liquid Glass Segmented 3-Step Control -->
+                            <div class="liquid-glass p-1.5 rounded-[24px] min-[481px]:rounded-full grid grid-cols-1 min-[481px]:grid-cols-3 gap-1.5" role="tablist" aria-label="Tahapan Pengisian Formulir">
+                                <button
+                                    type="button"
+                                    id="tab-step-1"
+                                    role="tab"
+                                    aria-selected="{{ $initialStep === 1 ? 'true' : 'false' }}"
+                                    aria-controls="step-content-1"
+                                    class="min-h-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center justify-center min-[481px]:justify-start gap-2 transition-colors"
+                                >
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">1</span>
+                                    <span>Identitas &amp; Privasi</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    id="tab-step-2"
+                                    role="tab"
+                                    aria-selected="{{ $initialStep === 2 ? 'true' : 'false' }}"
+                                    aria-controls="step-content-2"
+                                    class="min-h-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center justify-center min-[481px]:justify-start gap-2 transition-colors"
+                                >
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">2</span>
+                                    <span>Rincian Masalah</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    id="tab-step-3"
+                                    role="tab"
+                                    aria-selected="{{ $initialStep === 3 ? 'true' : 'false' }}"
+                                    aria-controls="step-content-3"
+                                    class="min-h-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center justify-center min-[481px]:justify-start gap-2 transition-colors"
+                                >
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0">3</span>
+                                    <span>Bukti &amp; Kirim</span>
+                                </button>
+                            </div>
+
+                            <!-- STEP 1: IDENTITAS & KERAHASIAAN -->
+                            <div id="step-content-1" role="tabpanel" aria-labelledby="tab-step-1" class="step-section flex flex-col gap-5">
+                                <div class="surface-nested p-4 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
+                                    <div class="flex items-start min-[641px]:items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-white border border-[#DCE4F0] flex items-center justify-center shrink-0">
+                                            <span id="anonIcon" class="material-symbols-outlined text-[20px] text-[#0066CC]" aria-hidden="true">badge</span>
+                                        </div>
+                                        <div>
+                                            <span id="anonTitle" class="text-sm font-bold text-[#0B1020] block">Data Terbuka (Dengan Identitas Pelapor)</span>
+                                            <span id="anonDesc" class="text-xs text-[#4A5366]">Pilih mode Anonim apabila Anda tidak ingin identitas diketahui pihak terlapor.</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Segmented Privacy Mode Switch -->
+                                    <div class="inline-flex p-1 bg-[#E4EAF3] rounded-full border border-[#75849B] shrink-0 self-start min-[641px]:self-center">
+                                        <button
+                                            type="button"
+                                            id="btnAnonMode"
+                                            class="min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors"
+                                        >
+                                            Anonim
+                                        </button>
+                                        <button
+                                            type="button"
+                                            id="btnPublicMode"
+                                            class="min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors"
+                                        >
+                                            Data Terbuka
+                                        </button>
+                                    </div>
+                                    <input class="sr-only" id="anonToggle" name="is_anonim" value="1" type="checkbox" @checked(old('is_anonim'))>
+                                </div>
+
+                                <div id="identityFields" class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-[#0B1020]" for="reporterName">
+                                            Nama Pelapor <span class="text-[#991B1B]">*</span>
+                                        </label>
+                                        <input
+                                            class="glass-input w-full min-h-[48px] px-4 text-sm placeholder:text-[#4A5366]"
+                                            id="reporterName"
+                                            name="nama_pelapor"
+                                            type="text"
+                                            placeholder="Nama lengkap pelapor"
+                                            value="{{ old('nama_pelapor') }}"
+                                        >
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-[#0B1020]" for="reporterContact">
+                                            Kontak (Opsional)
+                                        </label>
+                                        <input
+                                            class="glass-input w-full min-h-[48px] px-4 text-sm placeholder:text-[#4A5366]"
+                                            id="reporterContact"
+                                            name="kontak"
+                                            type="text"
+                                            placeholder="Nomor WhatsApp atau email"
+                                            value="{{ old('kontak') }}"
+                                        >
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        data-next-step="2"
+                                        class="btn-primary w-full min-[481px]:w-auto px-6 text-sm inline-flex items-center justify-center gap-2"
+                                    >
+                                        <span>Lanjut: Rincian Masalah</span>
+                                        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- STEP 2: RINCIAN MALADMINISTRASI & KRONOLOGI -->
+                            <div id="step-content-2" role="tabpanel" aria-labelledby="tab-step-2" class="step-section hidden flex-col gap-5">
+                                <div class="space-y-1.5">
+                                    <label class="block text-xs font-bold text-[#0B1020]" for="categorySelect">
+                                        Kategori Pokok Pengaduan <span class="text-[#991B1B]">*</span>
                                     </label>
                                     <div class="relative">
-                                        <select class="w-full h-11 px-space-md pr-10 rounded-lg bg-surface text-on-surface font-body-md text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" id="categorySelect" name="kategori" required="">
-                                            <option value="">Pilih kategori</option>
-                                            @foreach (['Pungutan Liar', 'Pelayanan Lambat', 'Prosedur Tidak Jelas', 'Maladministrasi Lainnya'] as $k)
+                                        <select
+                                            class="glass-input w-full min-h-[48px] px-4 pr-10 text-sm appearance-none"
+                                            id="categorySelect"
+                                            name="kategori"
+                                            required
+                                        >
+                                            <option value="">Pilih kategori pengaduan</option>
+                                            @foreach (($categories ?? ['Pungutan Liar', 'Dugaan Pungutan Liar', 'Pelayanan Lambat', 'Prosedur Tidak Jelas', 'Administrasi Kependudukan', 'Pelayanan Kesehatan', 'Infrastruktur', 'Ketenagakerjaan', 'Pertanahan', 'Maladministrasi Lainnya']) as $k)
                                                 <option value="{{ $k }}" @selected(old('kategori') === $k)>{{ $k }}</option>
                                             @endforeach
                                         </select>
-                                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                                        <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[#4A5366]" aria-hidden="true">expand_more</span>
                                     </div>
-                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Pilih kategori yang paling sesuai dengan masalah Anda.</p>
+                                    <p class="text-xs text-[#4A5366]">Pilih kategori pokok yang paling sesuai dengan kejadian Anda.</p>
                                 </div>
-                                <!-- Field 2: Instansi Terlapor -->
-                                <div class="space-y-space-xs">
-                                    <label class="block font-label-md text-label-md text-primary font-bold" for="reportedEntity">
-                                        Pihak / Instansi Terlapor <span class="text-error">*</span>
+
+                                <div class="space-y-1.5">
+                                    <label class="block text-xs font-bold text-[#0B1020]" for="reportedEntity">
+                                        Pihak / Instansi Terlapor <span class="text-[#991B1B]">*</span>
                                     </label>
                                     <div class="relative">
-                                        <input class="w-full h-11 px-space-md rounded-lg bg-surface text-on-surface font-body-md text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary pl-10" id="reportedEntity" name="instansi_terlapor" required="" type="text" value="{{ old('instansi_terlapor') }}">
-                                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">domain</span>
+                                        <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4A5366] text-[20px]" aria-hidden="true">domain</span>
+                                        <input
+                                            class="glass-input w-full min-h-[48px] pl-11 pr-4 text-sm placeholder:text-[#4A5366]"
+                                            id="reportedEntity"
+                                            name="instansi_terlapor"
+                                            required
+                                            type="text"
+                                            placeholder="Contoh: Loket Pelayanan Kependudukan Kecamatan"
+                                            value="{{ old('instansi_terlapor') }}"
+                                        >
                                     </div>
-                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Sebutkan nama unit layanan atau petugas yang dilaporkan.</span>
                                 </div>
-                                <!-- Field 3: 2-Column Incident Date and Exact Location -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                                    <!-- Date -->
-                                    <div class="space-y-space-xs">
-                                        <label class="block font-label-md text-label-md text-primary font-bold" for="incidentDate">
-                                            Tanggal Kejadian <span class="text-error">*</span>
+
+                                <div class="grid grid-cols-1 min-[641px]:grid-cols-2 gap-4">
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-[#0B1020]" for="incidentDate">
+                                            Tanggal Kejadian <span class="text-[#991B1B]">*</span>
+                                        </label>
+                                        <input
+                                            class="glass-input w-full min-h-[48px] px-4 text-sm"
+                                            id="incidentDate"
+                                            name="tanggal_kejadian"
+                                            required
+                                            type="date"
+                                            value="{{ old('tanggal_kejadian') }}"
+                                            max="{{ now()->toDateString() }}"
+                                        >
+                                    </div>
+                                    <div class="space-y-1.5">
+                                        <label class="block text-xs font-bold text-[#0B1020]" for="incidentLoc">
+                                            Lokasi Rinci Kejadian <span class="text-[#991B1B]">*</span>
                                         </label>
                                         <div class="relative">
-                                            <input class="w-full h-11 px-space-md rounded-lg bg-surface text-on-surface font-body-md text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" id="incidentDate" name="tanggal_kejadian" required="" type="date" value="{{ old('tanggal_kejadian') }}" max="{{ now()->toDateString() }}">
+                                            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4A5366] text-[20px]" aria-hidden="true">location_on</span>
+                                            <input
+                                                class="glass-input w-full min-h-[48px] pl-11 pr-4 text-sm placeholder:text-[#4A5366]"
+                                                id="incidentLoc"
+                                                name="lokasi"
+                                                required
+                                                type="text"
+                                                placeholder="Nama kantor / wilayah kejadian"
+                                                value="{{ old('lokasi') }}"
+                                            >
                                         </div>
                                     </div>
-                                    <!-- Location -->
-                                    <div class="space-y-space-xs">
-                                        <label class="block font-label-md text-label-md text-primary font-bold" for="incidentLoc">
-                                            Lokasi / Alamat Rinci Kejadian <span class="text-error">*</span>
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <label class="block text-xs font-bold text-[#0B1020]" for="fullDescription">
+                                            Uraian Lengkap Kejadian &amp; Fakta Lapangan <span class="text-[#991B1B]">*</span>
                                         </label>
-                                        <div class="relative">
-                                            <input class="w-full h-11 px-space-md rounded-lg bg-surface text-on-surface font-body-md text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary pl-10" id="incidentLoc" name="lokasi" required="" type="text" value="{{ old('lokasi') }}">
-                                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-                                        </div>
+                                        <span class="text-xs font-bold text-[#005EB8]" id="charCount">Karakter: 0 / 2000 (Min. 20)</span>
                                     </div>
+                                    <textarea
+                                        class="glass-input w-full p-4 text-sm placeholder:text-[#4A5366] leading-relaxed resize-y"
+                                        id="fullDescription"
+                                        name="uraian"
+                                        maxlength="2000"
+                                        required
+                                        rows="5"
+                                        placeholder="Jelaskan kronologi waktu, tempat, tindakan petugas, atau hambatan layanan yang Anda alami (minimal 20 karakter)..."
+                                    >{{ old('uraian', $prefill['chronology'] ?? '') }}</textarea>
                                 </div>
-                                <!-- Field 4: Textarea Kronologi Lengkap -->
-                                <div class="space-y-space-xs">
-                                    <div class="flex items-center justify-between">
-                                        <label class="block font-label-md text-label-md text-primary font-bold" for="fullDescription">
-                                            Uraian Lengkap Kejadian &amp;Fakta Lapangan <span class="text-error">*</span>
-                                        </label>
-                                        <span class="font-label-sm text-label-sm text-outline font-medium " id="charCount">Karakter: 0 / 2000</span>
-                                    </div>
-                                    <textarea class="w-full p-space-md rounded-lg bg-surface text-on-surface font-body-md text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed resize-y" id="fullDescription" name="uraian" maxlength="2000" required="" rows="5">{{ old('uraian', $prefill['chronology'] ?? '') }}</textarea>
-                                </div>
-                                <!-- Field 5: Interactive Anonymous Toggle Switch -->
-                                <div class="bg-surface-container-low p-space-md rounded-lg flex items-start sm:items-center justify-between gap-space-md">
-                                    <div class="flex items-start gap-space-sm">
-                                        <div class="p-2 rounded-lg bg-surface-container-lowest text-primary shadow-sm mt-0.5 sm:mt-0">
-                                            <span class="material-symbols-outlined text-[20px]">visibility_off</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-title-md text-title-md text-on-surface font-bold block">Kirim Sebagai Pengaduan Anonim</span>
-                                            <p class="font-body-sm text-body-sm text-on-surface-variant max-w-lg">(Nama dan kontak Anda tidak akan dibagikan kepada pihak terlapor).</p>
-                                        </div>
-                                    </div>
-                                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                                        <input class="sr-only peer" id="anonToggle" name="is_anonim" value="1" type="checkbox" @checked(old('is_anonim'))>
-                                        <div class="w-12 h-7 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-sm"></div>
-                                    </label>
-                                </div>
-                                <div id="identityFields" class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-                                    <div class="space-y-space-xs">
-                                        <label class="block font-label-md text-label-md text-primary font-bold" for="reporterName">Nama Pelapor</label>
-                                        <input class="w-full h-11 px-space-md rounded-lg bg-surface text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" id="reporterName" name="nama_pelapor" type="text" value="{{ old('nama_pelapor') }}">
-                                    </div>
-                                    <div class="space-y-space-xs">
-                                        <label class="block font-label-md text-label-md text-primary font-bold" for="reporterContact">Kontak (opsional)</label>
-                                        <input class="w-full h-11 px-space-md rounded-lg bg-surface text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary" id="reporterContact" name="kontak" type="text" value="{{ old('kontak') }}">
-                                    </div>
-                                </div>
-                                <!-- Field 6: Upload -->
-                                <div class="space-y-space-sm">
-                                    <div class="flex items-center justify-between">
-                                        <label class="block font-label-md text-label-md text-primary font-bold">Unggah Berkas Bukti &amp; Dokumentasi</label>
-                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Maksimal 10 MB (PDF, JPG, PNG)</span>
-                                    </div>
-                                    <div class="p-space-lg rounded-xl bg-surface-container-low/60 hover:bg-surface-container-low transition-all text-center cursor-pointer group flex flex-col items-center justify-center" onclick="document.getElementById('fileInput').click()">
-                                        <div class="w-12 h-12 rounded-full bg-surface-container-lowest text-primary shadow-sm flex items-center justify-center mb-space-xs group-hover:scale-105 transition-transform">
-                                            <span class="material-symbols-outlined text-[28px]">cloud_upload</span>
-                                        </div>
-                                        <p class="font-title-md text-title-md text-on-surface font-semibold">Klik untuk memilih berkas bukti</p>
-                                        <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">PDF, JPG, atau PNG, maksimal 10 MB per berkas</p>
-                                    </div>
-                                    <input id="fileInput" name="lampiran[]" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="sr-only">
-                                    <ul id="fileList" class="list-disc pl-5 text-body-sm text-on-surface-variant"></ul>
-                                </div>
-                                <!-- Field 7: Integrity Consent Checkbox -->
-                                <div class="pt-space-xs">
-                                    <label class="flex items-start gap-space-sm cursor-pointer select-none">
-                                        <input class="mt-1 w-5 h-5 rounded text-primary focus:ring-primary accent-primary cursor-pointer" id="consentCheck" name="persetujuan" value="1" required="" type="checkbox">
-                                        <span class="font-body-md text-body-md text-on-surface">Saya menyatakan bahwa informasi yang disampaikan adalah benar dan dapat dipertanggungjawabkan untuk ditindaklanjuti demi perbaikan pelayanan publik.</span>
-                                    </label>
-                                </div>
-                                <!-- Field 8: Action Submission Button -->
-                                <div class="pt-space-sm flex flex-col sm:flex-row items-center gap-space-md justify-between">
-                                    <div class="flex items-center gap-space-xs text-outline font-body-sm text-body-sm">
-                                        <span class="material-symbols-outlined text-[18px]">find_replace</span>
-                                        <span class="">Laporan akan diperiksa oleh petugas verifikator</span>
-                                    </div>
-                                    <button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-sm bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg px-space-xl py-3 rounded-lg shadow-md transition-all active:scale-[0.99] font-bold" type="submit">
-                                        <span class="">Kirim Pengaduan</span>
-                                        <span class="material-symbols-outlined text-[20px]">send</span>
+
+                                <div class="flex flex-col min-[481px]:flex-row items-stretch min-[481px]:items-center justify-between gap-2.5 pt-2">
+                                    <button
+                                        type="button"
+                                        data-prev-step="1"
+                                        class="btn-glass !min-h-[44px] px-5 text-xs inline-flex items-center justify-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
+                                        <span>Kembali ke Identitas</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-next-step="3"
+                                        class="btn-primary px-6 text-sm inline-flex items-center justify-center gap-2"
+                                    >
+                                        <span>Lanjut: Bukti &amp; Kirim</span>
+                                        <span class="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span>
                                     </button>
                                 </div>
-                            </form>
-                            <!-- Civic Assistance Helpline Footnote -->
-                        </div>
-                        <!-- RIGHT: SUCCESS STATE FRAME (Dedicated Elegant Preview Frame) (5 Cols) -->
-                        <div class="lg:col-span-5 space-y-space-lg">
-                            @if (session('ticket'))
-                            <div class="bg-surface-container-lowest rounded-2xl shadow-xl overflow-hidden relative">
-                                <div class="h-3 bg-gradient-to-r from-primary via-secondary to-primary-fixed"></div>
-                                <div class="p-space-xl space-y-space-lg">
-                                    <div class="text-center space-y-space-xs">
-                                        <div class="w-20 h-20 rounded-full bg-secondary-container/50 text-secondary mx-auto flex items-center justify-center mb-space-sm shadow-inner relative">
-                                            <span class="material-symbols-outlined text-[44px]">check_circle</span>
-                                            <span class="absolute inset-0 rounded-full bg-secondary/10 animate-ping"></span>
-                                        </div>
-                                        <span class="inline-block px-3 py-1 rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-sm text-label-sm uppercase tracking-wider font-extrabold">Berhasil Dikirim</span>
-                                        <h3 class="font-headline-lg text-headline-lg text-on-surface font-semibold tracking-tight">Pengaduan Berhasil Dikirim!</h3>
-                                        <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mx-auto leading-relaxed">Laporan Anda telah tercatat dan akan diperiksa oleh petugas verifikator.</p>
+                            </div>
+
+                            <!-- STEP 3: UNGGAH BUKTI & KIRIM -->
+                            <div id="step-content-3" role="tabpanel" aria-labelledby="tab-step-3" class="step-section hidden flex-col gap-5">
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <label for="fileInput" class="block text-xs font-bold text-[#0B1020]">
+                                            Unggah Berkas Bukti &amp; Dokumentasi (Opsional)
+                                        </label>
+                                        <span class="text-xs font-semibold text-[#4A5366]">Maks. 5 berkas @ 10 MB (PDF, JPG, PNG)</span>
                                     </div>
-                                    <div class="bg-surface-container-low rounded-xl p-space-lg space-y-space-md relative overflow-hidden">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-bold">Bukti Registrasi</span>
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-bold shadow-sm">
-                                                <span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span>Diterima
-                                            </span>
+
+                                    <button
+                                        type="button"
+                                        id="uploadTriggerBtn"
+                                        class="press-scale w-full p-6 rounded-[20px] bg-[#F4F7FC] hover:bg-[#E6F0FC]/60 border-2 border-dashed border-[#6C7B93] hover:border-[#0066CC] transition-all text-center flex flex-col items-center justify-center gap-2"
+                                    >
+                                        <div class="w-12 h-12 rounded-full bg-white text-[#0066CC] border border-[#DCE4F0] flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-[26px]" aria-hidden="true">cloud_upload</span>
                                         </div>
-                                        <div class="space-y-1">
-                                            <div class="font-label-sm text-label-sm text-on-surface-variant font-medium">Nomor Tiket Pengaduan:</div>
-                                            <div class="flex items-center justify-between bg-surface-container-lowest p-space-sm px-space-md rounded-lg shadow-sm">
-                                                <span class="font-title-lg text-title-lg text-primary font-bold tracking-wider font-mono text-[20px]" id="ticketNumber">{{ session('ticket') }}</span>
-                                                <button type="button" class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-primary font-label-md text-label-md font-bold transition-all active:scale-95" id="copyBtn" onclick="copyTicketCode()">
-                                                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
-                                                    <span id="copyBtnLabel">Salin</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-start gap-space-xs text-on-surface-variant font-body-sm text-body-sm bg-surface-container-lowest/60 p-space-sm rounded-lg">
-                                            <span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">info</span>
-                                            <p><strong>Instruksi Pelapor:</strong> Simpan nomor tiket ini untuk melacak perkembangan pengaduan Anda pada menu Lacak Tiket tanpa perlu membuat akun.</p>
-                                        </div>
-                                        <div class="pt-space-xs space-y-1.5 font-label-sm text-label-sm text-on-surface-variant">
-                                            <div class="flex justify-between py-1 border-b border-outline-variant/20">
-                                                <span>Waktu Pengiriman:</span>
-                                                <span class="font-semibold text-on-surface">{{ session('submitted_at') }}</span>
-                                            </div>
-                                            <div class="flex justify-between py-1">
-                                                <span>Status Awal:</span>
-                                                <span class="font-semibold text-secondary">Diterima</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="space-y-space-sm">
-                                        <a class="w-full inline-flex items-center justify-center gap-space-sm bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg py-3 px-space-lg rounded-lg shadow-sm transition-all font-bold" href="{{ route('complaint.track') }}">
-                                            <span class="material-symbols-outlined text-[20px]">search_check</span>
-                                            <span>Lacak Status Tiket Sekarang</span>
-                                        </a>
-                                    </div>
+                                        <span class="text-sm font-bold text-[#0B1020]">Klik untuk memilih berkas bukti</span>
+                                        <span class="text-xs text-[#4A5366]">Format didukung: PDF, JPG, PNG</span>
+                                    </button>
+
+                                    <input id="fileInput" name="lampiran[]" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" class="sr-only">
+                                    <ul id="fileList" class="space-y-2"></ul>
+                                </div>
+
+                                <div class="surface-nested p-4">
+                                    <label class="flex items-start gap-3 cursor-pointer select-none" for="consentCheck">
+                                        <input
+                                            class="mt-0.5 w-5 h-5 rounded text-[#0066CC] focus:ring-[#0066CC] accent-[#0066CC] shrink-0"
+                                            id="consentCheck"
+                                            name="persetujuan"
+                                            value="1"
+                                            required
+                                            type="checkbox"
+                                            @checked(old('persetujuan'))
+                                        >
+                                        <span class="text-xs min-[641px]:text-sm text-[#0B1020] leading-relaxed">
+                                            Saya menyatakan bahwa informasi yang disampaikan adalah benar dan dapat dipertanggungjawabkan untuk ditindaklanjuti demi perbaikan pelayanan publik.
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div class="pt-2 flex flex-col min-[641px]:flex-row items-stretch min-[641px]:items-center justify-between gap-3">
+                                    <button
+                                        type="button"
+                                        data-prev-step="2"
+                                        class="btn-glass !min-h-[44px] px-5 text-xs inline-flex items-center justify-center gap-1.5"
+                                    >
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
+                                        <span>Kembali ke Rincian</span>
+                                    </button>
+
+                                    <button
+                                        id="submitBtn"
+                                        type="submit"
+                                        class="btn-primary px-7 text-sm inline-flex items-center justify-center gap-2"
+                                    >
+                                        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">send</span>
+                                        <span id="submitBtnLabel">Kirim Pengaduan</span>
+                                    </button>
                                 </div>
                             </div>
-                            @else
-                            <div class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm text-on-surface-variant">
-                                Nomor tiket Anda akan muncul di sini setelah laporan berhasil dikirim.
-                            </div>
-                            @endif
-                            <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm space-y-space-md">
-                                <h4 class="font-title-md text-title-md text-on-surface font-bold flex items-center gap-space-xs">
-                                    <span class="material-symbols-outlined text-primary text-[20px]">timeline</span>Tahapan Penanganan Pasca Pengiriman
-                                </h4>
-                                <div class="space-y-space-md relative pl-6 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-high">
-                                    <div class="relative">
-                                        <div class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-secondary ring-4 ring-secondary-container"></div>
-                                        <div class="font-label-md text-label-md text-on-surface font-bold">1. Verifikasi Kelayakan Berkas</div>
-                                        <div class="font-body-sm text-body-sm text-on-surface-variant">Pemeriksaan kelengkapan dokumen dan indikasi pelanggaran administratif.</div>
+                        </form>
+                    </section>
+
+                    <!-- RIGHT COLUMN: Ticket Success Frame & Post-Submission Stages (5 Columns) -->
+                    <aside class="min-[1008px]:col-span-5 flex flex-col gap-6 min-[1008px]:sticky min-[1008px]:top-24">
+                        @if (session('ticket'))
+                            <div id="ticketSuccessCard" class="surface-card relative overflow-hidden border-2 border-[#0F766E]/45 p-6 min-[641px]:p-7 space-y-5">
+                                <span class="absolute inset-x-0 top-0 h-1 bg-[#0F766E]" aria-hidden="true"></span>
+                                <div class="text-center space-y-2.5">
+                                    <div class="w-16 h-16 rounded-full bg-[#0F766E] text-white mx-auto flex items-center justify-center shadow-[0_8px_20px_rgba(15,118,110,0.28)]">
+                                        <span class="material-symbols-outlined text-[36px]" aria-hidden="true">check_circle</span>
                                     </div>
-                                    <div class="relative">
-                                        <div class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-outline-variant"></div>
-                                        <div class="font-label-md text-label-md text-on-surface-variant font-semibold">2. Klarifikasi ke Instansi Terlapor</div>
-                                        <div class="font-body-sm text-body-sm text-outline">Penyampaian telaah ke pimpinan unit kerja kelurahan untuk klarifikasi resmi.</div>
+                                    <span class="inline-block px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-xs uppercase tracking-wider font-extrabold">
+                                        Berhasil Dikirim
+                                    </span>
+                                    <h2 class="text-xl font-extrabold text-[#0B1020]">Pengaduan Berhasil Dikirim!</h2>
+                                    <p class="text-xs min-[641px]:text-sm text-[#4A5366] leading-relaxed">
+                                        Laporan Anda telah tercatat dan akan diperiksa oleh petugas verifikator BHIMA.
+                                    </p>
+                                </div>
+
+                                <div class="surface-nested p-4 space-y-3">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-xs uppercase tracking-wider text-[#4A5366] font-bold">Bukti Registrasi</span>
+                                        <span class="px-2.5 py-0.5 rounded-full bg-[#E6F0FC] text-[#005EB8] text-xs font-bold">Diterima</span>
                                     </div>
-                                    <div class="relative">
-                                        <div class="absolute -left-6 top-1 w-3 h-3 rounded-full bg-outline-variant"></div>
-                                        <div class="font-label-md text-label-md text-on-surface-variant font-semibold">3. Rekomendasi Tindakan &amp; Penyelesaian</div>
-                                        <div class="font-body-sm text-body-sm text-outline">Penerbitan rekomendasi sanksi, perbaikan prosedur loket, dan penyelesaian laporan.</div>
+
+                                    <div>
+                                        <span class="text-xs text-[#4A5366] font-medium block mb-1">Nomor Tiket Pengaduan:</span>
+                                        <div class="flex items-center justify-between gap-2 bg-white p-3 rounded-[14px] border border-[#CBD5E4]">
+                                            <span class="text-lg min-[380px]:text-xl text-[#005EB8] font-extrabold font-mono tracking-wider select-all" id="ticketNumber">{{ session('ticket') }}</span>
+                                            <button
+                                                type="button"
+                                                id="copyBtn"
+                                                class="btn-glass !min-h-[44px] px-3.5 text-xs inline-flex items-center gap-1.5 shrink-0"
+                                            >
+                                                <span class="material-symbols-outlined text-[16px] text-[#0066CC]" aria-hidden="true">content_copy</span>
+                                                <span id="copyBtnLabel">Salin</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5 text-xs text-[#4A5366] pt-1">
+                                        <div class="flex justify-between gap-2 py-1 border-b border-[#DCE4F0]">
+                                            <span>Waktu Pengiriman:</span>
+                                            <span class="font-bold text-[#0B1020]">{{ session('submitted_at') }}</span>
+                                        </div>
+                                        <div class="flex justify-between gap-2 py-1">
+                                            <span>Status Awal:</span>
+                                            <span class="font-bold text-[#0F766E]">Diterima</span>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <div class="p-3.5 rounded-[16px] bg-[#E6F0FC] border border-[#BFD7F5] flex items-start gap-2.5 text-xs text-[#0B1020]">
+                                    <span class="material-symbols-outlined text-[#005EB8] text-[18px] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                                    <p class="leading-relaxed">
+                                        <strong>Instruksi Pelapor:</strong> Simpan nomor tiket ini untuk memantau status pengaduan melalui menu Lacak Tiket tanpa perlu membuat akun.
+                                    </p>
+                                </div>
+
+                                <a
+                                    href="{{ route('complaint.track', ['tiket' => session('ticket')]) }}"
+                                    class="btn-primary w-full px-6 text-sm flex items-center justify-center gap-2"
+                                >
+                                    <span class="material-symbols-outlined text-[20px]" aria-hidden="true">manage_search</span>
+                                    <span>Lacak Status Tiket Sekarang</span>
+                                </a>
                             </div>
+                        @else
+                            <div class="surface-card p-6 space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-11 h-11 rounded-[16px] bg-[#E6F0FC] text-[#005EB8] flex items-center justify-center shrink-0">
+                                        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">confirmation_number</span>
+                                    </div>
+                                    <h2 class="text-base font-bold text-[#0B1020]">Bukti Nomor Tiket Otomatis</h2>
+                                </div>
+                                <p class="text-sm text-[#4A5366] leading-relaxed">
+                                    Nomor tiket Anda (<span class="font-mono font-bold text-[#005EB8]">BHM-YYYY-XXXX</span>) akan langsung diterbitkan di sini setelah formulir pengaduan selesai dikirim.
+                                </p>
+                                <a href="{{ route('complaint.track') }}" class="min-h-[44px] inline-flex items-center gap-1 text-xs font-bold text-[#005EB8] hover:underline">
+                                    <span>Sudah punya tiket? Cek status di sini</span>
+                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">chevron_right</span>
+                                </a>
+                            </div>
+                        @endif
+
+                        <!-- 3-Stage Post Submission Timeline -->
+                        <div class="surface-card reveal-on-scroll p-6 min-[641px]:p-7 space-y-5">
+                            <div class="flex items-center gap-2 text-[#0B1020]">
+                                <span class="material-symbols-outlined text-[#0066CC] text-[22px]" aria-hidden="true">timeline</span>
+                                <h2 class="text-base min-[641px]:text-lg font-bold">Tahapan Penanganan Pasca Pengiriman</h2>
+                            </div>
+
+                            <ol class="space-y-4">
+                                <li class="flex items-start gap-3">
+                                    <span class="w-7 h-7 rounded-full bg-[#0F766E] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-sm font-bold text-[#0B1020]">Verifikasi Kelayakan Berkas</h3>
+                                        <p class="text-xs text-[#4A5366] leading-relaxed">Pemeriksaan kelengkapan uraian kejadian, lampiran bukti, dan indikasi pelanggaran administratif.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="w-7 h-7 rounded-full bg-[#E6F0FC] border border-[#BFD7F5] text-[#005EB8] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-sm font-bold text-[#0B1020]">Klarifikasi ke Instansi Terlapor</h3>
+                                        <p class="text-xs text-[#4A5366] leading-relaxed">Disposisi telaah ke unit kerja atau inspektorat terkait untuk permintaan klarifikasi resmi.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="w-7 h-7 rounded-full bg-[#E6F0FC] border border-[#BFD7F5] text-[#005EB8] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-sm font-bold text-[#0B1020]">Rekomendasi Tindakan &amp; Penyelesaian</h3>
+                                        <p class="text-xs text-[#4A5366] leading-relaxed">Penerbitan rekomendasi sanksi disiplin, perbaikan prosedur loket, dan pemulihan layanan warga.</p>
+                                    </div>
+                                </li>
+                            </ol>
                         </div>
-                    </div>
+                    </aside>
                 </div>
-                <!-- Inline Client Interaction Logic -->
-                <script>
-                    function copyTicketCode() {
-                        const ticketText = document.getElementById('ticketNumber').innerText;
-                        const copyLabel = document.getElementById('copyBtnLabel');
-
-                        navigator.clipboard.writeText(ticketText).then( () => {
-                            copyLabel.innerText = "Tersalin!";
-                            setTimeout( () => {
-                                copyLabel.innerText = "Salin";
-                            }
-                            , 2200);
-                        }
-                        ).catch( () => {
-                            copyLabel.innerText = "Tersalin!";
-                            setTimeout( () => {
-                                copyLabel.innerText = "Salin";
-                            }
-                            , 2200);
-                        }
-                        );
-                    }
-
-                    const anon = document.getElementById('anonToggle');
-                    const identity = document.getElementById('identityFields');
-                    function syncIdentity() { identity.classList.toggle('hidden', anon.checked); }
-                    anon.addEventListener('change', syncIdentity);
-                    syncIdentity();
-
-                    const desc = document.getElementById('fullDescription');
-                    const counter = document.getElementById('charCount');
-                    function syncCount() { counter.textContent = 'Karakter: ' + desc.value.length + ' / 2000'; }
-                    desc.addEventListener('input', syncCount);
-                    syncCount();
-
-                    const fileInput = document.getElementById('fileInput');
-                    const fileList = document.getElementById('fileList');
-                    fileInput.addEventListener('change', () => {
-                        fileList.innerHTML = '';
-                        Array.from(fileInput.files).forEach(f => {
-                            const li = document.createElement('li');
-                            li.textContent = f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB)';
-                            fileList.appendChild(li);
-                        });
-                    });
-                </script>
             </div>
         </main>
-        <footer class="w-full bg-surface-container-low text-on-surface-variant">
-            <div class="max-w-7xl mx-auto px-margin py-space-xl grid grid-cols-1 md:grid-cols-4 gap-space-xl">
-                <div class="space-y-space-sm md:col-span-2">
-                    <div class="flex items-center gap-space-sm">
-                        <div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
-                            <span class="material-symbols-outlined text-[20px]">balance</span>
-                        </div>
-                        <span class="font-title-lg text-title-lg text-on-surface font-bold">BHIMA</span>
-                    </div>
-                    <p class="font-body-md text-body-md text-on-surface-variant max-w-md">Sistem portal integrasi advokasi, pengaduan publik, dan transparansi informasi hukum masyarakat yang diselenggarakan secara adil, aman, dan akuntabel.</p>
+
+        @include('partials.liquid-footer')
+        @include('partials.liquid-bottom-nav', ['activeNav' => 'formulir-pengaduan'])
+
+        <!-- Accessible Pre-Submission Confirmation Modal (Clear Liquid Glass + Backdrop Blur) -->
+        <x-confirm-dialog
+            id="confirm-submit-complaint-dialog"
+            title="Konfirmasi Pengiriman Pengaduan"
+            description="Periksa ringkasan laporan Anda di bawah ini sebelum diteruskan ke tim verifikator BHIMA."
+            confirm-label="Ya, Kirim Pengaduan"
+            cancel-label="Periksa Kembali"
+            icon="send"
+            tone="primary"
+        >
+            <dl class="surface-nested grid grid-cols-1 min-[481px]:grid-cols-2 gap-3 p-4 text-xs">
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Mode Pelaporan</dt>
+                    <dd id="confirmSummaryMode" class="font-bold text-[#0B1020] mt-0.5">-</dd>
                 </div>
                 <div>
-                    <h4 class="font-title-md text-title-md text-on-surface mb-space-sm">Tautan Penting</h4>
-                    <ul class="space-y-space-xs font-body-md text-body-md">
-                        <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="layanan" href="#">Layanan Publik</a>
-                        </li>
-                        <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="peraturan" href="#">Jaringan Dokumentasi Peraturan</a>
-                        </li>
-                        <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="lacak-tiket" href="{{ route('complaint.track') }}">Pelacakan Pengaduan</a>
-                        </li>
-                        <li class="">
-                            <a class="hover:text-on-surface transition-colors" data-path="formulir-pengaduan" href="{{ route('complaint.create') }}">Formulir Lapor</a>
-                        </li>
-                    </ul>
+                    <dt class="text-[#4A5366] font-semibold">Kategori Pengaduan</dt>
+                    <dd id="confirmSummaryCategory" class="font-bold text-[#0B1020] mt-0.5">-</dd>
                 </div>
                 <div>
-                    <h4 class="font-title-md text-title-md text-on-surface mb-space-sm">Pusat Layanan</h4>
-                    <p class="font-body-md text-body-md">
-                        Gedung Pelayanan Terpadu<br>Email: pengaduan@bhima.go.id<br>Pelayanan Senin – Jumat: 08.00 – 16.00 WIB
-                    </p>
+                    <dt class="text-[#4A5366] font-semibold">Instansi Terlapor</dt>
+                    <dd id="confirmSummaryEntity" class="font-bold text-[#0B1020] mt-0.5">-</dd>
                 </div>
-            </div>
-            <div class="max-w-7xl mx-auto px-margin py-space-md border-t border-outline-variant/30 text-center font-label-md text-label-md text-on-surface-variant">© 2026 Portal Layanan Publik BHIMA. Hak Cipta Dilindungi Undang-Undang.</div>
-        </footer>
-    </body>
+                <div>
+                    <dt class="text-[#4A5366] font-semibold">Lokasi Kejadian</dt>
+                    <dd id="confirmSummaryLocation" class="font-bold text-[#0B1020] mt-0.5">-</dd>
+                </div>
+            </dl>
+        </x-confirm-dialog>
+    </div>
+
+    <script>
+        (function () {
+            const form = document.getElementById('complaintForm');
+            if (!form) return;
+
+            const activeTabClass = 'press-scale min-h-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center justify-center min-[481px]:justify-start gap-2 transition-colors bg-[#0066CC] text-white shadow-[0_4px_12px_rgba(0,102,204,0.22)]';
+            const inactiveTabClass = 'press-scale min-h-[44px] px-3.5 py-2 rounded-full text-xs font-bold flex items-center justify-center min-[481px]:justify-start gap-2 transition-colors text-[#333E52] hover:text-[#0B1020] hover:bg-white/70';
+
+            let currentStep = Number(form.dataset.initialStep || 1);
+
+            function switchStep(step) {
+                currentStep = step;
+                for (let i = 1; i <= 3; i++) {
+                    const panel = document.getElementById('step-content-' + i);
+                    const tab = document.getElementById('tab-step-' + i);
+                    if (!panel || !tab) continue;
+
+                    const active = i === step;
+                    panel.classList.toggle('hidden', !active);
+                    panel.classList.toggle('flex', active);
+                    tab.className = active ? activeTabClass : inactiveTabClass;
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+
+                    const numBadge = tab.querySelector('span:first-child');
+                    if (numBadge) {
+                        numBadge.className = active
+                            ? 'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 bg-white/25 text-white'
+                            : 'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 bg-[#E6F0FC] text-[#005EB8]';
+                    }
+                }
+            }
+
+            [1, 2, 3].forEach((stepNum) => {
+                document.getElementById('tab-step-' + stepNum)?.addEventListener('click', () => switchStep(stepNum));
+            });
+            form.querySelectorAll('[data-next-step]').forEach((btn) => {
+                btn.addEventListener('click', () => switchStep(Number(btn.dataset.nextStep)));
+            });
+            form.querySelectorAll('[data-prev-step]').forEach((btn) => {
+                btn.addEventListener('click', () => switchStep(Number(btn.dataset.prevStep)));
+            });
+
+            switchStep(currentStep);
+
+            // Privacy Mode Toggle (Anonim vs Data Terbuka)
+            const anonToggle = document.getElementById('anonToggle');
+            const btnAnon = document.getElementById('btnAnonMode');
+            const btnPublic = document.getElementById('btnPublicMode');
+            const identityFields = document.getElementById('identityFields');
+            const reporterName = document.getElementById('reporterName');
+            const anonTitle = document.getElementById('anonTitle');
+            const anonDesc = document.getElementById('anonDesc');
+            const anonIcon = document.getElementById('anonIcon');
+
+            function syncPrivacyMode(isAnon) {
+                if (!anonToggle || !btnAnon || !btnPublic) return;
+                anonToggle.checked = isAnon;
+                btnAnon.className = isAnon
+                    ? 'min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-[#0066CC] text-white shadow-sm'
+                    : 'min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors text-[#333E52] hover:text-[#0B1020]';
+                btnPublic.className = !isAnon
+                    ? 'min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-[#0066CC] text-white shadow-sm'
+                    : 'min-h-[44px] px-4 py-1.5 rounded-full text-xs font-bold transition-colors text-[#333E52] hover:text-[#0B1020]';
+
+                if (identityFields) {
+                    identityFields.classList.toggle('hidden', isAnon);
+                }
+                if (reporterName) {
+                    reporterName.required = !isAnon;
+                }
+                if (anonTitle && anonDesc && anonIcon) {
+                    if (isAnon) {
+                        anonTitle.textContent = 'Anonim Terlindungi';
+                        anonDesc.textContent = 'Nama dan kontak Anda tidak dibagikan ke pihak terlapor.';
+                        anonIcon.textContent = 'visibility_off';
+                        anonIcon.className = 'material-symbols-outlined text-[20px] text-[#0F766E]';
+                    } else {
+                        anonTitle.textContent = 'Data Terbuka (Dengan Identitas Pelapor)';
+                        anonDesc.textContent = 'Nama pelapor disertakan agar verifikator dapat menghubungi Anda.';
+                        anonIcon.textContent = 'badge';
+                        anonIcon.className = 'material-symbols-outlined text-[20px] text-[#0066CC]';
+                    }
+                }
+            }
+
+            btnAnon?.addEventListener('click', () => syncPrivacyMode(true));
+            btnPublic?.addEventListener('click', () => syncPrivacyMode(false));
+            syncPrivacyMode(Boolean(anonToggle?.checked));
+
+            // Character Counter for Uraian
+            const desc = document.getElementById('fullDescription');
+            const counter = document.getElementById('charCount');
+            function syncCount() {
+                if (!desc || !counter) return;
+                const len = desc.value.length;
+                counter.textContent = `Karakter: ${len} / 2000 (Min. 20)`;
+                counter.className = len < 20 ? 'text-xs font-bold text-[#991B1B]' : 'text-xs font-bold text-[#0F766E]';
+            }
+            desc?.addEventListener('input', syncCount);
+            syncCount();
+
+            // Multi-file Upload with Safe Remove
+            const fileInput = document.getElementById('fileInput');
+            const fileListEl = document.getElementById('fileList');
+            const uploadTriggerBtn = document.getElementById('uploadTriggerBtn');
+            let attachedFiles = [];
+
+            uploadTriggerBtn?.addEventListener('click', () => fileInput?.click());
+            uploadTriggerBtn?.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                uploadTriggerBtn.classList.add('border-[#0066CC]', 'bg-[#E6F0FC]');
+            });
+            uploadTriggerBtn?.addEventListener('dragleave', (event) => {
+                event.preventDefault();
+                uploadTriggerBtn.classList.remove('border-[#0066CC]', 'bg-[#E6F0FC]');
+            });
+            uploadTriggerBtn?.addEventListener('drop', (event) => {
+                event.preventDefault();
+                uploadTriggerBtn.classList.remove('border-[#0066CC]', 'bg-[#E6F0FC]');
+                const dropped = Array.from(event.dataTransfer?.files || []).slice(0, 5);
+                if (dropped.length > 0) {
+                    attachedFiles = dropped;
+                    syncFileList();
+                }
+            });
+
+            function syncFileList() {
+                if (!fileListEl || !fileInput) return;
+                const dt = new DataTransfer();
+                attachedFiles.forEach((f) => dt.items.add(f));
+                fileInput.files = dt.files;
+
+                fileListEl.innerHTML = '';
+                attachedFiles.forEach((f, idx) => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 rounded-[16px] bg-[#F4F7FC] border border-[#DCE4F0] flex items-center justify-between gap-3';
+
+                    const info = document.createElement('div');
+                    info.className = 'min-w-0';
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'text-xs font-bold text-[#0B1020] block truncate';
+                    nameSpan.textContent = f.name;
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.className = 'text-xs text-[#4A5366]';
+                    sizeSpan.textContent = (f.size / 1048576).toFixed(2) + ' MB';
+                    info.appendChild(nameSpan);
+                    info.appendChild(sizeSpan);
+
+                    const rmBtn = document.createElement('button');
+                    rmBtn.type = 'button';
+                    rmBtn.className = 'w-11 h-11 rounded-full bg-white hover:bg-[#FEE2E2] text-[#4A5366] hover:text-[#991B1B] border border-[#DCE4F0] flex items-center justify-center shrink-0 transition-colors';
+                    rmBtn.setAttribute('aria-label', 'Hapus berkas ' + f.name);
+                    rmBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>';
+                    rmBtn.addEventListener('click', () => {
+                        attachedFiles.splice(idx, 1);
+                        syncFileList();
+                    });
+
+                    li.appendChild(info);
+                    li.appendChild(rmBtn);
+                    fileListEl.appendChild(li);
+                });
+            }
+
+            fileInput?.addEventListener('change', () => {
+                attachedFiles = Array.from(fileInput.files || []).slice(0, 5);
+                syncFileList();
+            });
+
+            // Cross-Step Client Validation on Real POST Submit
+            const clientErrBox = document.getElementById('clientFormError');
+            const clientErrText = document.getElementById('clientFormErrorText');
+            const submitBtn = document.getElementById('submitBtn');
+            const submitLabel = document.getElementById('submitBtnLabel');
+
+            function showClientError(message, step, focusEl) {
+                if (clientErrBox && clientErrText) {
+                    clientErrText.textContent = message;
+                    clientErrBox.hidden = false;
+                }
+                switchStep(step);
+                focusEl?.focus();
+            }
+
+            form.addEventListener('submit', (event) => {
+                if (clientErrBox) clientErrBox.hidden = true;
+
+                if (!anonToggle?.checked && (!reporterName?.value?.trim())) {
+                    event.preventDefault();
+                    showClientError('Isi Nama Pelapor pada Langkah 1 atau pilih mode Anonim.', 1, reporterName);
+                    return;
+                }
+
+                const cat = document.getElementById('categorySelect');
+                if (!cat?.value) {
+                    event.preventDefault();
+                    showClientError('Pilih Kategori Pokok Pengaduan pada Langkah 2.', 2, cat);
+                    return;
+                }
+
+                const entity = document.getElementById('reportedEntity');
+                if (!entity?.value?.trim()) {
+                    event.preventDefault();
+                    showClientError('Isi Pihak / Instansi Terlapor pada Langkah 2.', 2, entity);
+                    return;
+                }
+
+                const dateEl = document.getElementById('incidentDate');
+                if (!dateEl?.value) {
+                    event.preventDefault();
+                    showClientError('Pilih Tanggal Kejadian pada Langkah 2.', 2, dateEl);
+                    return;
+                }
+
+                const locEl = document.getElementById('incidentLoc');
+                if (!locEl?.value?.trim()) {
+                    event.preventDefault();
+                    showClientError('Isi Lokasi Kejadian pada Langkah 2.', 2, locEl);
+                    return;
+                }
+
+                const uraianVal = desc?.value?.trim() || '';
+                if (uraianVal.length < 20) {
+                    event.preventDefault();
+                    showClientError('Uraian lengkap kejadian pada Langkah 2 wajib minimal 20 karakter agar dapat ditelaah verifikator.', 2, desc);
+                    return;
+                }
+
+                const consent = document.getElementById('consentCheck');
+                if (!consent?.checked) {
+                    event.preventDefault();
+                    showClientError('Centang pernyataan kebenaran informasi sebelum mengirim pengaduan.', 3, consent);
+                    return;
+                }
+
+                const confirmDialog = document.getElementById('confirm-submit-complaint-dialog');
+                if (confirmDialog && typeof confirmDialog.showModal === 'function' && form.dataset.confirmedSubmit !== '1') {
+                    event.preventDefault();
+                    const modeEl = document.getElementById('confirmSummaryMode');
+                    const catSummaryEl = document.getElementById('confirmSummaryCategory');
+                    const entitySummaryEl = document.getElementById('confirmSummaryEntity');
+                    const locSummaryEl = document.getElementById('confirmSummaryLocation');
+                    if (modeEl) modeEl.textContent = anonToggle?.checked ? 'Anonim Terlindungi' : (reporterName?.value?.trim() || 'Data Terbuka');
+                    if (catSummaryEl) catSummaryEl.textContent = cat.value;
+                    if (entitySummaryEl) entitySummaryEl.textContent = entity.value.trim();
+                    if (locSummaryEl) locSummaryEl.textContent = locEl.value.trim();
+                    confirmDialog.showModal();
+                    return;
+                }
+
+                if (submitBtn && submitLabel) {
+                    submitBtn.disabled = true;
+                    submitLabel.textContent = 'Mengirim Pengaduan...';
+                }
+            });
+
+            document.getElementById('confirm-submit-complaint-dialog')?.addEventListener('bhima:dialog-result', (event) => {
+                if (!event.detail?.confirmed) return;
+                form.dataset.confirmedSubmit = '1';
+                if (submitBtn && submitLabel) {
+                    submitBtn.disabled = true;
+                    submitLabel.textContent = 'Mengirim Pengaduan...';
+                }
+                form.submit();
+            });
+
+            // Copy Ticket Button & Mobile Auto-Focus on Success Card
+            const successCard = document.getElementById('ticketSuccessCard');
+            if (successCard && window.innerWidth < 1008) {
+                successCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            document.getElementById('copyBtn')?.addEventListener('click', () => {
+                const ticketText = document.getElementById('ticketNumber')?.innerText?.trim();
+                const copyLabel = document.getElementById('copyBtnLabel');
+                if (!ticketText) return;
+                navigator.clipboard?.writeText(ticketText).catch(() => {});
+                if (copyLabel) {
+                    copyLabel.textContent = 'Tersalin!';
+                    setTimeout(() => {
+                        copyLabel.textContent = 'Salin';
+                    }, 2200);
+                }
+            });
+        })();
+    </script>
+</body>
 </html>
