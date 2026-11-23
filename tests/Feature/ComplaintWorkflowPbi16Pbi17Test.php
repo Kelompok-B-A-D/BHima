@@ -318,4 +318,126 @@ class ComplaintWorkflowPbi16Pbi17Test extends TestCase
             ->assertDontSee('Petugas Verifikator Rahasia')
             ->assertDontSee($followUpPayload['follow_up']['attachment']['path']);
     }
+
+    public function test_status_cannot_skip_disposition(): void
+    {
+        $verifier = $this->user();
+        $this->complaint('BHM-2026-0014', $verifier->id);
+        $this->actingAs($verifier)->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0014',
+            'action' => 'status',
+            'note' => 'Langsung selesai.',
+            'status' => 'Selesai',
+            'follow_up_summary' => 'Hasil.',
+        ])->assertUnprocessable();
+    }
+
+    public function test_completion_requires_follow_up_summary(): void
+    {
+        $verifier = $this->user();
+        $this->complaint('BHM-2026-0015', $verifier->id);
+        $this->actingAs($verifier);
+        $this->postJson('/internal/data/complaints', ['id' => 'BHM-2026-0015', 'action' => 'verify', 'note' => 'Lengkap.'])->assertOk();
+        $this->postJson('/internal/data/complaints', ['id' => 'BHM-2026-0015', 'action' => 'dispatch', 'note' => 'Disposisi.', 'agency' => 'Inspektorat'])->assertOk();
+        $this->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0015',
+            'action' => 'status',
+            'note' => 'Selesai.',
+            'status' => 'Selesai',
+        ])->assertUnprocessable()->assertJsonValidationErrors('follow_up_summary');
+
+        $this->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0015',
+            'action' => 'status',
+            'note' => 'Progres awal tindak lanjut.',
+            'status' => 'Dalam Proses',
+            'follow_up_summary' => 'Klarifikasi lapangan selesai dilaksanakan.',
+        ])->assertOk();
+
+        $this->postJson('/internal/data/complaints', [
+            'id' => 'BHM-2026-0015',
+            'action' => 'status',
+            'note' => 'Menutup laporan.',
+            'status' => 'Selesai',
+        ])->assertOk();
+
+        $payload = $this->payload('BHM-2026-0015');
+        $this->assertSame('Selesai', $payload['status']);
+        $this->assertSame('Klarifikasi lapangan selesai dilaksanakan.', $payload['follow_up']['summary']);
+    }
+
+    public function test_public_completeness_rejects_wrong_status_and_oversize_file(): void
+    {
+        Storage::fake('local');
+        $verifier = $this->user();
+        $this->complaint('BHM-2026-0016', $verifier->id, ['status' => 'Dalam Proses']);
+
+        $this->post('/lacak/BHM-2026-0016/lengkapi', [
+            'catatan' => 'Terlambat mengirim.',
+            'lampiran' => [UploadedFile::fake()->createWithContent('ktp.pdf', '%PDF-1.4')],
+        ])->assertSessionHasErrors('lampiran');
+
+        $this->complaint('BHM-2026-0017', $verifier->id, ['status' => 'Menunggu Kelengkapan']);
+        $this->post('/lacak/BHM-2026-0017/lengkapi', [
+            'catatan' => 'Berkas terlalu besar.',
+            'lampiran' => [UploadedFile::fake()->create('besar.pdf', 10241)],
+        ])->assertSessionHasErrors('lampiran.0');
+
+        $this->post('/lacak/BHM-2026-0017/lengkapi', [
+            'catatan' => 'Format tidak didukung.',
+            'lampiran' => [UploadedFile::fake()->createWithContent('script.txt', 'hello')],
+        ])->assertSessionHasErrors('lampiran.0');
+
+        $existing = [];
+        for ($i = 0; $i < 9; $i++) {
+            $existing[] = [
+                'name' => "bukti-{$i}.pdf",
+                'path' => "complaints/BHM-2026-0018/bukti-{$i}.pdf",
+                'mime' => 'application/pdf',
+                'size' => 100,
+            ];
+        }
+        $this->complaint('BHM-2026-0018', $verifier->id, [
+            'status' => 'Menunggu Kelengkapan',
+            'attachments' => $existing,
+        ]);
+
+        $this->post('/lacak/BHM-2026-0018/lengkapi', [
+            'catatan' => 'Melebihi batas total sepuluh berkas.',
+            'lampiran' => [
+                UploadedFile::fake()->createWithContent('a.pdf', '%PDF-1.4'),
+                UploadedFile::fake()->createWithContent('b.pdf', '%PDF-1.4'),
+            ],
+        ])->assertSessionHasErrors('lampiran');
+    }
+
+    public function test_terminal_statuses_reject_further_workflow_actions(): void
+    {
+        $verifier = $this->user();
+        $this->complaint('BHM-2026-0020', $verifier->id, ['status' => 'Ditolak']);
+        $this->complaint('BHM-2026-0021', $verifier->id, ['status' => 'Selesai']);
+        $this->actingAs($verifier);
+
+        foreach (['BHM-2026-0020', 'BHM-2026-0021'] as $ticket) {
+            $this->postJson('/internal/data/complaints', [
+                'id' => $ticket,
+                'action' => 'verify',
+                'note' => 'Mencoba buka ulang.',
+            ])->assertUnprocessable();
+
+            $this->postJson('/internal/data/complaints', [
+                'id' => $ticket,
+                'action' => 'dispatch',
+                'note' => 'Mencoba disposisi ulang.',
+                'agency' => 'Inspektorat',
+            ])->assertUnprocessable();
+
+            $this->postJson('/internal/data/complaints', [
+                'id' => $ticket,
+                'action' => 'status',
+                'note' => 'Mencoba ubah status.',
+                'status' => 'Dalam Proses',
+            ])->assertUnprocessable();
+        }
+    }
 }
