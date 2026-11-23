@@ -37,7 +37,7 @@
         <main id="portal-main-content" class="w-full pt-24 min-[641px]:pt-28 pb-10 min-[641px]:pb-14 bg-transparent relative min-h-[calc(100vh-280px)] stitch-print-full">
             <div class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 space-y-6">
                 <!-- Context Header Bar -->
-                <div class="surface-card flex flex-col min-[1008px]:flex-row min-[1008px]:items-center justify-between gap-4 p-5 min-[641px]:p-6">
+                <div class="surface-card hero-enter flex flex-col min-[1008px]:flex-row min-[1008px]:items-center justify-between gap-4 p-5 min-[641px]:p-6">
                     <div class="flex items-start min-[641px]:items-center gap-3.5 min-w-0">
                         <div class="w-12 h-12 rounded-[16px] bg-[#0066CC] flex items-center justify-center text-white shadow-[0_6px_16px_rgba(0,102,204,0.22)] shrink-0">
                             <span class="material-symbols-outlined text-[24px]" aria-hidden="true">gavel</span>
@@ -50,7 +50,7 @@
                                     <span>Aktif · Regulasi JDIH</span>
                                 </span>
                             </div>
-                            <p class="text-xs min-[641px]:text-sm text-[#4A5366] leading-relaxed">
+                            <p class="prose-measure text-sm text-[#4A5366] leading-relaxed">
                                 <strong class="text-[#0B1020]">Ruang Konsultasi Hukum Warga:</strong> Penelusuran pasal dan panduan prosedur otomatis berbasis {{ $knowledgeStats['documents'] }} dokumen JDIH dan SOP layanan resmi.
                             </p>
                         </div>
@@ -60,6 +60,8 @@
                         <button
                             type="button"
                             id="reset-session-btn"
+                            command="show-modal"
+                            commandfor="confirm-reset-session-dialog"
                             class="btn-glass !min-h-[44px] flex items-center justify-center gap-1.5 px-4 py-2 text-xs min-[641px]:text-sm"
                         >
                             <span class="material-symbols-outlined text-[18px] text-[#0066CC]" aria-hidden="true">restart_alt</span>
@@ -178,7 +180,7 @@
                                 <button
                                     type="button"
                                     data-scenario="Tetangga menggeser patok batas tanah pekarangan keluarga kami secara sepihak sejauh satu meter padahal kami memegang sertifikat hak milik (SHM) yang sah. Bagaimana prosedur mediasi sengketa batas tanah ini?"
-                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#CBD5E4] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#75849B] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
                                 >
                                     <span class="material-symbols-outlined text-[15px] text-[#0066CC]" aria-hidden="true">fence</span>
                                     <span>Sengketa batas tanah</span>
@@ -186,7 +188,7 @@
                                 <button
                                     type="button"
                                     data-scenario="Saya mengurus pembuatan KTP elektronik yang hilang di kantor pelayanan Disdukcapil, sudah membawa KK dan surat kehilangan kepolisian, tetapi oknum petugas meminta uang rokok Rp100.000 agar cepat selesai. Apa aturan hukumnya dan langkah yang harus saya lakukan?"
-                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#CBD5E4] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#75849B] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
                                 >
                                     <span class="material-symbols-outlined text-[15px] text-[#0F766E]" aria-hidden="true">badge</span>
                                     <span>Pungli pengurusan KTP-el</span>
@@ -194,7 +196,7 @@
                                 <button
                                     type="button"
                                     data-scenario="Adik saya mengalami kecelakaan dan dibawa ke IGD rumah sakit terdekat dalam keadaan gawat darurat, namun pihak rumah sakit meminta uang muka deposit Rp5 juta sebelum tindakan medis dan menolak kartu BPJS Kesehatan. Bagaimana aturannya?"
-                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#CBD5E4] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#75849B] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
                                 >
                                     <span class="material-symbols-outlined text-[15px] text-[#0066CC]" aria-hidden="true">medical_services</span>
                                     <span>Penolakan pasien darurat IGD</span>
@@ -202,7 +204,7 @@
                                 <button
                                     type="button"
                                     data-scenario="Saya bekerja di perusahaan selama 3 tahun, bulan ini di-PHK secara sepihak tanpa perundingan, gaji bulan terakhir belum dibayar, dan ijazah asli saya masih ditahan perusahaan. Apa hak hukum saya?"
-                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#CBD5E4] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#75849B] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
                                 >
                                     <span class="material-symbols-outlined text-[15px] text-[#1E3A8A]" aria-hidden="true">work</span>
                                     <span>PHK sepihak &amp; ijazah ditahan</span>
@@ -210,7 +212,7 @@
                                 <button
                                     type="button"
                                     data-scenario="Jalan kabupaten di desa kami rusak berlubang parah dan belum diberi rambu peringatan sehingga warga sering terjatuh saat malam hari, serta drainase jalan tersumbat menyebabkan banjir. Ke mana dan bagaimana cara melaporkannya?"
-                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#CBD5E4] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
+                                    class="quick-chip press-scale min-h-[44px] px-3.5 py-2 bg-white hover:bg-[#E6F0FC] text-[#0B1020] hover:text-[#005EB8] border border-[#75849B] rounded-full text-xs font-semibold transition-colors inline-flex items-center gap-1.5 shrink-0"
                                 >
                                     <span class="material-symbols-outlined text-[15px] text-[#0F766E]" aria-hidden="true">add_road</span>
                                     <span>Jalan rusak &amp; drainase banjir</span>
@@ -272,7 +274,7 @@
                         <!-- JDIH Document References Box -->
                         <div
                             id="jdih-reference-panel"
-                            class="surface-card min-[641px]:col-span-2 min-[1008px]:col-span-1 p-5 min-[641px]:p-6 space-y-4 scroll-mt-24"
+                            class="surface-card hero-enter hero-enter-1 min-[641px]:col-span-2 min-[1008px]:col-span-1 p-5 min-[641px]:p-6 space-y-4 scroll-mt-24"
                         >
                             <div class="flex items-start justify-between gap-2 pb-3 border-b border-[#DCE4F0]">
                                 <div>
@@ -386,7 +388,7 @@
                         <!-- POSBAKUM Legal Aid Desk Card (Zero Gradient) -->
                         <div
                             id="posbakum-panel"
-                            class="surface-card relative overflow-hidden p-5 min-[641px]:p-6 flex flex-col justify-between gap-4 h-full scroll-mt-24"
+                            class="surface-card reveal-on-scroll relative overflow-hidden p-5 min-[641px]:p-6 flex flex-col justify-between gap-4 h-full scroll-mt-24"
                         >
                             <span class="absolute inset-x-0 top-0 h-1 bg-[#0F766E]" aria-hidden="true"></span>
                             <div class="space-y-3.5">
@@ -429,7 +431,7 @@
                         </div>
 
                         <!-- Real-Time Index Coverage Card (Solid Ink Blue #1E3A8A) -->
-                        <div class="hero-dark-scene rounded-[28px] bg-[#1E3A8A] text-white p-5 min-[641px]:p-6 flex flex-col justify-between gap-4 shadow-[0_14px_34px_rgba(20,30,80,0.16)] h-full">
+                        <div class="hero-dark-scene reveal-on-scroll rounded-[28px] bg-[#1E3A8A] text-white p-5 min-[641px]:p-6 flex flex-col justify-between gap-4 shadow-[0_14px_34px_rgba(20,30,80,0.16)] h-full">
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-[#F2D8B3] uppercase tracking-wider font-bold">Integritas Indeks Regulasi</span>
@@ -457,6 +459,22 @@
 
         @include('partials.liquid-footer')
         @include('partials.liquid-bottom-nav', ['activeNav' => 'asisten-hukum'])
+
+        <!-- Accessible Confirmation Modal Dialog (Clear Liquid Glass + Backdrop Blur) -->
+        <x-confirm-dialog
+            id="confirm-reset-session-dialog"
+            title="Mulai Topik Konsultasi Baru?"
+            description="Riwayat percakapan pada layar saat ini akan dibersihkan dan sesi konsultasi baru akan dibuka. Pastikan Anda sudah menyalin atau mencetak catatan penting terlebih dahulu."
+            confirm-label="Ya, Mulai Topik Baru"
+            cancel-label="Batal"
+            icon="restart_alt"
+            tone="primary"
+        >
+            <div class="surface-nested p-3.5 text-xs text-[#333E52] flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-[18px] text-[#0066CC] shrink-0 mt-0.5" aria-hidden="true">info</span>
+                <span>Tekan tombol <strong>Esc</strong> atau klik di luar jendela dialog ini untuk menutup tanpa menghapus percakapan.</span>
+            </div>
+        </x-confirm-dialog>
     </div>
 </body>
 </html>

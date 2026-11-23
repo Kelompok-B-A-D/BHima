@@ -32,7 +32,7 @@
                     <div class="max-w-[1200px] mx-auto w-full flex flex-col pt-2 min-[1008px]:pt-6">
                         <!-- Asymmetric Hero Grid: Left Headline + Right Clear Glass UI Preview -->
                         <div class="grid grid-cols-1 min-[1008px]:grid-cols-12 gap-6 min-[1008px]:gap-8 items-end mb-8 min-[1008px]:mb-10">
-                            <div class="min-[1008px]:col-span-7 space-y-4">
+                            <div class="hero-enter min-[1008px]:col-span-7 space-y-4">
                                 <p class="text-xs uppercase tracking-[0.14em] text-[#F2D8B3] font-bold">
                                     Kanal Advokasi &amp; Transparansi Publik
                                 </p>
@@ -61,7 +61,7 @@
                             </div>
 
                             <!-- Clear Liquid Glass Preview Panel over Deep Ink Blue -->
-                            <div class="min-[1008px]:col-span-5 flex flex-col justify-end">
+                            <div class="hero-enter hero-enter-1 min-[1008px]:col-span-5 flex flex-col justify-end">
                                 <div class="liquid-glass--clear p-5 min-[641px]:p-6 rounded-[28px] text-white space-y-4">
                                     <div class="flex items-center justify-between gap-3">
                                         <span class="text-xs uppercase tracking-wider font-bold text-[#F2D8B3]">Basis Pengetahuan Terindeks</span>
@@ -88,7 +88,7 @@
                         </div>
 
                         <!-- FLOATING CLEAR LIQUID GLASS SEARCH DOCK -->
-                        <div id="pencarian-regulasi" class="liquid-glass liquid-glass--strong w-full p-3.5 min-[641px]:p-4 rounded-[28px] scroll-mt-28 text-[#0B1020]">
+                        <div id="pencarian-regulasi" class="hero-enter hero-enter-2 liquid-glass liquid-glass--strong w-full p-3.5 min-[641px]:p-4 rounded-[28px] scroll-mt-28 text-[#0B1020]">
                             <form id="bhimaSearchForm" action="{{ route('consultation.search') }}" method="GET" class="flex flex-col min-[641px]:flex-row items-stretch min-[641px]:items-center gap-2.5">
                                 <div class="flex-1 flex flex-col min-w-0">
                                     <label for="bhimaSearchInput" class="sr-only">
@@ -124,7 +124,7 @@
                                     <button
                                         type="button"
                                         data-search-tag="Perekaman KTP Elektronik Gratis"
-                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#CBD5E4] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
+                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#75849B] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px] text-[#0066CC] shrink-0" aria-hidden="true">badge</span>
                                         <span class="truncate">Perekaman KTP</span>
@@ -132,7 +132,7 @@
                                     <button
                                         type="button"
                                         data-search-tag="Bebas Pungli & Pelaporan Saber Pungli"
-                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#CBD5E4] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
+                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#75849B] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px] text-[#0F766E] shrink-0" aria-hidden="true">gpp_good</span>
                                         <span class="truncate">Bebas Pungli</span>
@@ -140,7 +140,7 @@
                                     <button
                                         type="button"
                                         data-search-tag="Transparansi Dana & Keterbukaan Informasi"
-                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#CBD5E4] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
+                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#75849B] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px] text-[#1E3A8A] shrink-0" aria-hidden="true">account_balance</span>
                                         <span class="truncate">Transparansi Dana</span>
@@ -148,7 +148,7 @@
                                     <button
                                         type="button"
                                         data-search-tag="SOP Izin Usaha Mikro & Ketenagakerjaan"
-                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/80 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#CBD5E4] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
+                                        class="press-scale min-h-[44px] px-3.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-xs font-semibold text-[#0B1020] border border-[#75849B] transition-colors inline-flex items-center justify-center min-[641px]:justify-start gap-1.5"
                                     >
                                         <span class="material-symbols-outlined text-[16px] text-[#0F766E] shrink-0" aria-hidden="true">storefront</span>
                                         <span class="truncate">SOP Izin Usaha Mikro</span>
@@ -193,7 +193,7 @@
 
                 <!-- 2. WIDE PILL STATS BAR (DESIGN (1).md Section 8: 3 Real Numbers, Thin Dividers) -->
                 <section class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 pt-8 min-[641px]:pt-10 pb-6" aria-label="Ringkasan Cakupan Data BHIMA">
-                    <div class="surface-card !rounded-[28px] min-[641px]:!rounded-full px-6 py-5 min-[641px]:px-8 min-[641px]:py-5 grid grid-cols-1 min-[641px]:grid-cols-3 divide-y min-[641px]:divide-y-0 min-[641px]:divide-x divide-[#DCE4F0]">
+                    <div class="surface-card reveal-on-scroll !rounded-[28px] min-[641px]:!rounded-full px-6 py-5 min-[641px]:px-8 min-[641px]:py-5 grid grid-cols-1 min-[641px]:grid-cols-3 divide-y min-[641px]:divide-y-0 min-[641px]:divide-x divide-[#DCE4F0]">
                         <div class="pb-3.5 min-[641px]:pb-0 min-[641px]:pr-6 flex items-baseline justify-between min-[641px]:flex-col min-[641px]:items-center gap-1">
                             <span class="text-2xl min-[641px]:text-3xl font-extrabold text-[#0B1020] tabular-nums">{{ $knowledgeStats['jdih'] }}</span>
                             <span class="text-xs font-semibold text-[#4A5366]">Peraturan JDIH Terverifikasi</span>
@@ -210,10 +210,10 @@
                 </section>
 
                 <!-- 3. ASYMMETRIC BENTO SHORTCUT CARDS (5 + 7 + 12 cols, Clean Content Surfaces) -->
-                <section class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-4 pb-10 min-[641px]:pb-14" aria-label="Pintasan Layanan Utama">
+                <section class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-8 min-[641px]:py-10" aria-label="Pintasan Layanan Utama">
                     <div class="grid grid-cols-1 min-[641px]:grid-cols-2 min-[1008px]:grid-cols-12 gap-5 min-[1008px]:gap-6">
                         <!-- Card 1: Tanya Asisten Hukum (5 cols) -->
-                        <div class="surface-card min-[1008px]:col-span-5 p-6 min-[1008px]:p-7 flex flex-col justify-between">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[1008px]:col-span-5 p-6 min-[1008px]:p-7 flex flex-col justify-between">
                             <div>
                                 <div class="w-12 h-12 rounded-[16px] bg-[#E6F0FC] flex items-center justify-center text-[#005EB8] mb-5">
                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">gavel</span>
@@ -236,7 +236,7 @@
                         </div>
 
                         <!-- Card 2: Buat Pengaduan (7 cols - Primary Action Card) -->
-                        <div class="surface-card min-[1008px]:col-span-7 p-6 min-[1008px]:p-7 flex flex-col justify-between relative overflow-hidden">
+                        <div class="surface-card card-interactive reveal-on-scroll min-[1008px]:col-span-7 p-6 min-[1008px]:p-7 flex flex-col justify-between relative overflow-hidden">
                             <span class="absolute inset-x-0 top-0 h-1 bg-[#0F766E]" aria-hidden="true"></span>
                             <div>
                                 <div class="flex items-center justify-between gap-2 flex-wrap mb-5">
@@ -263,7 +263,7 @@
                         </div>
 
                         <!-- Card 3: Lacak Status Tiket (12 cols) -->
-                        <div class="surface-card min-[641px]:col-span-2 min-[1008px]:col-span-12 p-6 min-[1008px]:p-7 flex flex-col min-[1008px]:flex-row min-[1008px]:items-center justify-between gap-6">
+                        <div class="surface-card reveal-on-scroll min-[641px]:col-span-2 min-[1008px]:col-span-12 p-6 min-[1008px]:p-7 flex flex-col min-[1008px]:flex-row min-[1008px]:items-center justify-between gap-6">
                             <div class="min-[1008px]:max-w-xl">
                                 <div class="w-12 h-12 rounded-[16px] bg-[#E6F5F3] flex items-center justify-center text-[#0F766E] mb-4">
                                     <span class="material-symbols-outlined text-[24px]" aria-hidden="true">track_changes</span>
@@ -305,7 +305,7 @@
                 </section>
 
                 <!-- 4. PENGUMUMAN RESMI & RUJUKAN UTAMA (Asymmetric Bento 7x2 + 5 + 5) -->
-                <section id="pengumuman" class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-6 min-[641px]:py-8 scroll-mt-24">
+                <section id="pengumuman" class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-8 min-[641px]:py-10 scroll-mt-24">
                     <div class="flex flex-col min-[641px]:flex-row min-[641px]:items-end justify-between gap-3 mb-6">
                         <div>
                             <span class="text-xs text-[#005EB8] uppercase font-bold tracking-wider">Pembaruan Regulasi &amp; Agenda</span>
@@ -323,7 +323,7 @@
 
                     <div class="grid grid-cols-1 min-[641px]:grid-cols-2 min-[1008px]:grid-cols-12 gap-5 min-[1008px]:gap-6">
                         <!-- Pengumuman 1 (Featured 7 cols x 2 rows) -->
-                        <article id="peraturan" class="surface-card min-[1008px]:col-span-7 min-[1008px]:row-span-2 p-6 min-[1008px]:p-8 flex flex-col justify-between scroll-mt-28 relative overflow-hidden">
+                        <article id="peraturan" class="surface-card card-interactive reveal-on-scroll min-[1008px]:col-span-7 min-[1008px]:row-span-2 p-6 min-[1008px]:p-8 flex flex-col justify-between scroll-mt-28 relative overflow-hidden">
                             <span class="absolute inset-x-0 top-0 h-1 bg-[#0F766E]" aria-hidden="true"></span>
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -353,7 +353,7 @@
                         </article>
 
                         <!-- Pengumuman 2 (5 cols) -->
-                        <article class="surface-card min-[1008px]:col-span-5 p-6 flex flex-col justify-between relative overflow-hidden">
+                        <article class="surface-card card-interactive reveal-on-scroll min-[1008px]:col-span-5 p-6 flex flex-col justify-between relative overflow-hidden">
                             <span class="absolute inset-x-0 top-0 h-1 bg-[#F2D8B3]" aria-hidden="true"></span>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -379,7 +379,7 @@
                         </article>
 
                         <!-- Pengumuman 3 (5 cols) -->
-                        <article class="surface-card min-[1008px]:col-span-5 p-6 flex flex-col justify-between relative overflow-hidden">
+                        <article class="surface-card card-interactive reveal-on-scroll min-[1008px]:col-span-5 p-6 flex flex-col justify-between relative overflow-hidden">
                             <span class="absolute inset-x-0 top-0 h-1 bg-[#1E3A8A]" aria-hidden="true"></span>
                             <div class="space-y-3">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
@@ -407,7 +407,7 @@
                 </section>
 
                 <!-- 5. TWO-COLUMN BENTO: LAYANAN ADMIN POPULER (RP 0) & CAKUPAN TOPIK ADUAN -->
-                <section id="layanan" class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-6 min-[641px]:py-8 scroll-mt-24">
+                <section id="layanan" class="max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-8 min-[641px]:py-10 scroll-mt-24">
                     <div class="grid grid-cols-1 min-[1008px]:grid-cols-12 gap-6 min-[1008px]:gap-8 items-start">
                         <!-- Left Column: Layanan Administrasi Populer (7 cols) -->
                         <div class="min-[1008px]:col-span-7 space-y-4">
@@ -424,7 +424,7 @@
 
                             <div class="space-y-3.5">
                                 <!-- Item 1: Perekaman KTP-el -->
-                                <div class="surface-card !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
+                                <div class="surface-card card-interactive reveal-on-scroll !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
                                     <div class="flex items-start min-[641px]:items-center gap-3.5 min-w-0">
                                         <div class="w-12 h-12 rounded-[16px] bg-[#E6F0FC] flex items-center justify-center text-[#005EB8] shrink-0">
                                             <span class="material-symbols-outlined text-[24px]" aria-hidden="true">badge</span>
@@ -447,7 +447,7 @@
                                 </div>
 
                                 <!-- Item 2: Keluhan IGD & BPJS Kesehatan (SOP-004) -->
-                                <div class="surface-card !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
+                                <div class="surface-card card-interactive reveal-on-scroll !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
                                     <div class="flex items-start min-[641px]:items-center gap-3.5 min-w-0">
                                         <div class="w-12 h-12 rounded-[16px] bg-[#E6F5F3] flex items-center justify-center text-[#0F766E] shrink-0">
                                             <span class="material-symbols-outlined text-[24px]" aria-hidden="true">medical_services</span>
@@ -470,7 +470,7 @@
                                 </div>
 
                                 <!-- Item 3: Penanganan Pengaduan Pungutan Liar (SOP-003) -->
-                                <div class="surface-card !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
+                                <div class="surface-card card-interactive reveal-on-scroll !rounded-[24px] p-5 flex flex-col min-[641px]:flex-row min-[641px]:items-center justify-between gap-4">
                                     <div class="flex items-start min-[641px]:items-center gap-3.5 min-w-0">
                                         <div class="w-12 h-12 rounded-[16px] bg-[#E6F0FC] flex items-center justify-center text-[#1E3A8A] shrink-0">
                                             <span class="material-symbols-outlined text-[24px]" aria-hidden="true">verified_user</span>
@@ -532,9 +532,9 @@
                                             <span class="font-mono {{ $textColor }} font-bold shrink-0">{{ $item['count'] }} bagian</span>
                                         </div>
                                         <div class="w-full h-2.5 rounded-full bg-[#E2E9F3] overflow-hidden p-0.5">
-                                            <div class="h-full rounded-full {{ $barColor }}" style="width: {{ $item['percent'] }}%"></div>
+                                            <div class="topic-bar-fill h-full rounded-full {{ $barColor }}" style="width: {{ $item['percent'] }}%"></div>
                                         </div>
-                                        <div class="flex justify-between items-center gap-2 text-[#4A5366] text-[11px]">
+                                        <div class="flex justify-between items-center gap-2 text-[#4A5366] text-xs">
                                             <span class="truncate">{{ $item['reference'] }}</span>
                                             <span class="text-[#005EB8] font-bold shrink-0 group-hover:underline">Konsultasikan</span>
                                         </div>
@@ -554,8 +554,8 @@
                 </section>
 
                 <!-- 6. PARTICIPATORY BUDGET TRANSPARENCY BANNER (Solid #1E3A8A, Zero Gradient) -->
-                <section id="anggaran" class="hero-dark-scene max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-6 scroll-mt-24">
-                    <div class="rounded-[28px] bg-[#1E3A8A] text-white p-6 min-[641px]:p-8 min-[1008px]:p-10 shadow-[0_18px_44px_rgba(20,30,80,0.18)] flex flex-col min-[1008px]:flex-row items-start min-[1008px]:items-center justify-between gap-6">
+                <section id="anggaran" class="hero-dark-scene max-w-[1200px] mx-auto w-full px-4 min-[641px]:px-6 py-8 min-[641px]:py-10 scroll-mt-24">
+                    <div class="reveal-on-scroll rounded-[28px] bg-[#1E3A8A] text-white p-6 min-[641px]:p-8 min-[1008px]:p-10 shadow-[0_18px_44px_rgba(20,30,80,0.18)] flex flex-col min-[1008px]:flex-row items-start min-[1008px]:items-center justify-between gap-6">
                         <div class="space-y-2.5 max-w-xl">
                             <span class="text-xs font-bold uppercase tracking-[0.14em] text-[#F2D8B3] block">Peran Serta Warga</span>
                             <h2 class="type-h2 text-white">Kawal Anggaran Kelurahan di Wilayah Anda</h2>
