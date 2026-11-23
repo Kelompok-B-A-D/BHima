@@ -12,7 +12,7 @@
 @php
     $isDanger = $tone === 'danger';
     $confirmBtnClass = $isDanger
-        ? 'press-scale min-h-[48px] px-6 rounded-full bg-[#B91C1C] hover:bg-[#991B1B] active:bg-[#7F1D1D] text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(185,28,28,0.24)] transition-colors'
+        ? 'press-scale min-h-[48px] px-6 rounded-full bg-[#B91C1C] hover:bg-[#991B1B] active:bg-[#7F1D1D] border border-[#B91C1C] hover:border-[#991B1B] text-white text-sm font-bold inline-flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(185,28,28,0.24)] transition-colors'
         : 'btn-primary px-6 text-sm inline-flex items-center justify-center gap-2';
     $iconWrapClass = $isDanger
         ? 'bg-[#FEE2E2] text-[#991B1B] border-[#FCA5A5]'

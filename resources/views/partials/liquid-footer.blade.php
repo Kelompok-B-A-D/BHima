@@ -1,6 +1,6 @@
 <!-- Portal Footer (Clean Frosted Content Surface, Zero Glass-on-Glass) -->
 <footer class="stitch-no-print w-full pt-8 min-[641px]:pt-10 pb-8 px-4 min-[641px]:px-6 mt-8 min-[641px]:mt-12">
-    <div class="surface-card reveal-on-scroll max-w-[1200px] mx-auto p-6 min-[641px]:p-8 min-[1008px]:p-10">
+    <div class="surface-card max-w-[1200px] mx-auto p-6 min-[641px]:p-8 min-[1008px]:p-10">
         <div class="grid grid-cols-1 min-[641px]:grid-cols-2 min-[1008px]:grid-cols-4 gap-6 min-[641px]:gap-8 pb-8 border-b border-[#DCE4F0]">
             <div class="min-[641px]:col-span-2 space-y-4">
                 <div class="flex items-center gap-3">
@@ -25,7 +25,7 @@
                 <h2 class="text-xs min-[641px]:text-sm text-[#0B1020] font-bold block uppercase tracking-wider">Kanal Publik</h2>
                 <div class="flex flex-col space-y-0.5 text-sm font-medium">
                     <a class="min-h-[44px] inline-flex items-center text-[#333E52] hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}">Beranda Portal</a>
-                    <a class="min-h-[44px] inline-flex items-center text-[#333E52] hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}#layanan">Layanan &amp; SOP Gratis</a>
+                    <a class="min-h-[44px] inline-flex items-center text-[#333E52] hover:text-[#0066CC] transition-colors" href="{{ route('services.index') }}">Katalog Layanan &amp; SOP</a>
                     <a class="min-h-[44px] inline-flex items-center text-[#333E52] hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}#pengumuman">Pengumuman Regulasi</a>
                     <a class="min-h-[44px] inline-flex items-center text-[#333E52] hover:text-[#0066CC] transition-colors" href="{{ route('consultation.home') }}#anggaran">Transparansi Anggaran</a>
                 </div>

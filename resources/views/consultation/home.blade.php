@@ -416,10 +416,16 @@
                                     <span class="text-xs text-[#0F766E] uppercase font-bold tracking-wider">Tanpa Biaya Retribusi</span>
                                     <h2 class="type-h2 text-[#0B1020] mt-0.5">Layanan Administrasi Populer</h2>
                                 </div>
-                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-xs font-bold">
-                                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">verified</span>
-                                    <span>Tarif Resmi: Rp 0</span>
-                                </span>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] border border-[#BBF7D0] text-xs font-bold">
+                                        <span class="material-symbols-outlined text-[16px]" aria-hidden="true">verified</span>
+                                        <span>Tarif Resmi: Rp 0</span>
+                                    </span>
+                                    <a href="{{ route('services.index') }}" class="btn-glass !min-h-[44px] px-4 text-xs inline-flex items-center gap-1">
+                                        <span>Katalog Lengkap</span>
+                                        <span class="material-symbols-outlined text-[16px] text-[#0066CC]" aria-hidden="true">chevron_right</span>
+                                    </a>
+                                </div>
                             </div>
 
                             <div class="space-y-3.5">

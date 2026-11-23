@@ -99,7 +99,7 @@ async function initialize() {
   content.querySelectorAll('[data-add]').forEach(el=>el.onclick=()=>editor(el.dataset.add));
   content.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>editor(el.dataset.edit,data[el.dataset.edit].find(r=>r.id===el.dataset.id)));
   content.querySelectorAll('[data-process-document]').forEach(el=>el.onclick=()=>processDocument(el.dataset.processDocument));
-  content.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>modal('Hapus data?',`<p>Data ini akan dihapus dari daftar. Pastikan data tidak lagi diperlukan.</p><form><div class="form-actions"><button type="button" data-cancel>Batal</button><button class="danger-button" type="submit">Ya, hapus data</button></div></form>`,async()=>{await service.remove(el.dataset.delete,el.dataset.id,role);data=service.read();render();toast('Data dihapus.');}));
+  content.querySelectorAll('[data-delete]').forEach(el=>el.onclick=()=>modal('Hapus data?',`<p>Data ini akan dihapus dari daftar. Pastikan data tidak lagi diperlukan.</p><form><div class="form-actions"><button type="button" data-cancel autofocus>Batal</button><button class="danger-button" type="submit">Ya, hapus data</button></div></form>`,async()=>{await service.remove(el.dataset.delete,el.dataset.id,role);data=service.read();render();toast('Data dihapus.');}));
   content.querySelectorAll('[data-content-tab]').forEach(el=>el.onclick=()=>{filters.search=el.dataset.contentTab==='Semua'?'':el.dataset.contentTab;currentPage=1;render();});
  content.querySelector('#preferences')?.addEventListener('submit',event=>{event.preventDefault();pageSize=Number(new FormData(event.target).get('pageSize'));toast('Preferensi tampilan disimpan untuk sesi halaman ini.');});
  }

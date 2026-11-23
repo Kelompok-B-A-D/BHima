@@ -1,7 +1,7 @@
 @php
     $activeNav = $activeNav ?? 'beranda';
-    $navInactiveClass = 'min-h-[40px] px-3 min-[1140px]:px-4 py-2 rounded-full text-xs font-semibold text-[#333E52] hover:text-[#0B1020] hover:bg-white/65 transition-colors whitespace-nowrap inline-flex items-center';
-    $navActiveClass = 'min-h-[40px] px-3.5 min-[1140px]:px-4 py-2 rounded-full transition-colors bg-[#0066CC] text-white text-xs font-bold shadow-[0_4px_14px_rgba(0,102,204,0.24)] whitespace-nowrap inline-flex items-center';
+    $navInactiveClass = 'min-h-[44px] px-3 min-[1140px]:px-4 py-2 rounded-full text-xs font-semibold text-[#333E52] hover:text-[#0B1020] hover:bg-white/65 transition-colors whitespace-nowrap inline-flex items-center';
+    $navActiveClass = 'min-h-[44px] px-3.5 min-[1140px]:px-4 py-2 rounded-full transition-colors bg-[#0066CC] text-white text-xs font-bold shadow-[0_4px_14px_rgba(0,102,204,0.24)] whitespace-nowrap inline-flex items-center';
     $drawerInactiveClass = 'min-h-[44px] px-4 py-2.5 rounded-full text-[#0B1020] hover:bg-white/75 font-semibold text-xs min-[380px]:text-sm flex items-center gap-2.5 transition-colors';
     $drawerActiveClass = 'min-h-[44px] px-4 py-2.5 rounded-full bg-[#0066CC] text-white font-bold text-xs min-[380px]:text-sm flex items-center gap-2.5 shadow-sm';
     $jdihHref = $activeNav === 'asisten-hukum' ? '#jdih-reference-panel' : route('consultation.home').'#peraturan';
@@ -43,8 +43,9 @@
                 href="{{ route('consultation.home') }}"
             >Beranda</a>
             <a
-                class="{{ $navInactiveClass }}"
-                href="{{ route('consultation.home') }}#layanan"
+                @if($activeNav === 'layanan') aria-current="page" @endif
+                class="{{ $activeNav === 'layanan' ? $navActiveClass : $navInactiveClass }}"
+                href="{{ route('services.index') }}"
             >Layanan &amp; SOP</a>
             <a
                 @if($activeNav === 'asisten-hukum') aria-current="page" @endif
@@ -98,8 +99,8 @@
                 <span class="material-symbols-outlined text-[18px] {{ $activeNav === 'beranda' ? 'text-white' : 'text-[#0066CC]' }}" aria-hidden="true">home</span>
                 <span>Beranda</span>
             </a>
-            <a data-beranda-drawer-link class="{{ $drawerInactiveClass }}" href="{{ route('consultation.home') }}#layanan">
-                <span class="material-symbols-outlined text-[18px] text-[#0066CC]" aria-hidden="true">verified_user</span>
+            <a data-beranda-drawer-link class="{{ $activeNav === 'layanan' ? $drawerActiveClass : $drawerInactiveClass }}" href="{{ route('services.index') }}">
+                <span class="material-symbols-outlined text-[18px] {{ $activeNav === 'layanan' ? 'text-white' : 'text-[#0066CC]' }}" aria-hidden="true">verified_user</span>
                 <span>Layanan &amp; SOP</span>
             </a>
             <a data-beranda-drawer-link class="{{ $activeNav === 'asisten-hukum' ? $drawerActiveClass : $drawerInactiveClass }}" href="{{ route('consultation.index') }}">
