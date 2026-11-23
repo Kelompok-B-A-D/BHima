@@ -69,6 +69,7 @@ class LegalAssistantService
 
         $retrieval = $this->retrievalService->retrieve($sanitizedChronology, $topK, $minSimilarity);
         $chunks = $retrieval['chunks'];
+        $revokedNotices = $retrieval['revoked_notices'] ?? [];
 
         // Bila tidak ada chunk di atas ambang kemiripan, JANGAN memanggil LLM untuk substansi hukum
         if (! $retrieval['has_context'] || empty($chunks)) {
@@ -78,6 +79,9 @@ class LegalAssistantService
             $parts = [];
             if ($verdictRequested) {
                 $parts[] = (string) config('rag.verdict_guardrail_notice');
+            }
+            if (! empty($revokedNotices)) {
+                $parts[] = implode("\n", $revokedNotices);
             }
             $parts[] = $outOfScopeMessage;
             $parts[] = $disclaimer;
@@ -93,13 +97,15 @@ class LegalAssistantService
                     'top_score' => $retrieval['top_score'],
                     'threshold' => $retrieval['threshold'],
                     'matched_count' => 0,
+                    'sanction_query' => (bool) ($retrieval['sanction_query'] ?? false),
+                    'revoked_notices' => $revokedNotices,
                     'guardrail_triggered' => $verdictRequested,
                 ],
             ];
         }
 
         // Kirim ke LLM hanya kronologi warga dan chunk hasil retrieval
-        $generation = $this->generateFromContext($sanitizedChronology, $chunks, $verdictRequested);
+        $generation = $this->generateFromContext($sanitizedChronology, $chunks, $verdictRequested, $revokedNotices);
 
         // Validasi semua sitasi terhadap chunk yang benar-benar diambil
         $validated = $this->validateCitations(
@@ -123,6 +129,8 @@ class LegalAssistantService
                 'top_score' => $retrieval['top_score'],
                 'threshold' => $retrieval['threshold'],
                 'matched_count' => count($chunks),
+                'sanction_query' => (bool) ($retrieval['sanction_query'] ?? false),
+                'revoked_notices' => $revokedNotices,
                 'guardrail_triggered' => $verdictRequested,
             ],
         ];
@@ -251,20 +259,31 @@ class LegalAssistantService
      * Kirim kronologi warga dan potongan konteks ke LLM (jika dikonfigurasi) atau penyusun jawaban berbasis konteks.
      *
      * @param  list<array<string, mixed>>  $chunks
+     * @param  list<string>  $revokedNotices
      * @return array{answer: string, citations: list<array<string, mixed>>, llm_called: bool, provider: string}
      */
-    private function generateFromContext(string $chronology, array $chunks, bool $verdictRequested): array
+    private function generateFromContext(string $chronology, array $chunks, bool $verdictRequested, array $revokedNotices = []): array
     {
         $provider = (string) config('rag.llm.provider', 'local_grounded');
         $apiKey = (string) config('rag.llm.api_key', '');
         $systemPrompt = (string) config('rag.system_prompt');
 
-        // Format konteks yang dikirim ke LLM: HANYA kronologi warga dan chunk hasil retrieval
+        // Format konteks yang dikirim ke LLM: HANYA kronologi warga dan chunk hasil retrieval beserta status & tautan resmi
         $contextBlocks = [];
         foreach ($chunks as $idx => $chunk) {
             $num = $idx + 1;
+            $statusBerlaku = (string) ($chunk['status_berlaku'] ?? 'berlaku');
+            $diubahOleh = trim((string) ($chunk['diubah_oleh'] ?? ''));
+            $statusLine = $statusBerlaku === 'diubah' && $diubahOleh !== ''
+                ? "diubah (diubah oleh {$diubahOleh})"
+                : $statusBerlaku;
+            $officialUrl = trim((string) ($chunk['source_page_url'] ?? ''));
+            $sanctionLine = ! empty($chunk['sanksi_teks'])
+                ? sprintf('%s (%s)', (string) $chunk['sanksi_teks'], (string) ($chunk['sanksi_jenis'] ?? 'lainnya'))
+                : 'Tidak tercantum dalam potongan pasal yang ditemukan';
+
             $contextBlocks[] = sprintf(
-                "[SUMBER #%d]\nID Dokumen: %s\nKategori: %s\nNama Dokumen: %s\nJenis: %s\nNomor/Tahun: %s (%d)\nPasal/Bagian: %s\nTautan Sumber: %s\nIsi Konteks: %s",
+                "[SUMBER #%d]\nID Dokumen: %s\nKategori: %s\nNama Dokumen: %s\nJenis: %s\nNomor/Tahun: %s (%d)\nPasal/Bagian: %s\nStatus Berlaku: %s\nKetentuan Sanksi Eksplisit: %s\nTautan Portal: %s%s\nIsi Konteks: %s",
                 $num,
                 $chunk['document_key'],
                 $chunk['category'],
@@ -273,19 +292,32 @@ class LegalAssistantService
                 $chunk['document_number'],
                 $chunk['document_year'],
                 $chunk['article_label'],
+                $statusLine,
+                $sanctionLine,
                 $chunk['source_url'],
+                $officialUrl !== '' ? "\nTautan Sumber Resmi: {$officialUrl}" : '',
                 $chunk['content']
             );
         }
 
-        $userPrompt = "KRONOLOGI WARGA:\n".$chronology."\n\nPOTONGAN KONTEKS HUKUM & SOP:\n".implode("\n\n", $contextBlocks);
+        $archivePrefix = ! empty($revokedNotices)
+            ? "\n\nCATATAN ARSIP PERATURAN DICABUT:\n".implode("\n", $revokedNotices)
+            : '';
+
+        $userPrompt = "KRONOLOGI WARGA:\n".$chronology.$archivePrefix."\n\nPOTONGAN KONTEKS HUKUM & SOP:\n".implode("\n\n", $contextBlocks);
 
         if ($provider === 'api' && $apiKey !== '') {
             try {
+                $baseUrl = rtrim((string) config('rag.llm.base_url', 'https://ai.paas.id'), '/');
+                $endpoint = str_ends_with($baseUrl, '/chat/completions')
+                    ? $baseUrl
+                    : $baseUrl.'/chat/completions';
+
                 $response = Http::withToken($apiKey)
+                    ->acceptJson()
                     ->timeout((int) config('rag.llm.timeout', 20))
-                    ->post(rtrim((string) config('rag.llm.base_url'), '/').'/chat/completions', [
-                        'model' => config('rag.llm.model', 'deepseek-chat'),
+                    ->post($endpoint, [
+                        'model' => config('rag.llm.model', 'deepseek-v4.1-flash'),
                         'temperature' => (float) config('rag.llm.temperature', 0.1),
                         'max_tokens' => (int) config('rag.llm.max_tokens', 1200),
                         'messages' => [
@@ -297,6 +329,10 @@ class LegalAssistantService
                 if ($response->successful()) {
                     $llmText = trim((string) $response->json('choices.0.message.content', ''));
                     if ($llmText !== '') {
+                        if (! empty($revokedNotices)) {
+                            $llmText = implode("\n", $revokedNotices)."\n\n".$llmText;
+                        }
+
                         return [
                             'answer' => $llmText,
                             'citations' => array_map(fn (array $c) => $this->formatCitationFromChunk($c), $chunks),
@@ -317,7 +353,7 @@ class LegalAssistantService
         }
 
         // Penyusunan jawaban terstruktur berbasis konteks (Context-Grounded Synthesis)
-        $synthesized = $this->synthesizeGroundedAnswer($chronology, $chunks, $verdictRequested);
+        $synthesized = $this->synthesizeGroundedAnswer($chronology, $chunks, $verdictRequested, $revokedNotices);
 
         return [
             'answer' => $synthesized,
@@ -331,8 +367,9 @@ class LegalAssistantService
      * Susun jawaban bahasa awam 4 bagian yang 100% bersumber dari chunk hasil retrieval.
      *
      * @param  list<array<string, mixed>>  $chunks
+     * @param  list<string>  $revokedNotices
      */
-    private function synthesizeGroundedAnswer(string $chronology, array $chunks, bool $verdictRequested): string
+    private function synthesizeGroundedAnswer(string $chronology, array $chunks, bool $verdictRequested, array $revokedNotices = []): string
     {
         $jdihChunks = array_values(array_filter($chunks, fn (array $c) => $c['category'] === 'JDIH'));
         $sopChunks = array_values(array_filter($chunks, fn (array $c) => $c['category'] === 'SOP'));
@@ -348,31 +385,56 @@ class LegalAssistantService
         if ($verdictRequested) {
             $summarySection .= (string) config('rag.verdict_guardrail_notice');
         } else {
-            $summarySection .= 'Berikut adalah ketentuan aturan dan prosedur layanan resmi yang relevan dengan kondisi Anda.';
+            $summarySection .= 'Berikut adalah ketentuan aturan yang berpotensi terkait dan prosedur layanan resmi yang relevan dengan kondisi Anda.';
+        }
+        if (! empty($revokedNotices)) {
+            $summarySection .= "\n".implode("\n", $revokedNotices);
         }
 
         // (b) Pasal/aturan yang relevan dan artinya dalam bahasa awam
         $rulesLines = ['(b) Pasal/Aturan yang Relevan dan Artinya'];
         $targetRuleChunks = ! empty($jdihChunks) ? $jdihChunks : $chunks;
 
+        $distinctJdihDocs = [];
         foreach ($targetRuleChunks as $chunk) {
             $plainExplanation = $this->explainLegalTermsInPlainLanguage((string) $chunk['content']);
+            $statusNote = '';
+            if (($chunk['status_berlaku'] ?? 'berlaku') === 'diubah' && ! empty($chunk['diubah_oleh'])) {
+                $statusNote = ' [Catatan status: diubah oleh '.$chunk['diubah_oleh'].']';
+            }
+            $officialSuffix = ! empty($chunk['source_page_url'])
+                ? ' | Sumber Resmi: '.$chunk['source_page_url']
+                : '';
             $citationInline = sprintf(
-                '[Sitasi: %s (%s Tahun %d), %s — Sumber: %s]',
+                '[Sitasi: %s (%s), %s - Sumber: %s%s]',
                 $chunk['document_name'],
-                $chunk['document_number'],
-                $chunk['document_year'],
+                $this->formatDocNumberYear((string) $chunk['document_number'], (int) $chunk['document_year']),
                 $chunk['article_label'],
-                $chunk['source_url']
+                $chunk['source_url'],
+                $officialSuffix
             );
             $rulesLines[] = sprintf(
-                '- Berdasarkan %s (%s), %s: %s %s %s',
+                '- Berdasarkan %s (%s), %s: %s %s%s %s',
                 $chunk['document_name'],
                 $chunk['document_number'],
                 $chunk['article_label'],
                 $chunk['content'],
                 $plainExplanation,
+                $statusNote,
                 $citationInline
+            );
+            if ($chunk['category'] === 'JDIH') {
+                $distinctJdihDocs[$chunk['document_key']] = $chunk['document_name'].' ('.$chunk['document_number'].')';
+            }
+        }
+
+        // Aturan 7.4: bila lebih dari satu peraturan berlaku pada kasus yang sama, jelaskan mana ketentuan khusus (lex specialis)
+        if (count($distinctJdihDocs) > 1) {
+            $docNames = array_values($distinctJdihDocs);
+            $rulesLines[] = sprintf(
+                '- Catatan keberlakuan beberapa aturan: terdapat lebih dari satu peraturan yang relevan (%s). Dalam praktik hukum, ketentuan sektoral yang mengatur pokok permasalahan secara lebih spesifik (%s) berlaku sebagai aturan khusus (lex specialis) berdampingan dengan aturan umum atau pendukung lainnya.',
+                implode('; ', $docNames),
+                $docNames[0]
             );
         }
 
@@ -382,27 +444,25 @@ class LegalAssistantService
         if (! empty($sopChunks)) {
             $firstSop = $sopChunks[0];
             $stepsLines[] = sprintf(
-                '2. Ikuti prosedur resmi sesuai %s (%s) pada %s: %s [Sitasi: %s (%s Tahun %d), %s — Sumber: %s].',
+                '2. Ikuti prosedur resmi sesuai %s (%s) pada %s: %s [Sitasi: %s (%s), %s - Sumber: %s].',
                 $firstSop['document_name'],
                 $firstSop['document_number'],
                 $firstSop['article_label'],
                 $firstSop['content'],
                 $firstSop['document_name'],
-                $firstSop['document_number'],
-                $firstSop['document_year'],
+                $this->formatDocNumberYear((string) $firstSop['document_number'], (int) $firstSop['document_year']),
                 $firstSop['article_label'],
                 $firstSop['source_url']
             );
         } else {
             $firstRule = $targetRuleChunks[0];
             $stepsLines[] = sprintf(
-                '2. Ajukan permohonan atau pengaduan resmi dengan merujuk pada ketentuan %s (%s) %s [Sitasi: %s (%s Tahun %d), %s — Sumber: %s].',
+                '2. Ajukan permohonan atau pengaduan resmi dengan merujuk pada ketentuan %s (%s) %s [Sitasi: %s (%s), %s - Sumber: %s].',
                 $firstRule['document_name'],
                 $firstRule['document_number'],
                 $firstRule['article_label'],
                 $firstRule['document_name'],
-                $firstRule['document_number'],
-                $firstRule['document_year'],
+                $this->formatDocNumberYear((string) $firstRule['document_number'], (int) $firstRule['document_year']),
                 $firstRule['article_label'],
                 $firstRule['source_url']
             );
@@ -414,15 +474,13 @@ class LegalAssistantService
         if (! empty($sopChunks)) {
             foreach ($sopChunks as $sop) {
                 $sopLines[] = sprintf(
-                    '- %s (%s Tahun %d), %s: %s [Sitasi: %s (%s Tahun %d), %s — Sumber: %s]',
+                    '- %s (%s), %s: %s [Sitasi: %s (%s), %s - Sumber: %s]',
                     $sop['document_name'],
-                    $sop['document_number'],
-                    $sop['document_year'],
+                    $this->formatDocNumberYear((string) $sop['document_number'], (int) $sop['document_year']),
                     $sop['article_label'],
                     $sop['content'],
                     $sop['document_name'],
-                    $sop['document_number'],
-                    $sop['document_year'],
+                    $this->formatDocNumberYear((string) $sop['document_number'], (int) $sop['document_year']),
                     $sop['article_label'],
                     $sop['source_url']
                 );
@@ -498,6 +556,15 @@ class LegalAssistantService
         return $cleaned;
     }
 
+    private function formatDocNumberYear(string $docNumber, int $docYear): string
+    {
+        if ($docYear > 0 && ! str_contains(mb_strtolower($docNumber, 'UTF-8'), (string) $docYear)) {
+            return trim($docNumber.' Tahun '.$docYear);
+        }
+
+        return $docNumber;
+    }
+
     /**
      * @param  array<string, mixed>  $chunk
      * @return array<string, mixed>
@@ -512,7 +579,17 @@ class LegalAssistantService
             'document_number' => (string) $chunk['document_number'],
             'document_year' => (int) $chunk['document_year'],
             'article_label' => (string) $chunk['article_label'],
+            'pasal_nomor' => isset($chunk['pasal_nomor']) ? (string) $chunk['pasal_nomor'] : null,
+            'ayat' => isset($chunk['ayat']) ? (string) $chunk['ayat'] : null,
+            'is_ketentuan_pidana' => (bool) ($chunk['is_ketentuan_pidana'] ?? false),
+            'sanksi_jenis' => isset($chunk['sanksi_jenis']) ? (string) $chunk['sanksi_jenis'] : null,
+            'sanksi_teks' => isset($chunk['sanksi_teks']) ? (string) $chunk['sanksi_teks'] : null,
+            'rujuk_pasal' => isset($chunk['rujuk_pasal']) ? (string) $chunk['rujuk_pasal'] : null,
+            'status_berlaku' => (string) ($chunk['status_berlaku'] ?? 'berlaku'),
+            'diubah_oleh' => isset($chunk['diubah_oleh']) ? (string) $chunk['diubah_oleh'] : null,
             'source_url' => (string) $chunk['source_url'],
+            'source_page_url' => isset($chunk['source_page_url']) ? (string) $chunk['source_page_url'] : null,
+            'pdf_page' => isset($chunk['pdf_page']) ? (int) $chunk['pdf_page'] : null,
             'category' => (string) $chunk['category'],
             'topic' => (string) ($chunk['topic'] ?? 'Umum'),
             'score' => round((float) $chunk['score'], 4),

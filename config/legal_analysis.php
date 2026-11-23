@@ -17,8 +17,9 @@ return [
 
     'deepseek' => [
         'api_key' => env('DEEPSEEK_API_KEY', ''),
-        'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'),
-        'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
+        'base_url' => env('DEEPSEEK_BASE_URL', 'https://ai.paas.id'),
+        'model' => env('DEEPSEEK_MODEL', 'deepseek-v4.1-flash'),
+        'send_response_format' => filter_var(env('DEEPSEEK_SEND_RESPONSE_FORMAT', true), FILTER_VALIDATE_BOOLEAN),
         'timeout' => (int) env('DEEPSEEK_TIMEOUT', 20),
         'temperature' => min(0.2, max(0.0, (float) env('DEEPSEEK_TEMPERATURE', 0.1))),
         'max_tokens' => (int) env('DEEPSEEK_MAX_TOKENS', 1500),
@@ -52,9 +53,9 @@ Tugas Anda adalah menganalisis kronologi permasalahan warga HANYA berdasarkan po
 Patuhi 6 aturan isi analisis berikut secara ketat tanpa pengecualian:
 1. Gunakan HANYA chunk konteks yang diberikan. Dilarang keras mengarang undang-undang, pasal, nomor, tahun, tautan, atau besaran sanksi di luar konteks.
 2. "Pasal yang dilanggar" WAJIB ditulis dan dijelaskan sebagai "pasal yang berpotensi terkait" berdasarkan kronologi warga, BUKAN putusan bahwa pelanggaran pasti telah terjadi.
-3. "Estimasi ancaman sanksi" berarti sanksi maksimal atau rentang sanksi yang tertulis secara eksplisit di dalam bunyi pasal pada konteks (misalnya pidana penjara paling lama X atau denda paling banyak Y). Bukan prediksi vonis hakim, bukan peluang menang atau kalah, dan bukan janji hasil perkara.
+3. "Estimasi ancaman sanksi" berarti sanksi maksimal atau rentang sanksi yang tertulis secara eksplisit di dalam bunyi pasal atau field "Sanksi Eksplisit Terverifikasi" pada konteks (misalnya pidana penjara paling lama X atau denda paling banyak Y). Angka sanksi WAJIB identik dengan teks konteks. Bukan prediksi vonis hakim, bukan peluang menang atau kalah, dan bukan janji hasil perkara.
 4. Jika potongan pasal pada konteks tidak memuat ancaman sanksi secara eksplisit, isi field "bunyi_sanksi_ringkas" persis dengan kalimat: "Tidak tercantum dalam potongan pasal yang ditemukan". Dilarang menebak atau mengarang angka sanksi.
-5. Gunakan bahasa Indonesia yang mudah dipahami warga awam dan jelaskan istilah hukum secara singkat dan lugas.
+5. Gunakan bahasa Indonesia yang mudah dipahami warga awam, jelaskan istilah hukum secara singkat dan lugas, cantumkan catatan "diubah oleh ..." pada field "catatan" bila konteks bertanda status "diubah", serta jelaskan aturan khusus (lex specialis) bila lebih dari satu peraturan berlaku pada kasus yang sama.
 6. Jika konteks yang diberikan kosong atau tidak cukup relevan dengan kronologi warga, kembalikan array kosong untuk "rujukan", "pasal_relevan", dan "ancaman_sanksi", serta tetapkan "perlu_eskalasi": true.
 
 Keluarkan HANYA JSON valid (tanpa blok markdown ```json) dengan skema tetap berikut:
