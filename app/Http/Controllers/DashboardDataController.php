@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -48,12 +49,35 @@ class DashboardDataController extends Controller
             'complaints' => ['action' => 'required|in:verify,complete,reject,dispatch,status,note,assign', 'note' => 'required|string|min:5|max:5000', 'status' => ['nullable', Rule::in(self::STATUSES)], 'agency' => 'required_if:action,dispatch|nullable|string|max:200', 'assigned_to' => 'required_if:action,assign|nullable|integer|exists:users,id'],
         };
         $input = $request->validate($rules);
+        if ($collection === 'budgets') {
+            $input['title'] = trim($input['title']);
+        }
         DB::transaction(function () use ($request, $collection, $base, $input, $admin) {
             // A user row lock serializes capacity checks and per-record changes for this internal workspace.
             DB::table('users')->orderBy('id')->lockForUpdate()->get(['id']);
             $record = DB::table('dashboard_records')->where('collection', $collection)->where('record_key', $base['id'])->lockForUpdate()->first();
             $old = $record ? json_decode($record->payload, true) : [];
             $assigned = $record?->assigned_to;
+            if ($collection === 'budgets') {
+                $title = $this->normalizedBudgetTitle($input['title']);
+                $duplicate = DB::table('dashboard_records')
+                    ->where('collection', 'budgets')
+                    ->where('record_key', '!=', $base['id'])
+                    ->lockForUpdate()
+                    ->get(['payload'])
+                    ->first(function ($budget) use ($input, $title) {
+                        $payload = json_decode($budget->payload, true);
+
+                        return (int) ($payload['year'] ?? 0) === (int) $input['year']
+                            && $this->normalizedBudgetTitle((string) ($payload['title'] ?? '')) === $title;
+                    });
+
+                if ($duplicate) {
+                    throw ValidationException::withMessages([
+                        'title' => 'Bidang kegiatan sudah memiliki anggaran untuk tahun tersebut.',
+                    ]);
+                }
+            }
             if ($collection === 'complaints') {
                 abort_unless($record && ($admin || $assigned === $request->user()->id), 403);
                 $action = $input['action'];
@@ -170,5 +194,10 @@ class DashboardDataController extends Controller
     private function audit(Request $request, string $text): void
     {
         DB::table('dashboard_activities')->insert(['user_id' => $request->user()->id, 'text' => $text, 'created_at' => now(), 'updated_at' => now()]);
+    }
+
+    private function normalizedBudgetTitle(string $title): string
+    {
+        return Str::lower(preg_replace('/\s+/', ' ', trim($title)) ?? '');
     }
 }
