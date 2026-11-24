@@ -883,16 +883,44 @@ TEXT,
         return array_map(fn (array $s) => [
             'id' => $s['id'],
             'title' => $s['title'],
-            'type' => 'SOP Layanan',
+            'type' => 'daerah',
             'number' => $s['number'],
             'year' => $s['year'],
             'category' => 'SOP',
+            'service_category' => $s['topic'],
+            'agency' => $this->resolveSopAgency($s['number']),
             'topic' => $s['topic'],
             'status' => 'Terbit',
             'body' => $s['body'],
+            'requirements' => 'Identitas KTP-el atau Kartu Keluarga pemohon serta dokumen pendukung sesuai jenis permohonan layanan.',
+            'procedure' => $s['body'],
+            'duration' => '1 sampai 3 hari kerja',
+            'cost' => 'Gratis (Rp 0)',
             'source_url' => '/rujukan/'.$s['id'],
             'updated' => $today,
         ], $sops);
     }
-}
 
+    private function resolveSopAgency(string $sopNumber): string
+    {
+        return match (true) {
+            str_contains($sopNumber, 'DUKCAPIL') => 'Dinas Kependudukan dan Pencatatan Sipil',
+            str_contains($sopNumber, 'INSPEKTORAT') => 'Inspektorat Daerah',
+            str_contains($sopNumber, 'DINKES') => 'Dinas Kesehatan',
+            str_contains($sopNumber, 'PUPR') => 'Dinas Pekerjaan Umum dan Penataan Ruang',
+            str_contains($sopNumber, 'HUKUM') => 'Bagian Hukum Sekretariat Daerah',
+            str_contains($sopNumber, 'DISNAKER') => 'Dinas Tenaga Kerja',
+            str_contains($sopNumber, 'PERTANAHAN') => 'Kantor Pertanahan / BPN',
+            str_contains($sopNumber, 'KOMINFO') => 'Dinas Komunikasi dan Informatika',
+            str_contains($sopNumber, 'UPTD-PPA') => 'UPTD Perlindungan Perempuan dan Anak',
+            str_contains($sopNumber, 'PPID') => 'PPID Utama Pemerintah Daerah',
+            str_contains($sopNumber, 'DINSOS') => 'Dinas Sosial',
+            str_contains($sopNumber, 'DLH') => 'Dinas Lingkungan Hidup',
+            str_contains($sopNumber, 'DISDAG') => 'Dinas Perdagangan dan Perindustrian',
+            str_contains($sopNumber, 'DPMPTSP') => 'DPMPTSP Daerah',
+            str_contains($sopNumber, 'PEMDES') => 'Dinas Pemberdayaan Masyarakat dan Desa',
+            str_contains($sopNumber, 'ORGPEM') => 'Bagian Organisasi Sekretariat Daerah',
+            default => 'Sekretariat Layanan Terpadu BHIMA',
+        };
+    }
+}

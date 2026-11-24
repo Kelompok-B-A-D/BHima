@@ -29,7 +29,7 @@
     <div class="space-y-3">
         <div class="flex flex-wrap items-center gap-2">
             <span class="px-3 py-1 rounded-full bg-[#E6F0FC] text-[#005EB8] text-xs font-bold">
-                {{ $data['service_category'] ?? $data['category'] ?? 'Informasi Layanan' }}
+                {{ $data['service_category'] ?? ($data['topic'] ?? ($data['category'] ?? 'Informasi Layanan')) }}
             </span>
             @if (! empty($data['type']))
                 <span class="px-3 py-1 rounded-full bg-[#E6F5F3] text-[#0F766E] text-xs font-bold">
@@ -47,7 +47,7 @@
     <dl class="surface-nested grid grid-cols-1 min-[481px]:grid-cols-2 min-[1008px]:grid-cols-4 gap-4 p-4 min-[641px]:p-5 text-xs">
         <div>
             <dt class="text-[#4A5366] font-semibold">Instansi penyelenggara</dt>
-            <dd class="text-sm font-bold text-[#0B1020] mt-1">{{ $data['agency'] ?? 'Informasi belum tersedia' }}</dd>
+            <dd class="text-sm font-bold text-[#0B1020] mt-1">{{ $data['agency'] ?? ($data['number'] ?? 'Informasi belum tersedia') }}</dd>
         </div>
         <div>
             <dt class="text-[#4A5366] font-semibold">Jenis layanan</dt>
