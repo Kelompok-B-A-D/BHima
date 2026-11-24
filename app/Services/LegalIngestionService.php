@@ -196,7 +196,10 @@ class LegalIngestionService
         if ($docYear < 1900 || $docYear > 2100) {
             $docYear = (int) date('Y');
         }
-        $docType = trim((string) ($payload['type'] ?? $this->inferDocumentType($docName, $docNumber, $category)));
+        $rawType = trim((string) ($payload['type'] ?? ''));
+        $docType = ($rawType !== '' && ! in_array(strtolower($rawType), ['daerah', 'umum'], true))
+            ? $rawType
+            : $this->inferDocumentType($docName, $docNumber, $category);
         $topic = trim((string) ($payload['topic'] ?? $payload['category'] ?? ($manifest['kategori'] ?? 'Umum')));
         $baseUrl = trim((string) ($payload['source_url'] ?? '/rujukan/'.rawurlencode($docKey)));
 
@@ -433,7 +436,7 @@ class LegalIngestionService
             $hasSanction = true;
             $sanction = [
                 'jenis' => str_contains(mb_strtolower($dm[1], 'UTF-8'), 'kurungan') ? 'pidana' : 'denda',
-                'bunyi_sanksi_ringkas' => trim($dm[1], " .;,"),
+                'bunyi_sanksi_ringkas' => trim($dm[1], ' .;,'),
             ];
         }
 

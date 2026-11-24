@@ -8,6 +8,12 @@
             'href' => route('consultation.home'),
         ],
         [
+            'key' => 'layanan',
+            'label' => 'Layanan',
+            'icon' => 'verified_user',
+            'href' => route('services.index'),
+        ],
+        [
             'key' => 'asisten-hukum',
             'label' => 'Asisten',
             'icon' => 'smart_toy',
@@ -34,7 +40,7 @@
     class="bhima-bottom-nav stitch-no-print min-[1008px]:hidden fixed left-3 right-3 z-40 pointer-events-none flex justify-center"
     style="bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));"
 >
-    <div class="liquid-glass w-full max-w-[460px] pointer-events-auto rounded-full p-2 grid grid-cols-4 gap-2">
+    <div class="liquid-glass w-full max-w-[500px] pointer-events-auto rounded-full p-2 grid grid-cols-5 gap-1.5">
         @foreach ($tabs as $tab)
             @php
                 $isActive = $activeNav === $tab['key'];

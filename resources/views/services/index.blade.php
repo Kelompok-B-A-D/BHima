@@ -77,8 +77,8 @@
                                 <strong>{{ $data['title'] }}</strong>
                                 <small>{{ $data['category'] ?? '' }}</small>
                             </td>
-                            <td>{{ $data['service_category'] ?? 'Belum tersedia' }}</td>
-                            <td>{{ $data['agency'] ?? 'Belum tersedia' }}</td>
+                            <td>{{ $data['service_category'] ?? ($data['topic'] ?? 'Belum tersedia') }}</td>
+                            <td>{{ $data['agency'] ?? ($data['number'] ?? 'Belum tersedia') }}</td>
                             <td>{{ ucfirst($data['type'] ?? 'Belum tersedia') }}</td>
                             <td>{{ $record->updated_at->format('d/m/Y') }}</td>
                             <td>
@@ -219,7 +219,7 @@
                         <div class="space-y-3 min-w-0">
                             <div class="flex items-center justify-between gap-2 flex-wrap">
                                 <span class="px-3 py-1 rounded-full bg-[#E6F0FC] text-[#005EB8] text-xs font-bold">
-                                    {{ $data['service_category'] ?? $data['category'] ?? 'Layanan' }}
+                                    {{ $data['service_category'] ?? ($data['topic'] ?? ($data['category'] ?? 'Layanan')) }}
                                 </span>
                                 @if (! empty($data['type']))
                                     <span class="px-2.5 py-1 rounded-full bg-[#E6F5F3] text-[#0F766E] text-xs font-bold">
@@ -230,7 +230,7 @@
 
                             <div class="space-y-1">
                                 <h2 class="type-h3 text-[#0B1020] break-words">{{ $data['title'] }}</h2>
-                                <p class="text-xs font-bold text-[#0F766E]">{{ $data['agency'] ?? 'Instansi belum tersedia' }}</p>
+                                <p class="text-xs font-bold text-[#0F766E]">{{ $data['agency'] ?? ($data['number'] ?? 'Instansi belum tersedia') }}</p>
                             </div>
 
                             <p class="text-sm text-[#4A5366] leading-relaxed break-words">
